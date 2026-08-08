@@ -3,47 +3,31 @@
 namespace App\Http\Controllers\UserManagement;
 
 use App\Http\Controllers\Controller;
+use App\Models\UserManagement\Dashboard;
 use App\Models\UserManagement\OrganisationUnit;
 use App\Models\UserManagement\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OrganisationUnitController extends Controller
 {
-    /**
-     * Display LAPF organisation structure.
-     */
     public function index(): View
     {
         $this->ensurePermission(
             'user-management.organisation-units.view'
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Organisation Units
-        |--------------------------------------------------------------------------
-        */
-
         $organisationUnits = OrganisationUnit::query()
-            ->orderBy('type')
+            ->with('dashboard')
+            ->orderBy('display_order')
             ->orderBy('name')
             ->get();
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | User Counts
-        |--------------------------------------------------------------------------
-        |
-        | We calculate this separately so the controller does not depend on
-        | OrganisationUnit having a users() relationship.
-        |
-        */
+        $unitLookup =
+            $organisationUnits->keyBy('id');
 
         $userCounts = User::query()
             ->selectRaw(
@@ -56,13 +40,6 @@ class OrganisationUnitController extends Controller
                 'organisation_unit_id'
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Child Counts
-        |--------------------------------------------------------------------------
-        */
-
         $childCounts = OrganisationUnit::query()
             ->selectRaw(
                 'parent_id, COUNT(*) as total'
@@ -74,60 +51,30 @@ class OrganisationUnitController extends Controller
                 'parent_id'
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Lookup
-        |--------------------------------------------------------------------------
-        */
-
-        $unitLookup =
-            $organisationUnits->keyBy('id');
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Summary Counts
-        |--------------------------------------------------------------------------
-        */
-
         $summary = [
             'total' =>
                 $organisationUnits->count(),
 
-            'principal_offices' =>
-                $organisationUnits
-                    ->where(
-                        'type',
-                        'principal_office'
-                    )
-                    ->count(),
-
             'departments' =>
                 $organisationUnits
-                    ->where(
-                        'type',
-                        'department'
-                    )
+                    ->where('unit_type', 'department')
                     ->count(),
 
             'sections' =>
                 $organisationUnits
-                    ->where(
-                        'type',
-                        'section'
-                    )
+                    ->where('unit_type', 'section')
+                    ->count(),
+
+            'offices' =>
+                $organisationUnits
+                    ->where('unit_type', 'office')
                     ->count(),
 
             'active' =>
                 $organisationUnits
-                    ->where(
-                        'is_active',
-                        true
-                    )
+                    ->where('is_active', true)
                     ->count(),
         ];
-
 
         return view(
             'user-management.organisation-units.index',
@@ -142,35 +89,33 @@ class OrganisationUnitController extends Controller
     }
 
 
-    /**
-     * Show create form.
-     */
     public function create(): View
     {
         $this->ensurePermission(
             'user-management.organisation-units.create'
         );
 
-
         $parentUnits = OrganisationUnit::query()
             ->where('is_active', true)
-            ->orderBy('type')
+            ->orderBy('display_order')
             ->orderBy('name')
             ->get();
 
+        $dashboards = Dashboard::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         return view(
             'user-management.organisation-units.create',
             compact(
-                'parentUnits'
+                'parentUnits',
+                'dashboards'
             )
         );
     }
 
 
-    /**
-     * Store organisation unit.
-     */
     public function store(
         Request $request
     ): RedirectResponse {
@@ -178,43 +123,26 @@ class OrganisationUnitController extends Controller
             'user-management.organisation-units.create'
         );
 
-
         $validated =
             $this->validateOrganisationUnit(
                 $request
             );
 
+        $validated['created_by'] =
+            auth()->id();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Principal Office Validation
-        |--------------------------------------------------------------------------
-        |
-        | A principal office is a root-level structure and therefore should not
-        | report to another organisation unit.
-        |
-        */
-
-        if (
-            $validated['type']
-            === 'principal_office'
-        ) {
-            $validated['parent_id'] = null;
-        }
-
+        $validated['updated_by'] =
+            auth()->id();
 
         DB::transaction(
             function () use (
                 $validated
             ): void {
-
                 OrganisationUnit::create(
                     $validated
                 );
-
             }
         );
-
 
         return redirect()
             ->route(
@@ -227,16 +155,12 @@ class OrganisationUnitController extends Controller
     }
 
 
-    /**
-     * Redirect show to edit.
-     */
     public function show(
         OrganisationUnit $organisationUnit
     ): RedirectResponse {
         $this->ensurePermission(
             'user-management.organisation-units.view'
         );
-
 
         return redirect()
             ->route(
@@ -246,9 +170,6 @@ class OrganisationUnitController extends Controller
     }
 
 
-    /**
-     * Show edit form.
-     */
     public function edit(
         OrganisationUnit $organisationUnit
     ): View {
@@ -256,25 +177,13 @@ class OrganisationUnitController extends Controller
             'user-management.organisation-units.update'
         );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Descendants
-        |--------------------------------------------------------------------------
-        |
-        | A unit must not be allowed to report to itself or to one of its
-        | descendants because that would create a circular hierarchy.
-        |
-        */
-
         $excludedIds =
             $this->getDescendantIds(
                 $organisationUnit
             );
 
         $excludedIds[] =
-            $organisationUnit->id;
-
+            (int) $organisationUnit->id;
 
         $parentUnits = OrganisationUnit::query()
             ->where('is_active', true)
@@ -282,34 +191,35 @@ class OrganisationUnitController extends Controller
                 'id',
                 $excludedIds
             )
-            ->orderBy('type')
+            ->orderBy('display_order')
             ->orderBy('name')
             ->get();
 
+        $dashboards = Dashboard::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
-        $employeeCount =
-            User::query()
-                ->where(
-                    'organisation_unit_id',
-                    $organisationUnit->id
-                )
-                ->count();
+        $employeeCount = User::query()
+            ->where(
+                'organisation_unit_id',
+                $organisationUnit->id
+            )
+            ->count();
 
-
-        $childCount =
-            OrganisationUnit::query()
-                ->where(
-                    'parent_id',
-                    $organisationUnit->id
-                )
-                ->count();
-
+        $childCount = OrganisationUnit::query()
+            ->where(
+                'parent_id',
+                $organisationUnit->id
+            )
+            ->count();
 
         return view(
             'user-management.organisation-units.edit',
             compact(
                 'organisationUnit',
                 'parentUnits',
+                'dashboards',
                 'employeeCount',
                 'childCount'
             )
@@ -317,9 +227,6 @@ class OrganisationUnitController extends Controller
     }
 
 
-    /**
-     * Update organisation unit.
-     */
     public function update(
         Request $request,
         OrganisationUnit $organisationUnit
@@ -328,38 +235,14 @@ class OrganisationUnitController extends Controller
             'user-management.organisation-units.update'
         );
 
-
         $validated =
             $this->validateOrganisationUnit(
                 $request,
                 $organisationUnit
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Principal Office
-        |--------------------------------------------------------------------------
-        */
-
         if (
-            $validated['type']
-            === 'principal_office'
-        ) {
-            $validated['parent_id'] = null;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent Self Reporting
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            isset(
-                $validated['parent_id']
-            )
+            !empty($validated['parent_id'])
             &&
             (int) $validated['parent_id']
             === (int) $organisationUnit->id
@@ -372,23 +255,13 @@ class OrganisationUnitController extends Controller
                 ->withInput();
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent Circular Hierarchy
-        |--------------------------------------------------------------------------
-        */
-
         if (
-            !empty(
-                $validated['parent_id']
-            )
+            !empty($validated['parent_id'])
         ) {
             $descendantIds =
                 $this->getDescendantIds(
                     $organisationUnit
                 );
-
 
             if (
                 in_array(
@@ -400,26 +273,25 @@ class OrganisationUnitController extends Controller
                 return back()
                     ->withErrors([
                         'parent_id' =>
-                            'This reporting structure would create a circular organisation hierarchy.',
+                            'This reporting relationship would create a circular organisation structure.',
                     ])
                     ->withInput();
             }
         }
 
+        $validated['updated_by'] =
+            auth()->id();
 
         DB::transaction(
             function () use (
                 $organisationUnit,
                 $validated
             ): void {
-
                 $organisationUnit->update(
                     $validated
                 );
-
             }
         );
-
 
         return redirect()
             ->route(
@@ -433,9 +305,6 @@ class OrganisationUnitController extends Controller
     }
 
 
-    /**
-     * Delete organisation unit.
-     */
     public function destroy(
         OrganisationUnit $organisationUnit
     ): RedirectResponse {
@@ -443,25 +312,14 @@ class OrganisationUnitController extends Controller
             'user-management.organisation-units.delete'
         );
 
+        $employeeCount = User::query()
+            ->where(
+                'organisation_unit_id',
+                $organisationUnit->id
+            )
+            ->count();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Assigned Employees
-        |--------------------------------------------------------------------------
-        */
-
-        $employeeCount =
-            User::query()
-                ->where(
-                    'organisation_unit_id',
-                    $organisationUnit->id
-                )
-                ->count();
-
-
-        if (
-            $employeeCount > 0
-        ) {
+        if ($employeeCount > 0) {
             return back()
                 ->with(
                     'error',
@@ -471,45 +329,30 @@ class OrganisationUnitController extends Controller
                 );
         }
 
+        $childCount = OrganisationUnit::query()
+            ->where(
+                'parent_id',
+                $organisationUnit->id
+            )
+            ->count();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Child Units
-        |--------------------------------------------------------------------------
-        */
-
-        $childCount =
-            OrganisationUnit::query()
-                ->where(
-                    'parent_id',
-                    $organisationUnit->id
-                )
-                ->count();
-
-
-        if (
-            $childCount > 0
-        ) {
+        if ($childCount > 0) {
             return back()
                 ->with(
                     'error',
                     'This organisation unit cannot be deleted because it has '
                     . $childCount
-                    . ' child organisation unit(s). Reassign or remove them first.'
+                    . ' child organisation unit(s).'
                 );
         }
-
 
         DB::transaction(
             function () use (
                 $organisationUnit
             ): void {
-
                 $organisationUnit->delete();
-
             }
         );
-
 
         return redirect()
             ->route(
@@ -522,9 +365,6 @@ class OrganisationUnitController extends Controller
     }
 
 
-    /**
-     * Validate organisation unit.
-     */
     private function validateOrganisationUnit(
         Request $request,
         ?OrganisationUnit $organisationUnit = null
@@ -550,10 +390,10 @@ class OrganisationUnitController extends Controller
                     'max:150',
                 ],
 
-                'type' => [
+                'unit_type' => [
                     'required',
                     Rule::in([
-                        'principal_office',
+                        'office',
                         'department',
                         'section',
                     ]),
@@ -565,10 +405,34 @@ class OrganisationUnitController extends Controller
                     'exists:organisation_units,id',
                 ],
 
-                'description' => [
+                'dashboard_id' => [
+                    'nullable',
+                    'integer',
+                    'exists:dashboards,id',
+                ],
+
+                'email' => [
+                    'nullable',
+                    'email',
+                    'max:150',
+                ],
+
+                'telephone' => [
                     'nullable',
                     'string',
-                    'max:1000',
+                    'max:50',
+                ],
+
+                'physical_location' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                ],
+
+                'display_order' => [
+                    'required',
+                    'integer',
+                    'min:0',
                 ],
 
                 'is_active' => [
@@ -586,19 +450,19 @@ class OrganisationUnitController extends Controller
                 'name.required' =>
                     'The organisation unit name is required.',
 
-                'type.required' =>
+                'unit_type.required' =>
                     'Please select the organisation unit type.',
 
                 'parent_id.exists' =>
-                    'The selected reporting organisation unit does not exist.',
+                    'The selected parent organisation unit does not exist.',
+
+                'dashboard_id.exists' =>
+                    'The selected dashboard does not exist.',
             ]
         );
     }
 
 
-    /**
-     * Recursively find descendants.
-     */
     private function getDescendantIds(
         OrganisationUnit $organisationUnit
     ): array {
@@ -610,15 +474,12 @@ class OrganisationUnitController extends Controller
                 ])
                 ->get();
 
-
         $childrenByParent =
             $allUnits->groupBy(
                 'parent_id'
             );
 
-
         $descendants = [];
-
 
         $walk =
             function (
@@ -630,12 +491,10 @@ class OrganisationUnitController extends Controller
             ): void {
 
                 $children =
-                    $childrenByParent
-                        ->get(
-                            $parentId,
-                            collect()
-                        );
-
+                    $childrenByParent->get(
+                        $parentId,
+                        collect()
+                    );
 
                 foreach (
                     $children
@@ -644,19 +503,15 @@ class OrganisationUnitController extends Controller
                     $descendants[] =
                         (int) $child->id;
 
-
                     $walk(
                         (int) $child->id
                     );
                 }
-
             };
-
 
         $walk(
             (int) $organisationUnit->id
         );
-
 
         return array_values(
             array_unique(
@@ -666,14 +521,11 @@ class OrganisationUnitController extends Controller
     }
 
 
-    /**
-     * Controller-level permission enforcement.
-     */
     private function ensurePermission(
         string $permission
     ): void {
-        $user = auth()->user();
-
+        $user =
+            auth()->user();
 
         abort_if(
             !$user,
@@ -681,13 +533,11 @@ class OrganisationUnitController extends Controller
             'Unauthenticated.'
         );
 
-
         if (
             $user->is_system_administrator
         ) {
             return;
         }
-
 
         abort_unless(
             $user->can(

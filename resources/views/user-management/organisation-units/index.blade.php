@@ -20,15 +20,8 @@
             ) }}"
             class="btn btn-success"
         >
-
-            <i
-                class="mdi
-                       mdi-sitemap
-                       me-1"
-            ></i>
-
+            <i class="mdi mdi-sitemap me-1"></i>
             Add Organisation Unit
-
         </a>
 
     @endcan
@@ -39,14 +32,49 @@
 @section('content')
 
 
-{{-- =========================================================
-     SUMMARY
-========================================================= --}}
+@if(session('success'))
 
+    <div
+        class="alert alert-success alert-dismissible fade show"
+        role="alert"
+    >
+        <i class="mdi mdi-check-circle-outline me-1"></i>
+
+        {{ session('success') }}
+
+        <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+        ></button>
+    </div>
+
+@endif
+
+
+@if(session('error'))
+
+    <div
+        class="alert alert-danger alert-dismissible fade show"
+        role="alert"
+    >
+        {{ session('error') }}
+
+        <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+        ></button>
+    </div>
+
+@endif
+
+
+
+{{-- Summary --}}
 <div class="row">
 
 
-    {{-- Total Units --}}
     <div class="col-xl-3 col-md-6">
 
         <div class="card">
@@ -58,18 +86,9 @@
                     <div class="avatar-sm me-3">
 
                         <span
-                            class="avatar-title
-                                   rounded-circle
-                                   bg-soft-primary
-                                   text-primary"
+                            class="avatar-title rounded-circle bg-soft-primary text-primary"
                         >
-
-                            <i
-                                class="mdi
-                                       mdi-sitemap
-                                       font-size-20"
-                            ></i>
-
+                            <i class="mdi mdi-sitemap font-size-20"></i>
                         </span>
 
                     </div>
@@ -97,7 +116,6 @@
 
 
 
-    {{-- Departments --}}
     <div class="col-xl-3 col-md-6">
 
         <div class="card">
@@ -109,18 +127,11 @@
                     <div class="avatar-sm me-3">
 
                         <span
-                            class="avatar-title
-                                   rounded-circle
-                                   bg-soft-success
-                                   text-success"
+                            class="avatar-title rounded-circle bg-soft-primary text-primary"
                         >
-
                             <i
-                                class="mdi
-                                       mdi-office-building-outline
-                                       font-size-20"
+                                class="mdi mdi-office-building-outline font-size-20"
                             ></i>
-
                         </span>
 
                     </div>
@@ -148,7 +159,6 @@
 
 
 
-    {{-- Sections --}}
     <div class="col-xl-3 col-md-6">
 
         <div class="card">
@@ -160,18 +170,11 @@
                     <div class="avatar-sm me-3">
 
                         <span
-                            class="avatar-title
-                                   rounded-circle
-                                   bg-soft-info
-                                   text-info"
+                            class="avatar-title rounded-circle bg-soft-info text-info"
                         >
-
                             <i
-                                class="mdi
-                                       mdi-source-branch
-                                       font-size-20"
+                                class="mdi mdi-source-branch font-size-20"
                             ></i>
-
                         </span>
 
                     </div>
@@ -199,7 +202,6 @@
 
 
 
-    {{-- Active --}}
     <div class="col-xl-3 col-md-6">
 
         <div class="card">
@@ -211,18 +213,11 @@
                     <div class="avatar-sm me-3">
 
                         <span
-                            class="avatar-title
-                                   rounded-circle
-                                   bg-soft-warning
-                                   text-warning"
+                            class="avatar-title rounded-circle bg-soft-success text-success"
                         >
-
                             <i
-                                class="mdi
-                                       mdi-check-network-outline
-                                       font-size-20"
+                                class="mdi mdi-check-circle-outline font-size-20"
                             ></i>
-
                         </span>
 
                     </div>
@@ -253,594 +248,428 @@
 
 
 
-{{-- =========================================================
-     MESSAGES
-========================================================= --}}
+<div class="card">
 
-@if(session('success'))
+    <div class="card-body">
 
-    <div
-        class="alert
-               alert-success
-               alert-dismissible
-               fade show"
-        role="alert"
-    >
+        <h4 class="header-title">
+            LAPF Organisation Structure
+        </h4>
 
-        <i
-            class="mdi
-                   mdi-check-circle-outline
-                   me-1"
-        ></i>
-
-        {{ session('success') }}
+        <p class="card-title-desc">
+            Departments, sections and offices can be moved within the
+            reporting structure without changing system code.
+        </p>
 
 
-        <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-        ></button>
+        <div class="table-responsive">
 
-    </div>
+            <table
+                class="table table-striped table-bordered align-middle mb-0"
+            >
 
-@endif
+                <thead>
 
+                    <tr>
 
-@if(session('error'))
+                        <th>
+                            Order
+                        </th>
 
-    <div
-        class="alert
-               alert-danger
-               alert-dismissible
-               fade show"
-        role="alert"
-    >
+                        <th>
+                            Code
+                        </th>
 
-        <i
-            class="mdi
-                   mdi-alert-circle-outline
-                   me-1"
-        ></i>
+                        <th>
+                            Organisation Unit
+                        </th>
 
-        {{ session('error') }}
+                        <th>
+                            Type
+                        </th>
 
+                        <th>
+                            Reports To
+                        </th>
 
-        <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-        ></button>
+                        <th>
+                            Dashboard
+                        </th>
 
-    </div>
+                        <th>
+                            Contact
+                        </th>
 
-@endif
+                        <th>
+                            Employees
+                        </th>
 
+                        <th>
+                            Status
+                        </th>
 
+                        <th style="width:140px;">
+                            Actions
+                        </th>
 
-{{-- =========================================================
-     ORGANISATION STRUCTURE TABLE
-========================================================= --}}
+                    </tr>
 
-<div class="row">
-
-    <div class="col-12">
-
-        <div class="card">
-
-            <div class="card-body">
-
-
-                <div class="mb-4">
-
-                    <h4 class="header-title">
-                        LAPF Organisation Structure
-                    </h4>
+                </thead>
 
 
-                    <p
-                        class="card-title-desc
-                               mb-0"
-                    >
+                <tbody>
 
-                        Manage departments, sections and reporting
-                        relationships. Changing the parent unit changes
-                        the reporting structure without changing application code.
+                    @forelse(
+                        $organisationUnits
+                        as $organisationUnit
+                    )
 
-                    </p>
+                        @php
 
-                </div>
-
-
-                <div class="table-responsive">
-
-                    <table
-                        class="table
-                               table-striped
-                               table-bordered
-                               align-middle
-                               mb-0"
-                    >
-
-                        <thead>
-
-                            <tr>
-
-                                <th>
-                                    Code
-                                </th>
-
-                                <th>
-                                    Organisation Unit
-                                </th>
-
-                                <th>
-                                    Type
-                                </th>
-
-                                <th>
-                                    Reports To
-                                </th>
-
-                                <th>
-                                    Employees
-                                </th>
-
-                                <th>
-                                    Child Units
-                                </th>
-
-                                <th>
-                                    Status
-                                </th>
-
-                                <th
-                                    style="width:140px;"
-                                >
-                                    Actions
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody>
-
-                            @forelse(
-                                $organisationUnits
-                                as $organisationUnit
-                            )
-
-                                @php
-
-                                    $parent =
+                            $parent =
+                                $organisationUnit->parent_id
+                                    ? $unitLookup->get(
                                         $organisationUnit->parent_id
-                                            ? $unitLookup->get(
-                                                $organisationUnit->parent_id
-                                            )
-                                            : null;
+                                    )
+                                    : null;
 
 
-                                    $employeeCount =
-                                        (int) (
-                                            $userCounts[
-                                                $organisationUnit->id
-                                            ]
-                                            ?? 0
-                                        );
+                            $employeeCount =
+                                (int) (
+                                    $userCounts[
+                                        $organisationUnit->id
+                                    ]
+                                    ?? 0
+                                );
 
 
-                                    $children =
-                                        (int) (
-                                            $childCounts[
-                                                $organisationUnit->id
-                                            ]
-                                            ?? 0
-                                        );
+                            $typeClass =
+                                match(
+                                    $organisationUnit->unit_type
+                                ) {
+                                    'office'
+                                        => 'warning',
+
+                                    'department'
+                                        => 'primary',
+
+                                    'section'
+                                        => 'info',
+
+                                    default
+                                        => 'secondary',
+                                };
 
 
-                                    $typeClass =
-                                        match(
-                                            $organisationUnit->type
-                                        ) {
-                                            'principal_office'
-                                                => 'warning',
+                            $typeLabel =
+                                ucfirst(
+                                    str_replace(
+                                        '_',
+                                        ' ',
+                                        $organisationUnit->unit_type
+                                    )
+                                );
 
-                                            'department'
-                                                => 'primary',
-
-                                            'section'
-                                                => 'info',
-
-                                            default
-                                                => 'secondary',
-                                        };
+                        @endphp
 
 
-                                    $typeLabel =
-                                        match(
-                                            $organisationUnit->type
-                                        ) {
-                                            'principal_office'
-                                                => 'Principal Office',
+                        <tr>
 
-                                            'department'
-                                                => 'Department',
-
-                                            'section'
-                                                => 'Section',
-
-                                            default
-                                                => ucfirst(
-                                                    str_replace(
-                                                        '_',
-                                                        ' ',
-                                                        $organisationUnit->type
-                                                    )
-                                                ),
-                                        };
-
-                                @endphp
+                            <td>
+                                {{ $organisationUnit->display_order }}
+                            </td>
 
 
-                                <tr>
+                            <td>
+                                <strong>
+                                    {{ $organisationUnit->code }}
+                                </strong>
+                            </td>
 
 
-                                    {{-- Code --}}
-                                    <td>
+                            <td>
 
-                                        <strong>
-                                            {{ $organisationUnit->code }}
-                                        </strong>
+                                <div class="d-flex align-items-center">
 
-                                    </td>
-
-
-
-                                    {{-- Name --}}
-                                    <td>
-
-                                        <div
-                                            class="d-flex
-                                                   align-items-center"
-                                        >
-
-                                            <div
-                                                class="avatar-sm
-                                                       me-3"
-                                            >
-
-                                                <span
-                                                    class="avatar-title
-                                                           rounded-circle
-                                                           bg-soft-{{ $typeClass }}
-                                                           text-{{ $typeClass }}"
-                                                >
-
-                                                    @if(
-                                                        $organisationUnit->type
-                                                        === 'principal_office'
-                                                    )
-
-                                                        <i
-                                                            class="mdi
-                                                                   mdi-account-tie-outline
-                                                                   font-size-18"
-                                                        ></i>
-
-                                                    @elseif(
-                                                        $organisationUnit->type
-                                                        === 'department'
-                                                    )
-
-                                                        <i
-                                                            class="mdi
-                                                                   mdi-office-building-outline
-                                                                   font-size-18"
-                                                        ></i>
-
-                                                    @else
-
-                                                        <i
-                                                            class="mdi
-                                                                   mdi-source-branch
-                                                                   font-size-18"
-                                                        ></i>
-
-                                                    @endif
-
-                                                </span>
-
-                                            </div>
-
-
-                                            <div>
-
-                                                <h6 class="mb-1">
-
-                                                    {{ $organisationUnit->name }}
-
-                                                </h6>
-
-
-                                                @if(
-                                                    $organisationUnit->description
-                                                )
-
-                                                    <span
-                                                        class="text-muted
-                                                               font-size-12"
-                                                    >
-
-                                                        {{
-                                                            \Illuminate\Support\Str::limit(
-                                                                $organisationUnit->description,
-                                                                80
-                                                            )
-                                                        }}
-
-                                                    </span>
-
-                                                @endif
-
-                                            </div>
-
-                                        </div>
-
-                                    </td>
-
-
-
-                                    {{-- Type --}}
-                                    <td>
+                                    <div class="avatar-sm me-3">
 
                                         <span
-                                            class="badge
-                                                   bg-soft-{{ $typeClass }}
-                                                   text-{{ $typeClass }}"
+                                            class="avatar-title rounded-circle bg-soft-{{ $typeClass }} text-{{ $typeClass }}"
                                         >
 
-                                            {{ $typeLabel }}
-
-                                        </span>
-
-                                    </td>
-
-
-
-                                    {{-- Parent --}}
-                                    <td>
-
-                                        @if($parent)
-
-                                            <span>
-                                                {{ $parent->name }}
-                                            </span>
-
-                                            <br>
-
-                                            <small class="text-muted">
-                                                {{ $parent->code }}
-                                            </small>
-
-                                        @else
-
-                                            <span
-                                                class="badge
-                                                       bg-soft-success
-                                                       text-success"
-                                            >
-                                                Root
-                                            </span>
-
-                                        @endif
-
-                                    </td>
-
-
-
-                                    {{-- Employees --}}
-                                    <td>
-
-                                        <span
-                                            class="badge
-                                                   bg-soft-primary
-                                                   text-primary"
-                                        >
-                                            {{ $employeeCount }}
-                                        </span>
-
-                                    </td>
-
-
-
-                                    {{-- Children --}}
-                                    <td>
-
-                                        <span
-                                            class="badge
-                                                   bg-soft-info
-                                                   text-info"
-                                        >
-                                            {{ $children }}
-                                        </span>
-
-                                    </td>
-
-
-
-                                    {{-- Status --}}
-                                    <td>
-
-                                        @if(
-                                            $organisationUnit->is_active
-                                        )
-
-                                            <span
-                                                class="badge
-                                                       bg-success"
-                                            >
-                                                Active
-                                            </span>
-
-                                        @else
-
-                                            <span
-                                                class="badge
-                                                       bg-secondary"
-                                            >
-                                                Inactive
-                                            </span>
-
-                                        @endif
-
-                                    </td>
-
-
-
-                                    {{-- Actions --}}
-                                    <td>
-
-                                        <div
-                                            class="d-flex
-                                                   gap-2"
-                                        >
-
-                                            @can(
-                                                'user-management.organisation-units.update'
+                                            @if(
+                                                $organisationUnit->unit_type
+                                                === 'office'
                                             )
-
-                                                <a
-                                                    href="{{ route(
-                                                        'user-management.organisation-units.edit',
-                                                        $organisationUnit
-                                                    ) }}"
-                                                    class="btn
-                                                           btn-sm
-                                                           btn-primary"
-                                                    title="Edit Organisation Unit"
-                                                >
-
-                                                    <i
-                                                        class="mdi
-                                                               mdi-pencil-outline"
-                                                    ></i>
-
-                                                </a>
-
-                                            @endcan
-
-
-                                            @can(
-                                                'user-management.organisation-units.delete'
-                                            )
-
-                                                <form
-                                                    method="POST"
-                                                    action="{{ route(
-                                                        'user-management.organisation-units.destroy',
-                                                        $organisationUnit
-                                                    ) }}"
-                                                    onsubmit="
-                                                        return confirm(
-                                                            'Delete this organisation unit?'
-                                                        );
-                                                    "
-                                                >
-
-                                                    @csrf
-                                                    @method('DELETE')
-
-
-                                                    <button
-                                                        type="submit"
-                                                        class="btn
-                                                               btn-sm
-                                                               btn-danger"
-                                                        title="Delete Organisation Unit"
-                                                    >
-
-                                                        <i
-                                                            class="mdi
-                                                                   mdi-delete-outline"
-                                                        ></i>
-
-                                                    </button>
-
-                                                </form>
-
-                                            @endcan
-
-                                        </div>
-
-                                    </td>
-
-
-                                </tr>
-
-                            @empty
-
-                                <tr>
-
-                                    <td
-                                        colspan="8"
-                                        class="text-center
-                                               py-5"
-                                    >
-
-                                        <div
-                                            class="avatar-md
-                                                   mx-auto
-                                                   mb-3"
-                                        >
-
-                                            <span
-                                                class="avatar-title
-                                                       rounded-circle
-                                                       bg-soft-secondary
-                                                       text-secondary"
-                                            >
 
                                                 <i
-                                                    class="mdi
-                                                           mdi-sitemap
-                                                           font-size-24"
+                                                    class="mdi mdi-account-tie-outline font-size-18"
                                                 ></i>
+
+                                            @elseif(
+                                                $organisationUnit->unit_type
+                                                === 'department'
+                                            )
+
+                                                <i
+                                                    class="mdi mdi-office-building-outline font-size-18"
+                                                ></i>
+
+                                            @else
+
+                                                <i
+                                                    class="mdi mdi-source-branch font-size-18"
+                                                ></i>
+
+                                            @endif
+
+                                        </span>
+
+                                    </div>
+
+
+                                    <div>
+
+                                        <h6 class="mb-1">
+                                            {{ $organisationUnit->name }}
+                                        </h6>
+
+
+                                        @if(
+                                            $organisationUnit->physical_location
+                                        )
+
+                                            <span class="text-muted font-size-12">
+
+                                                <i
+                                                    class="mdi mdi-map-marker-outline me-1"
+                                                ></i>
+
+                                                {{
+                                                    $organisationUnit
+                                                        ->physical_location
+                                                }}
 
                                             </span>
 
-                                        </div>
+                                        @endif
+
+                                    </div>
+
+                                </div>
+
+                            </td>
 
 
-                                        <h5>
-                                            No Organisation Units Found
-                                        </h5>
+                            <td>
+
+                                <span
+                                    class="badge bg-soft-{{ $typeClass }} text-{{ $typeClass }}"
+                                >
+                                    {{ $typeLabel }}
+                                </span>
+
+                            </td>
 
 
-                                        <p
-                                            class="text-muted
-                                                   mb-0"
+                            <td>
+
+                                @if($parent)
+
+                                    {{ $parent->name }}
+
+                                    <br>
+
+                                    <small class="text-muted">
+                                        {{ $parent->code }}
+                                    </small>
+
+                                @else
+
+                                    <span
+                                        class="badge bg-soft-success text-success"
+                                    >
+                                        Root
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+
+                            <td>
+
+                                @if(
+                                    $organisationUnit->dashboard
+                                )
+
+                                    {{
+                                        $organisationUnit
+                                            ->dashboard
+                                            ->name
+                                    }}
+
+                                @else
+
+                                    <span class="text-muted">
+                                        -
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+
+                            <td>
+
+                                @if($organisationUnit->email)
+
+                                    <div>
+                                        <i
+                                            class="mdi mdi-email-outline me-1"
+                                        ></i>
+
+                                        {{ $organisationUnit->email }}
+                                    </div>
+
+                                @endif
+
+
+                                @if($organisationUnit->telephone)
+
+                                    <div>
+                                        <i
+                                            class="mdi mdi-phone-outline me-1"
+                                        ></i>
+
+                                        {{ $organisationUnit->telephone }}
+                                    </div>
+
+                                @endif
+
+
+                                @if(
+                                    !$organisationUnit->email
+                                    && !$organisationUnit->telephone
+                                )
+
+                                    <span class="text-muted">
+                                        -
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+
+                            <td>
+
+                                <span
+                                    class="badge bg-soft-primary text-primary"
+                                >
+                                    {{ $employeeCount }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                @if($organisationUnit->is_active)
+
+                                    <span class="badge bg-success">
+                                        Active
+                                    </span>
+
+                                @else
+
+                                    <span class="badge bg-secondary">
+                                        Inactive
+                                    </span>
+
+                                @endif
+
+                            </td>
+
+
+                            <td>
+
+                                @can(
+                                    'user-management.organisation-units.update'
+                                )
+
+                                    <a
+                                        href="{{ route(
+                                            'user-management.organisation-units.edit',
+                                            $organisationUnit
+                                        ) }}"
+                                        class="btn btn-sm btn-primary"
+                                    >
+                                        <i
+                                            class="mdi mdi-pencil-outline"
+                                        ></i>
+                                    </a>
+
+                                @endcan
+
+
+                                @can(
+                                    'user-management.organisation-units.delete'
+                                )
+
+                                    <form
+                                        method="POST"
+                                        action="{{ route(
+                                            'user-management.organisation-units.destroy',
+                                            $organisationUnit
+                                        ) }}"
+                                        class="d-inline"
+                                        onsubmit="
+                                            return confirm(
+                                                'Delete this organisation unit?'
+                                            );
+                                        "
+                                    >
+
+                                        @csrf
+                                        @method('DELETE')
+
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-danger"
                                         >
+                                            <i
+                                                class="mdi mdi-delete-outline"
+                                            ></i>
+                                        </button>
 
-                                            The LAPF organisation structure
-                                            has not yet been configured.
+                                    </form>
 
-                                        </p>
+                                @endcan
 
-                                    </td>
+                            </td>
 
-                                </tr>
+                        </tr>
 
-                            @endforelse
+                    @empty
 
-                        </tbody>
+                        <tr>
 
-                    </table>
+                            <td
+                                colspan="10"
+                                class="text-center py-5"
+                            >
+                                No organisation units found.
+                            </td>
 
-                </div>
+                        </tr>
 
-            </div>
+                    @endforelse
+
+                </tbody>
+
+            </table>
 
         </div>
 

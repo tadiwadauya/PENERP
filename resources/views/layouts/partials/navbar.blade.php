@@ -20,7 +20,7 @@
                         <img
                             src="{{ asset('layouts/assets/images/logo-sm.png') }}"
                             alt="LAPF"
-                            height="22"
+                            height="40"
                         >
 
                     </span>
@@ -31,7 +31,7 @@
                         <img
                             src="{{ asset('layouts/assets/images/logo-dark.png') }}"
                             alt="LAPF"
-                            height="20"
+                            height="40"
                         >
 
                     </span>
@@ -289,19 +289,33 @@
 
 
                     <a
-                        class="dropdown-item"
-                        href="#"
-                    >
+    class="dropdown-item"
+    href="{{ route('profile.show') }}"
+>
+    <i
+        class="mdi mdi-account-circle-outline
+               font-size-16
+               align-middle
+               me-1"
+    ></i>
 
-                        <i
-                            class="mdi mdi-account-circle-outline
-                                   font-size-16
-                                   align-middle me-1"
-                        ></i>
+    My Profile
+</a>
 
-                        Profile
 
-                    </a>
+<a
+    class="dropdown-item"
+    href="{{ route('password.change') }}"
+>
+    <i
+        class="mdi mdi-lock-outline
+               font-size-16
+               align-middle
+               me-1"
+    ></i>
+
+    Change Password
+</a>
 
 
                     <div class="dropdown-divider"></div>

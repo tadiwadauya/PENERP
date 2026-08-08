@@ -11,6 +11,7 @@ use App\Http\Controllers\UserManagement\OrganisationUnitController;
 use App\Http\Controllers\UserManagement\JobTitleController;
 use App\Http\Controllers\UserManagement\GradeController;
 use App\Http\Controllers\UserManagement\PasswordPolicyController;
+use App\Http\Controllers\UserManagement\ProfileController;
 
 use App\Http\Controllers\Audit\AuditTrailController;
 use App\Http\Controllers\Audit\UserSessionController;
@@ -114,6 +115,23 @@ Route::middleware('auth')->group(function (): void {
     | Fully Authenticated System
     |--------------------------------------------------------------------------
     */
+
+    Route::get(
+    '/profile',
+    [ProfileController::class, 'show']
+)->name('profile.show');
+
+
+Route::get(
+    '/password/change',
+    [PasswordController::class, 'edit']
+)->name('password.change');
+
+
+Route::put(
+    '/password/change',
+    [PasswordController::class, 'update']
+)->name('password.change.update');
 
     Route::middleware([
         'account.active',
@@ -1019,35 +1037,28 @@ Route::prefix('audit')
                 | Password Policy
                 |--------------------------------------------------------------------------
                 */
-
-                Route::get(
-                    '/password-policy',
-                    [
-                        PasswordPolicyController::class,
-                        'edit',
-                    ]
-                )
-                    ->middleware(
-                        'permission:user-management.password-policies.view'
-                    )
-                    ->name(
-                        'password-policies.edit'
-                    );
+              Route::get(
+                    'password-policy',
+                    [PasswordPolicyController::class, 'edit']
+                )->name(
+                    'password-policies.edit'
+                );
 
 
                 Route::put(
-                    '/password-policy',
-                    [
-                        PasswordPolicyController::class,
-                        'update',
-                    ]
-                )
-                    ->middleware(
-                        'permission:user-management.password-policies.update'
-                    )
-                    ->name(
-                        'password-policies.update'
-                    );
+                    'password-policy',
+                    [PasswordPolicyController::class, 'update']
+                )->name(
+                    'password-policies.update'
+                );
+
+
+                Route::get(
+                    'password-policy/report',
+                    [PasswordPolicyController::class, 'report']
+                )->name(
+                    'password-policies.report'
+                );
             });
     });
 });
