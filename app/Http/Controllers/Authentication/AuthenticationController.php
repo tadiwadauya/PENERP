@@ -138,27 +138,158 @@ class AuthenticationController extends Controller
         return redirect()->intended(route('dashboard'));
     }
 
-    public function destroy(Request $request): RedirectResponse
-    {
-        $user = $request->user();
+   /**
+ * Logout the authenticated user.
+ */
+public function destroy(
+    Request $request
+): RedirectResponse {
+    /*
+    |--------------------------------------------------------------------------
+    | Capture User and Laravel Session BEFORE logout
+    |--------------------------------------------------------------------------
+    */
 
-        if ($user) {
-            $this->auditService->record(
-                eventType: 'authentication',
-                module: 'authentication',
-                action: 'logout',
-                description: 'User logged out of the system.',
-                subject: $user
-            );
+    $user = $request->user();
+
+    $laravelSessionId =
+        $request->session()->getId();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Close Current Tracked Session
+    |--------------------------------------------------------------------------
+    */
+
+    if ($user) {
+        /*
+        |--------------------------------------------------------------------------
+        | First Choice:
+        | Match the exact Laravel session.
+        |--------------------------------------------------------------------------
+        */
+
+        $trackedSession =
+            \App\Models\Audit\UserSession::query()
+                ->where(
+                    'user_id',
+                    $user->id
+                )
+                ->where(
+                    'laravel_session_id',
+                    $laravelSessionId
+                )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->orderByDesc(
+                    'login_at'
+                )
+                ->first();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Fallback:
+        | If Laravel regenerated the session ID, find the most recent active
+        | session belonging to this user.
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$trackedSession) {
+            $trackedSession =
+                \App\Models\Audit\UserSession::query()
+                    ->where(
+                        'user_id',
+                        $user->id
+                    )
+                    ->where(
+                        'is_active',
+                        true
+                    )
+                    ->orderByDesc(
+                        'last_activity_at'
+                    )
+                    ->orderByDesc(
+                        'login_at'
+                    )
+                    ->first();
         }
 
-        Auth::logout();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        /*
+        |--------------------------------------------------------------------------
+        | Close It
+        |--------------------------------------------------------------------------
+        */
 
-        return redirect()->route('login');
+        if ($trackedSession) {
+            $trackedSession->update([
+                'last_activity_at' =>
+                    now(),
+
+                'logout_at' =>
+                    now(),
+
+                'logout_reason' =>
+                    'Normal logout',
+
+                'is_active' =>
+                    false,
+
+                'was_forcibly_terminated' =>
+                    false,
+            ]);
+        }
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Laravel Authentication Logout
+    |--------------------------------------------------------------------------
+    */
+
+    \Illuminate\Support\Facades\Auth::logout();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Destroy Current Laravel Session
+    |--------------------------------------------------------------------------
+    */
+
+    $request
+        ->session()
+        ->invalidate();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Regenerate CSRF Token
+    |--------------------------------------------------------------------------
+    */
+
+    $request
+        ->session()
+        ->regenerateToken();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redirect to Login
+    |--------------------------------------------------------------------------
+    */
+
+    return redirect()
+        ->route('login')
+        ->with(
+            'success',
+            'You have been logged out successfully.'
+        );
+}
 
     private function processFailedAttempt(
         Request $request,
