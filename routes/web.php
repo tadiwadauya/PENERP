@@ -17,6 +17,13 @@ use App\Http\Controllers\Audit\AuditTrailController;
 use App\Http\Controllers\Audit\UserSessionController;
 use App\Http\Controllers\Audit\LoginAttemptController;
 
+use App\Http\Controllers\PensionsAdministration\Updates\EmployerController;
+use App\Http\Controllers\PensionsAdministration\Updates\EmployerGroupController;
+use App\Http\Controllers\PensionsAdministration\Updates\MemberController;
+
+use App\Http\Controllers\PensionsAdministration\PensionsDashboardController;
+use App\Http\Controllers\PensionsAdministration\Updates\UpdatesDashboardController;
+
 use Illuminate\Support\Facades\Route;
 
 
@@ -271,6 +278,75 @@ Route::put(
 | Audit and Security
 |--------------------------------------------------------------------------
 */
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Pensions Administration
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('pensions-administration')
+    ->name('pensions-administration.')
+    ->group(function (): void {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pensions Dashboard
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/',
+            [
+                PensionsDashboardController::class,
+                'index'
+            ]
+        )->name('dashboard');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Updates / Membership
+        |--------------------------------------------------------------------------
+        */
+
+        Route::prefix('updates')
+            ->name('updates.')
+            ->group(function (): void {
+
+                Route::get(
+                    '/',
+                    [
+                        UpdatesDashboardController::class,
+                        'index'
+                    ]
+                )->name('dashboard');
+
+
+                Route::resource(
+                    'employer-groups',
+                    EmployerGroupController::class
+                );
+
+
+                Route::resource(
+                    'employers',
+                    EmployerController::class
+                );
+
+
+                Route::resource(
+                    'members',
+                    MemberController::class
+                );
+            });
+    });
+
+
+
+
 
 Route::prefix('audit')
     ->name('audit.')

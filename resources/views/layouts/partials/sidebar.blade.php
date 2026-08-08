@@ -116,13 +116,19 @@
                 {{-- =================================================
                      DASHBOARDS
                 ================================================== --}}
-                @canany([
-                    'dashboard.finance.view',
-                    'dashboard.pensions.view',
-                    'dashboard.property.view',
-                    'dashboard.principal-office.view',
-                    'dashboard.system-administration.view'
-                ])
+                @if(
+                    auth()->user()->is_system_administrator
+                    ||
+                    auth()->user()->can('dashboard.finance.view')
+                    ||
+                    auth()->user()->can('dashboard.pensions.view')
+                    ||
+                    auth()->user()->can('dashboard.property.view')
+                    ||
+                    auth()->user()->can('dashboard.principal-office.view')
+                    ||
+                    auth()->user()->can('dashboard.system-administration.view')
+                )
 
 
                     <li>
@@ -148,7 +154,12 @@
                         >
 
 
-                            @can('dashboard.finance.view')
+                            {{-- Finance --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can('dashboard.finance.view')
+                            )
 
                                 <li>
 
@@ -160,25 +171,37 @@
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('dashboard.pensions.view')
+                            {{-- Pensions Administration --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can('dashboard.pensions.view')
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('dashboard.pensions') }}"
+                                        href="{{ route(
+                                            'pensions-administration.dashboard'
+                                        ) }}"
                                     >
                                         Pensions Administration
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('dashboard.property.view')
+                            {{-- Property --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can('dashboard.property.view')
+                            )
 
                                 <li>
 
@@ -190,37 +213,53 @@
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('dashboard.principal-office.view')
+                            {{-- Principal Officer --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can('dashboard.principal-office.view')
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('dashboard.principal-office') }}"
+                                        href="{{ route(
+                                            'dashboard.principal-office'
+                                        ) }}"
                                     >
                                         Principal Officer
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('dashboard.system-administration.view')
+                            {{-- System Administration --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'dashboard.system-administration.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('dashboard.system-administration') }}"
+                                        href="{{ route(
+                                            'dashboard.system-administration'
+                                        ) }}"
                                     >
                                         System Administration
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
                         </ul>
@@ -229,22 +268,38 @@
                     </li>
 
 
-                @endcanany
+                @endif
 
 
 
                 {{-- =================================================
                      ADMINISTRATION HEADING
                 ================================================== --}}
-                @canany([
-                    'user-management.users.view',
-                    'user-management.roles.view',
-                    'user-management.permissions.view',
-                    'user-management.organisation-units.view',
-                    'user-management.job-titles.view',
-                    'user-management.grades.view',
-                    'user-management.password-policies.view'
-                ])
+                @if(
+                    auth()->user()->is_system_administrator
+                    ||
+                    auth()->user()->can('user-management.users.view')
+                    ||
+                    auth()->user()->can('user-management.roles.view')
+                    ||
+                    auth()->user()->can('user-management.permissions.view')
+                    ||
+                    auth()->user()->can(
+                        'user-management.organisation-units.view'
+                    )
+                    ||
+                    auth()->user()->can(
+                        'user-management.job-titles.view'
+                    )
+                    ||
+                    auth()->user()->can(
+                        'user-management.grades.view'
+                    )
+                    ||
+                    auth()->user()->can(
+                        'user-management.password-policies.view'
+                    )
+                )
 
 
                     <li class="menu-title">
@@ -279,109 +334,172 @@
                         >
 
 
-                            @can('user-management.users.view')
+                            {{-- Users --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'user-management.users.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('user-management.users.index') }}"
+                                        href="{{ route(
+                                            'user-management.users.index'
+                                        ) }}"
                                     >
                                         Users
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('user-management.roles.view')
+                            {{-- Roles --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'user-management.roles.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('user-management.roles.index') }}"
+                                        href="{{ route(
+                                            'user-management.roles.index'
+                                        ) }}"
                                     >
                                         Roles
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('user-management.permissions.view')
+                            {{-- Permissions --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'user-management.permissions.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('user-management.permissions.index') }}"
+                                        href="{{ route(
+                                            'user-management.permissions.index'
+                                        ) }}"
                                     >
                                         Permissions
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('user-management.organisation-units.view')
+                            {{-- Organisation Structure --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'user-management.organisation-units.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('user-management.organisation-units.index') }}"
+                                        href="{{ route(
+                                            'user-management.organisation-units.index'
+                                        ) }}"
                                     >
                                         Organisation Structure
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('user-management.job-titles.view')
+                            {{-- Job Titles --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'user-management.job-titles.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('user-management.job-titles.index') }}"
+                                        href="{{ route(
+                                            'user-management.job-titles.index'
+                                        ) }}"
                                     >
                                         Job Titles
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('user-management.grades.view')
+                            {{-- Grades --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'user-management.grades.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('user-management.grades.index') }}"
+                                        href="{{ route(
+                                            'user-management.grades.index'
+                                        ) }}"
                                     >
                                         Grades
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('user-management.password-policies.view')
+                            {{-- Password Policy --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'user-management.password-policies.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('user-management.password-policies.edit') }}"
+                                        href="{{ route(
+                                            'user-management.password-policies.edit'
+                                        ) }}"
                                     >
                                         Password Policy
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
                         </ul>
@@ -390,18 +508,22 @@
                     </li>
 
 
-                @endcanany
+                @endif
 
 
 
                 {{-- =================================================
                      AUDIT & SECURITY
                 ================================================== --}}
-                @canany([
-                    'audit.audit-trails.view',
-                    'audit.user-sessions.view',
-                    'audit.login-attempts.view'
-                ])
+                @if(
+                    auth()->user()->is_system_administrator
+                    ||
+                    auth()->user()->can('audit.audit-trails.view')
+                    ||
+                    auth()->user()->can('audit.user-sessions.view')
+                    ||
+                    auth()->user()->can('audit.login-attempts.view')
+                )
 
 
                     <li>
@@ -427,49 +549,76 @@
                         >
 
 
-                            @can('audit.audit-trails.view')
+                            {{-- Audit Trail --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'audit.audit-trails.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('audit.audit-trails.index') }}"
+                                        href="{{ route(
+                                            'audit.audit-trails.index'
+                                        ) }}"
                                     >
                                         Audit Trail
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('audit.user-sessions.view')
+                            {{-- User Sessions --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'audit.user-sessions.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('audit.user-sessions.index') }}"
+                                        href="{{ route(
+                                            'audit.user-sessions.index'
+                                        ) }}"
                                     >
                                         User Sessions
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
-                            @can('audit.login-attempts.view')
+                            {{-- Login Attempts --}}
+                            @if(
+                                auth()->user()->is_system_administrator
+                                ||
+                                auth()->user()->can(
+                                    'audit.login-attempts.view'
+                                )
+                            )
 
                                 <li>
 
                                     <a
-                                        href="{{ route('audit.login-attempts.index') }}"
+                                        href="{{ route(
+                                            'audit.login-attempts.index'
+                                        ) }}"
                                     >
                                         Login Attempts
                                     </a>
 
                                 </li>
 
-                            @endcan
+                            @endif
 
 
                         </ul>
@@ -478,7 +627,7 @@
                     </li>
 
 
-                @endcanany
+                @endif
 
 
             </ul>
