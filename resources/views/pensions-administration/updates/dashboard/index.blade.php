@@ -1,28 +1,16 @@
 @extends('layouts.app')
 
-@section(
-    'title',
-    'Updates Dashboard'
-)
+@section('title', 'Updates Dashboard')
 
-@section(
-    'page-heading',
-    'Updates / Membership'
-)
+@section('page-heading', 'Updates / Membership')
 
 
 @section('page-actions')
 
-    <a
-        href="{{ route(
-            'pensions-administration.updates.members.create'
-        ) }}"
-        class="btn btn-success"
-    >
+    <a href="{{ route('pensions-administration.updates.members.create') }}"
+       class="btn btn-success">
 
-        <i
-            class="mdi mdi-account-plus-outline me-1"
-        ></i>
+        <i class="mdi mdi-account-plus-outline me-1"></i>
 
         Add Member
 
@@ -33,11 +21,7 @@
 
 @section('content')
 
-
-@include(
-    'pensions-administration.partials.navigation'
-)
-
+@include('pensions-administration.partials.navigation')
 
 
 {{-- =========================================================
@@ -57,24 +41,11 @@
                     Total Members
                 </p>
 
-                <div
-                    class="mini-stat-icon
-                           mx-auto
-                           mb-4 mt-3"
-                >
+                <div class="mini-stat-icon mx-auto mb-4 mt-3">
 
-                    <span
-                        class="avatar-title
-                               rounded-circle
-                               bg-soft-primary"
-                    >
+                    <span class="avatar-title rounded-circle bg-soft-primary">
 
-                        <i
-                            class="mdi
-                                   mdi-account-group-outline
-                                   text-primary
-                                   font-size-20"
-                        ></i>
+                        <i class="mdi mdi-account-group-outline text-primary font-size-20"></i>
 
                     </span>
 
@@ -83,13 +54,9 @@
 
                 <h5 class="font-size-22">
 
-                    {{
-                        number_format(
-                            $statistics[
-                                'total_members'
-                            ]
-                        )
-                    }}
+                    {{ number_format(
+                        $statistics['total_members']
+                    ) }}
 
                 </h5>
 
@@ -98,7 +65,6 @@
         </div>
 
     </div>
-
 
 
     <div class="col-xl-3 col-md-6">
@@ -111,24 +77,11 @@
                     Active Members
                 </p>
 
-                <div
-                    class="mini-stat-icon
-                           mx-auto
-                           mb-4 mt-3"
-                >
+                <div class="mini-stat-icon mx-auto mb-4 mt-3">
 
-                    <span
-                        class="avatar-title
-                               rounded-circle
-                               bg-soft-success"
-                    >
+                    <span class="avatar-title rounded-circle bg-soft-success">
 
-                        <i
-                            class="mdi
-                                   mdi-account-check-outline
-                                   text-success
-                                   font-size-20"
-                        ></i>
+                        <i class="mdi mdi-account-check-outline text-success font-size-20"></i>
 
                     </span>
 
@@ -137,13 +90,9 @@
 
                 <h5 class="font-size-22">
 
-                    {{
-                        number_format(
-                            $statistics[
-                                'active_members'
-                            ]
-                        )
-                    }}
+                    {{ number_format(
+                        $statistics['active_members']
+                    ) }}
 
                 </h5>
 
@@ -152,7 +101,6 @@
         </div>
 
     </div>
-
 
 
     <div class="col-xl-3 col-md-6">
@@ -165,24 +113,11 @@
                     Dormant Members
                 </p>
 
-                <div
-                    class="mini-stat-icon
-                           mx-auto
-                           mb-4 mt-3"
-                >
+                <div class="mini-stat-icon mx-auto mb-4 mt-3">
 
-                    <span
-                        class="avatar-title
-                               rounded-circle
-                               bg-soft-warning"
-                    >
+                    <span class="avatar-title rounded-circle bg-soft-warning">
 
-                        <i
-                            class="mdi
-                                   mdi-account-clock-outline
-                                   text-warning
-                                   font-size-20"
-                        ></i>
+                        <i class="mdi mdi-account-clock-outline text-warning font-size-20"></i>
 
                     </span>
 
@@ -191,13 +126,9 @@
 
                 <h5 class="font-size-22">
 
-                    {{
-                        number_format(
-                            $statistics[
-                                'dormant_members'
-                            ]
-                        )
-                    }}
+                    {{ number_format(
+                        $statistics['dormant_members']
+                    ) }}
 
                 </h5>
 
@@ -206,7 +137,6 @@
         </div>
 
     </div>
-
 
 
     <div class="col-xl-3 col-md-6">
@@ -219,24 +149,11 @@
                     Active Employers
                 </p>
 
-                <div
-                    class="mini-stat-icon
-                           mx-auto
-                           mb-4 mt-3"
-                >
+                <div class="mini-stat-icon mx-auto mb-4 mt-3">
 
-                    <span
-                        class="avatar-title
-                               rounded-circle
-                               bg-soft-info"
-                    >
+                    <span class="avatar-title rounded-circle bg-soft-info">
 
-                        <i
-                            class="mdi
-                                   mdi-office-building-outline
-                                   text-info
-                                   font-size-20"
-                        ></i>
+                        <i class="mdi mdi-office-building-outline text-info font-size-20"></i>
 
                     </span>
 
@@ -245,13 +162,9 @@
 
                 <h5 class="font-size-22">
 
-                    {{
-                        number_format(
-                            $statistics[
-                                'active_employers'
-                            ]
-                        )
-                    }}
+                    {{ number_format(
+                        $statistics['active_employers']
+                    ) }}
 
                 </h5>
 
@@ -261,9 +174,7 @@
 
     </div>
 
-
 </div>
-
 
 
 {{-- =========================================================
@@ -282,38 +193,21 @@
         <div class="row">
 
 
-            <div class="col-xl-4 col-md-6 mb-3">
+            {{-- MEMBERS --}}
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
 
-                <a
-                    href="{{ route(
-                        'pensions-administration.updates.members.index'
-                    ) }}"
-                    class="text-reset"
-                >
+                <a href="{{ route('pensions-administration.updates.members.index') }}"
+                   class="text-reset">
 
-                    <div
-                        class="border
-                               rounded
-                               p-4
-                               h-100"
-                    >
+                    <div class="border rounded p-4 h-100">
 
                         <div class="d-flex">
 
                             <div class="avatar-sm me-3">
 
-                                <span
-                                    class="avatar-title
-                                           rounded-circle
-                                           bg-soft-primary"
-                                >
+                                <span class="avatar-title rounded-circle bg-soft-primary">
 
-                                    <i
-                                        class="mdi
-                                               mdi-account-group-outline
-                                               text-primary
-                                               font-size-20"
-                                    ></i>
+                                    <i class="mdi mdi-account-group-outline text-primary font-size-20"></i>
 
                                 </span>
 
@@ -327,8 +221,7 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    View and maintain the
-                                    membership register.
+                                    View and maintain the membership register.
                                 </p>
 
                             </div>
@@ -342,39 +235,21 @@
             </div>
 
 
+            {{-- EMPLOYERS --}}
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
 
-            <div class="col-xl-4 col-md-6 mb-3">
+                <a href="{{ route('pensions-administration.updates.employers.index') }}"
+                   class="text-reset">
 
-                <a
-                    href="{{ route(
-                        'pensions-administration.updates.employers.index'
-                    ) }}"
-                    class="text-reset"
-                >
-
-                    <div
-                        class="border
-                               rounded
-                               p-4
-                               h-100"
-                    >
+                    <div class="border rounded p-4 h-100">
 
                         <div class="d-flex">
 
                             <div class="avatar-sm me-3">
 
-                                <span
-                                    class="avatar-title
-                                           rounded-circle
-                                           bg-soft-success"
-                                >
+                                <span class="avatar-title rounded-circle bg-soft-success">
 
-                                    <i
-                                        class="mdi
-                                               mdi-office-building-outline
-                                               text-success
-                                               font-size-20"
-                                    ></i>
+                                    <i class="mdi mdi-office-building-outline text-success font-size-20"></i>
 
                                 </span>
 
@@ -388,8 +263,7 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Manage participating
-                                    local authorities.
+                                    Manage participating local authorities.
                                 </p>
 
                             </div>
@@ -403,39 +277,21 @@
             </div>
 
 
+            {{-- EMPLOYER GROUPS --}}
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
 
-            <div class="col-xl-4 col-md-6 mb-3">
+                <a href="{{ route('pensions-administration.updates.employer-groups.index') }}"
+                   class="text-reset">
 
-                <a
-                    href="{{ route(
-                        'pensions-administration.updates.employer-groups.index'
-                    ) }}"
-                    class="text-reset"
-                >
-
-                    <div
-                        class="border
-                               rounded
-                               p-4
-                               h-100"
-                    >
+                    <div class="border rounded p-4 h-100">
 
                         <div class="d-flex">
 
                             <div class="avatar-sm me-3">
 
-                                <span
-                                    class="avatar-title
-                                           rounded-circle
-                                           bg-soft-warning"
-                                >
+                                <span class="avatar-title rounded-circle bg-soft-warning">
 
-                                    <i
-                                        class="mdi
-                                               mdi-folder-multiple-outline
-                                               text-warning
-                                               font-size-20"
-                                    ></i>
+                                    <i class="mdi mdi-folder-multiple-outline text-warning font-size-20"></i>
 
                                 </span>
 
@@ -449,8 +305,7 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Maintain local authority
-                                    group classifications.
+                                    Maintain local authority group classifications.
                                 </p>
 
                             </div>
@@ -464,12 +319,53 @@
             </div>
 
 
+            {{-- MEMBERSHIP REPORTS --}}
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
+
+                <a href="{{ route('pensions-administration.updates.reports.membership.index') }}"
+                   class="text-reset">
+
+                    <div class="border rounded p-4 h-100">
+
+                        <div class="d-flex">
+
+                            <div class="avatar-sm me-3">
+
+                                <span class="avatar-title rounded-circle bg-soft-info">
+
+                                    <i class="mdi mdi-chart-box-outline text-info font-size-20"></i>
+
+                                </span>
+
+                            </div>
+
+
+                            <div>
+
+                                <h5>
+                                    Membership Reports
+                                </h5>
+
+                                <p class="text-muted mb-0">
+                                    View static member, employer, age,
+                                    mapping and data quality reports.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            </div>
+
         </div>
 
     </div>
 
 </div>
-
 
 
 {{-- =========================================================
@@ -490,115 +386,67 @@
                 </h4>
 
 
-                <ul
-                    class="list-group
-                           list-group-flush"
-                >
+                <ul class="list-group list-group-flush">
 
 
-                    <li
-                        class="list-group-item
-                               d-flex
-                               justify-content-between
-                               align-items-center"
-                    >
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
 
                         New Members
 
-                        <span
-                            class="badge
-                                   bg-primary
-                                   rounded-pill"
-                        >
-                            {{
-                                number_format(
-                                    $monthlyMovements[
-                                        'new_members'
-                                    ]
-                                )
-                            }}
+                        <span class="badge bg-primary rounded-pill">
+
+                            {{ number_format(
+                                $monthlyMovements['new_members']
+                            ) }}
+
                         </span>
 
                     </li>
 
 
-                    <li
-                        class="list-group-item
-                               d-flex
-                               justify-content-between
-                               align-items-center"
-                    >
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
 
                         Reinstatements
 
-                        <span
-                            class="badge
-                                   bg-success
-                                   rounded-pill"
-                        >
-                            {{
-                                number_format(
-                                    $monthlyMovements[
-                                        'reinstatements'
-                                    ]
-                                )
-                            }}
+                        <span class="badge bg-success rounded-pill">
+
+                            {{ number_format(
+                                $monthlyMovements['reinstatements']
+                            ) }}
+
                         </span>
 
                     </li>
 
 
-                    <li
-                        class="list-group-item
-                               d-flex
-                               justify-content-between
-                               align-items-center"
-                    >
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
 
                         Suspensions
 
-                        <span
-                            class="badge
-                                   bg-warning
-                                   rounded-pill"
-                        >
-                            {{
-                                number_format(
-                                    $monthlyMovements[
-                                        'suspensions'
-                                    ]
-                                )
-                            }}
+                        <span class="badge bg-warning rounded-pill">
+
+                            {{ number_format(
+                                $monthlyMovements['suspensions']
+                            ) }}
+
                         </span>
 
                     </li>
 
 
-                    <li
-                        class="list-group-item
-                               d-flex
-                               justify-content-between
-                               align-items-center"
-                    >
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
 
                         Other Movements
 
-                        <span
-                            class="badge
-                                   bg-secondary
-                                   rounded-pill"
-                        >
-                            {{
-                                number_format(
-                                    $monthlyMovements[
-                                        'other_movements'
-                                    ]
-                                )
-                            }}
+                        <span class="badge bg-secondary rounded-pill">
+
+                            {{ number_format(
+                                $monthlyMovements['other_movements']
+                            ) }}
+
                         </span>
 
                     </li>
-
 
                 </ul>
 
@@ -609,34 +457,21 @@
     </div>
 
 
-
-    {{-- =====================================================
-         RECENT MEMBERS
-    ====================================================== --}}
-
+    {{-- RECENT MEMBERS --}}
     <div class="col-xl-8">
 
         <div class="card">
 
             <div class="card-body">
 
-                <div
-                    class="d-flex
-                           justify-content-between
-                           align-items-center
-                           mb-4"
-                >
+                <div class="d-flex justify-content-between align-items-center mb-4">
 
                     <h4 class="header-title mb-0">
                         Recently Added Members
                     </h4>
 
 
-                    <a
-                        href="{{ route(
-                            'pensions-administration.updates.members.index'
-                        ) }}"
-                    >
+                    <a href="{{ route('pensions-administration.updates.members.index') }}">
                         View All
                     </a>
 
@@ -645,32 +480,16 @@
 
                 <div class="table-responsive">
 
-                    <table
-                        class="table
-                               table-centered
-                               table-nowrap
-                               mb-0"
-                    >
+                    <table class="table table-centered table-nowrap mb-0">
 
                         <thead>
 
                             <tr>
 
-                                <th>
-                                    Member No.
-                                </th>
-
-                                <th>
-                                    Member
-                                </th>
-
-                                <th>
-                                    Employer
-                                </th>
-
-                                <th>
-                                    Status
-                                </th>
+                                <th>Member No.</th>
+                                <th>Member</th>
+                                <th>Employer</th>
+                                <th>Status</th>
 
                             </tr>
 
@@ -679,25 +498,19 @@
 
                         <tbody>
 
-                            @forelse(
-                                $recentMembers
-                                as $member
-                            )
+                            @forelse($recentMembers as $member)
 
                                 <tr>
 
                                     <td>
 
-                                        <a
-                                            href="{{ route(
-                                                'pensions-administration.updates.members.show',
-                                                $member
-                                            ) }}"
-                                        >
-                                            {{
-                                                $member
-                                                    ->member_number
-                                            }}
+                                        <a href="{{ route(
+                                            'pensions-administration.updates.members.show',
+                                            $member
+                                        ) }}">
+
+                                            {{ $member->member_number }}
+
                                         </a>
 
                                     </td>
@@ -707,15 +520,8 @@
 
                                         <strong>
 
-                                            {{
-                                                $member
-                                                    ->surname
-                                            }},
-
-                                            {{
-                                                $member
-                                                    ->first_names
-                                            }}
+                                            {{ $member->surname }},
+                                            {{ $member->first_names }}
 
                                         </strong>
 
@@ -724,11 +530,10 @@
 
                                     <td>
 
-                                        {{
-                                            $member
-                                                ->currentEmployment
-                                                ?->employer
-                                                ?->name
+                                        {{ $member
+                                            ->currentEmployment
+                                            ?->employer
+                                            ?->name
                                             ?? '-'
                                         }}
 
@@ -737,23 +542,16 @@
 
                                     <td>
 
-                                        <span
-                                            class="badge
+                                        <span class="badge
                                             {{
-                                                $member
-                                                    ->membership_status
-                                                === 'active'
+                                                $member->membership_status === 'active'
                                                     ? 'bg-success'
                                                     : 'bg-secondary'
-                                            }}"
-                                        >
+                                            }}">
 
-                                            {{
-                                                ucfirst(
-                                                    $member
-                                                        ->membership_status
-                                                )
-                                            }}
+                                            {{ ucfirst(
+                                                $member->membership_status
+                                            ) }}
 
                                         </span>
 
@@ -765,12 +563,11 @@
 
                                 <tr>
 
-                                    <td
-                                        colspan="4"
-                                        class="text-center
-                                               text-muted"
-                                    >
+                                    <td colspan="4"
+                                        class="text-center text-muted">
+
                                         No members created yet.
+
                                     </td>
 
                                 </tr>
@@ -789,9 +586,7 @@
 
     </div>
 
-
 </div>
-
 
 
 {{-- =========================================================
@@ -829,19 +624,15 @@
 
                 <tbody>
 
-                    @forelse(
-                        $recentMovements
-                        as $movement
-                    )
+                    @forelse($recentMovements as $movement)
 
                         <tr>
 
                             <td>
 
-                                {{
-                                    $movement
-                                        ->effective_date
-                                        ?->format('d M Y')
+                                {{ $movement
+                                    ->effective_date
+                                    ?->format('d M Y')
                                     ?? '-'
                                 }}
 
@@ -852,37 +643,30 @@
 
                                 @if($movement->member)
 
-                                    <a
-                                        href="{{ route(
-                                            'pensions-administration.updates.members.show',
-                                            $movement->member
-                                        ) }}"
-                                    >
+                                    <a href="{{ route(
+                                        'pensions-administration.updates.members.show',
+                                        $movement->member
+                                    ) }}">
 
-                                        {{
-                                            $movement
-                                                ->member
-                                                ->member_number
+                                        {{ $movement
+                                            ->member
+                                            ->member_number
                                         }}
 
                                     </a>
 
                                     <br>
 
-                                    <small
-                                        class="text-muted"
-                                    >
+                                    <small class="text-muted">
 
-                                        {{
-                                            $movement
-                                                ->member
-                                                ->surname
+                                        {{ $movement
+                                            ->member
+                                            ->surname
                                         }},
 
-                                        {{
-                                            $movement
-                                                ->member
-                                                ->first_names
+                                        {{ $movement
+                                            ->member
+                                            ->first_names
                                         }}
 
                                     </small>
@@ -898,44 +682,26 @@
 
                             <td>
 
-                                {{
-                                    ucwords(
-                                        strtolower(
-                                            str_replace(
-                                                '_',
-                                                ' ',
-                                                $movement
-                                                    ->movement_type
-                                                ?? ''
-                                            )
+                                {{ ucwords(
+                                    strtolower(
+                                        str_replace(
+                                            '_',
+                                            ' ',
+                                            $movement->movement_type ?? ''
                                         )
                                     )
-                                }}
+                                ) }}
 
                             </td>
 
 
                             <td>
 
-                                {{
-                                    $movement->old_status
-                                        ? ucfirst(
-                                            $movement
-                                                ->old_status
-                                        )
-                                        : '-'
-                                }}
-
-                            </td>
-
-
-                            <td>
-
-                                {{
-                                    ucfirst(
-                                        $movement
-                                            ->new_status
+                                {{ $movement->old_status
+                                    ? ucfirst(
+                                        $movement->old_status
                                     )
+                                    : '-'
                                 }}
 
                             </td>
@@ -943,11 +709,15 @@
 
                             <td>
 
-                                {{
-                                    $movement->reason
-                                    ?? '-'
-                                }}
+                                {{ ucfirst(
+                                    $movement->new_status
+                                ) }}
 
+                            </td>
+
+
+                            <td>
+                                {{ $movement->reason ?? '-' }}
                             </td>
 
                         </tr>
@@ -956,11 +726,11 @@
 
                         <tr>
 
-                            <td
-                                colspan="6"
-                                class="text-center text-muted"
-                            >
+                            <td colspan="6"
+                                class="text-center text-muted">
+
                                 No membership movements recorded.
+
                             </td>
 
                         </tr>

@@ -8,21 +8,21 @@
 
         <nav class="navbar navbar-light navbar-expand-lg topnav-menu">
 
-            {{-- Mobile Toggle --}}
-            <button
-                class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#pensions-topnav-menu"
-                aria-controls="pensions-topnav-menu"
-                aria-expanded="false"
-                aria-label="Toggle navigation"
-            >
+            <button class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#pensions-topnav-menu"
+                    aria-controls="pensions-topnav-menu"
+                    aria-expanded="false"
+                    aria-label="Toggle navigation">
+
                 <span class="navbar-toggler-icon"></span>
+
             </button>
 
 
-            <div class="collapse navbar-collapse" id="pensions-topnav-menu">
+            <div class="collapse navbar-collapse"
+                 id="pensions-topnav-menu">
 
                 <ul class="navbar-nav">
 
@@ -33,16 +33,16 @@
 
                     <li class="nav-item">
 
-                        <a
-                            class="nav-link {{ request()->routeIs('pensions-administration.dashboard') ? 'active' : '' }}"
-                            href="{{ route('pensions-administration.dashboard') }}"
-                        >
+                        <a class="nav-link {{ request()->routeIs('pensions-administration.dashboard') ? 'active' : '' }}"
+                           href="{{ route('pensions-administration.dashboard') }}">
+
                             <i class="dripicons-home me-2"></i>
+
                             Pensions Home
+
                         </a>
 
                     </li>
-
 
 
                     {{-- =================================================
@@ -51,59 +51,69 @@
 
                     <li class="nav-item dropdown">
 
-                        <a
-                            class="nav-link dropdown-toggle arrow-none {{ request()->routeIs('pensions-administration.updates.*') ? 'active' : '' }}"
-                            href="javascript:void(0);"
-                            id="pensions-updates-menu"
-                            role="button"
-                        >
+                        <a class="nav-link dropdown-toggle arrow-none {{ request()->routeIs('pensions-administration.updates.*') && !request()->routeIs('pensions-administration.updates.reports.*') ? 'active' : '' }}"
+                           href="javascript:void(0);"
+                           id="pensions-updates-menu"
+                           role="button">
+
                             <i class="dripicons-user-group me-2"></i>
 
                             Updates / Membership
 
                             <div class="arrow-down"></div>
+
                         </a>
 
 
-                        <div class="dropdown-menu" aria-labelledby="pensions-updates-menu">
+                        <div class="dropdown-menu"
+                             aria-labelledby="pensions-updates-menu">
 
 
-                            {{-- Updates Dashboard --}}
-                            <a href="{{ route('pensions-administration.updates.dashboard') }}" class="dropdown-item">
+                            <a href="{{ route('pensions-administration.updates.dashboard') }}"
+                               class="dropdown-item">
+
                                 <i class="mdi mdi-view-dashboard-outline me-2"></i>
                                 Updates Dashboard
+
                             </a>
 
 
                             <div class="dropdown-divider"></div>
 
 
-                            {{-- Members --}}
-                            <a href="{{ route('pensions-administration.updates.members.index') }}" class="dropdown-item">
+                            <a href="{{ route('pensions-administration.updates.members.index') }}"
+                               class="dropdown-item">
+
                                 <i class="mdi mdi-account-group-outline me-2"></i>
                                 Members
+
                             </a>
 
 
-                            {{-- Employers --}}
-                            <a href="{{ route('pensions-administration.updates.employers.index') }}" class="dropdown-item">
+                            <a href="{{ route('pensions-administration.updates.employers.index') }}"
+                               class="dropdown-item">
+
                                 <i class="mdi mdi-office-building-outline me-2"></i>
                                 Employers
+
                             </a>
 
 
-                            {{-- Employer Groups --}}
-                            <a href="{{ route('pensions-administration.updates.employer-groups.index') }}" class="dropdown-item">
+                            <a href="{{ route('pensions-administration.updates.employer-groups.index') }}"
+                               class="dropdown-item">
+
                                 <i class="mdi mdi-folder-multiple-outline me-2"></i>
                                 Employer Groups
+
                             </a>
 
 
                             <div class="dropdown-divider"></div>
 
 
-                            {{-- Member Movements --}}
-                            <span class="dropdown-item text-muted" style="cursor: default;">
+                            <span class="dropdown-item text-muted"
+                                  style="cursor: default;">
+
                                 <i class="mdi mdi-swap-horizontal me-2"></i>
 
                                 Member Movements
@@ -111,39 +121,38 @@
                                 <small class="ms-1">
                                     Coming next
                                 </small>
+
                             </span>
 
 
                             <div class="dropdown-divider"></div>
 
 
-                            {{-- =================================================
-                                 EXCEL IMPORTS
-                            ================================================== --}}
-
                             <h6 class="dropdown-header">
                                 Excel Imports
                             </h6>
 
 
-                            {{-- Member Imports --}}
-                            <a href="{{ route('pensions-administration.updates.imports.index') }}" class="dropdown-item">
+                            <a href="{{ route('pensions-administration.updates.imports.index') }}"
+                               class="dropdown-item">
+
                                 <i class="mdi mdi-account-arrow-up-outline me-2"></i>
                                 Member Imports
+
                             </a>
 
 
-                            {{-- Employer Imports --}}
-                            <a href="{{ route('pensions-administration.updates.employer-imports.index') }}" class="dropdown-item">
+                            <a href="{{ route('pensions-administration.updates.employer-imports.index') }}"
+                               class="dropdown-item">
+
                                 <i class="mdi mdi-office-building-cog-outline me-2"></i>
                                 Employer Imports
-                            </a>
 
+                            </a>
 
                         </div>
 
                     </li>
-
 
 
                     {{-- =================================================
@@ -152,11 +161,10 @@
 
                     <li class="nav-item">
 
-                        <a
-                            class="nav-link text-muted"
-                            href="javascript:void(0);"
-                            title="Payroll module will be implemented next"
-                        >
+                        <a class="nav-link text-muted"
+                           href="javascript:void(0);"
+                           title="Payroll module will be implemented next">
+
                             <i class="dripicons-wallet me-2"></i>
 
                             Payroll
@@ -164,10 +172,10 @@
                             <span class="badge bg-soft-secondary text-secondary ms-1">
                                 Next
                             </span>
+
                         </a>
 
                     </li>
-
 
 
                     {{-- =================================================
@@ -176,11 +184,10 @@
 
                     <li class="nav-item">
 
-                        <a
-                            class="nav-link text-muted"
-                            href="javascript:void(0);"
-                            title="Benefit Claims module is not yet implemented"
-                        >
+                        <a class="nav-link text-muted"
+                           href="javascript:void(0);"
+                           title="Benefit Claims module is not yet implemented">
+
                             <i class="dripicons-document me-2"></i>
 
                             Benefit Claims
@@ -188,10 +195,10 @@
                             <span class="badge bg-soft-secondary text-secondary ms-1">
                                 Later
                             </span>
+
                         </a>
 
                     </li>
-
 
 
                     {{-- =================================================
@@ -200,42 +207,101 @@
 
                     <li class="nav-item dropdown">
 
-                        <a
-                            class="nav-link dropdown-toggle arrow-none"
-                            href="javascript:void(0);"
-                            id="pensions-reports-menu"
-                            role="button"
-                        >
+                        <a class="nav-link dropdown-toggle arrow-none {{ request()->routeIs('pensions-administration.updates.reports.*') ? 'active' : '' }}"
+                           href="javascript:void(0);"
+                           id="pensions-reports-menu"
+                           role="button">
+
                             <i class="dripicons-graph-bar me-2"></i>
 
                             Reports
 
                             <div class="arrow-down"></div>
+
                         </a>
 
 
-                        <div class="dropdown-menu" aria-labelledby="pensions-reports-menu">
+                        <div class="dropdown-menu"
+                             aria-labelledby="pensions-reports-menu">
 
-                            <span class="dropdown-item text-muted">
+
+                            <h6 class="dropdown-header">
+                                Membership Reports
+                            </h6>
+
+
+                            <a href="{{ route('pensions-administration.updates.reports.membership.index') }}"
+                               class="dropdown-item">
+
+                                <i class="mdi mdi-chart-box-outline me-2"></i>
+                                Membership Reports Centre
+
+                            </a>
+
+
+                            <a href="{{ route('pensions-administration.updates.reports.membership.index') }}#member-register"
+                               class="dropdown-item">
+
+                                <i class="mdi mdi-account-group-outline me-2"></i>
                                 Membership Register
-                            </span>
 
-                            <span class="dropdown-item text-muted">
-                                Membership Reconciliation
-                            </span>
+                            </a>
 
-                            <span class="dropdown-item text-muted">
+
+                            <a href="{{ route('pensions-administration.updates.reports.membership.index') }}#employer-summary"
+                               class="dropdown-item">
+
+                                <i class="mdi mdi-office-building-outline me-2"></i>
                                 Employer Membership
-                            </span>
+
+                            </a>
+
+
+                            <a href="{{ route('pensions-administration.updates.reports.membership.index') }}#age-profile"
+                               class="dropdown-item">
+
+                                <i class="mdi mdi-calendar-account-outline me-2"></i>
+                                Age Profile
+
+                            </a>
+
+
+                            <a href="{{ route('pensions-administration.updates.reports.membership.index') }}#legacy-mapping"
+                               class="dropdown-item">
+
+                                <i class="mdi mdi-link-variant me-2"></i>
+                                Legacy Number Mapping
+
+                            </a>
+
+
+                            <a href="{{ route('pensions-administration.updates.reports.membership.index') }}#data-quality"
+                               class="dropdown-item">
+
+                                <i class="mdi mdi-database-alert-outline me-2"></i>
+                                Data Quality
+
+                            </a>
+
+
+                            <div class="dropdown-divider"></div>
+
 
                             <span class="dropdown-item text-muted">
-                                Movement Report
+
+                                <i class="mdi mdi-swap-horizontal me-2"></i>
+
+                                Movement Reports
+
+                                <small class="ms-1">
+                                    Later
+                                </small>
+
                             </span>
 
                         </div>
 
                     </li>
-
 
 
                     {{-- =================================================
@@ -244,13 +310,15 @@
 
                     <li class="nav-item">
 
-                        <a class="nav-link" href="{{ route('dashboard') }}">
+                        <a class="nav-link"
+                           href="{{ route('dashboard') }}">
+
                             <i class="mdi mdi-arrow-left-circle-outline me-2"></i>
                             Main ERP
+
                         </a>
 
                     </li>
-
 
                 </ul>
 
@@ -261,7 +329,6 @@
     </div>
 
 </div>
-
 
 
 @once
