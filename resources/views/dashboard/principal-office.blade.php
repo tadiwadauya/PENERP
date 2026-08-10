@@ -8,146 +8,523 @@
     Executive oversight and corporate administration
 @endsection
 
+
 @section('content')
 
-<div class="dashboard-welcome executive">
 
-    <div>
-        <h2>
-            Welcome, {{ auth()->user()->first_name }}
-        </h2>
+{{-- =========================================================
+     INTRODUCTION
+========================================================= --}}
 
-        <p>
-            Access authorised executive, HR, procurement and
-            corporate administration functions.
-        </p>
+<div class="row">
+
+    <div class="col-12">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <div
+                    class="
+                        d-flex
+                        flex-wrap
+                        justify-content-between
+                        align-items-center
+                    "
+                >
+
+                    <div>
+
+                        <h4 class="header-title mb-2">
+
+                            Welcome,
+                            {{
+                                auth()->user()->first_name
+                                ?? 'User'
+                            }}
+
+                        </h4>
+
+                        <p class="text-muted mb-0">
+
+                            Access authorised executive,
+                            human resources, procurement and
+                            corporate administration functions.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
     </div>
 
 </div>
 
 
-<div class="dashboard-section">
 
-    <div class="section-heading">
+{{-- =========================================================
+     PRINCIPAL OFFICE FUNCTIONS
+========================================================= --}}
 
-        <h2>Principal Office Functions</h2>
+@if(
+    auth()->user()->can(
+        'principal-office.executive-dashboard.view'
+    )
+    ||
+    auth()->user()->can(
+        'hr.employees.view'
+    )
+    ||
+    auth()->user()->can(
+        'procurement.procurement.view'
+    )
+    ||
+    auth()->user()->can(
+        'principal-office.approvals.view'
+    )
+    ||
+    auth()->user()->can(
+        'principal-office.reports.view'
+    )
+)
 
-        <p>
-            Only functions assigned to your account are displayed.
-        </p>
+    <div class="row mt-2">
+
+        <div class="col-12">
+
+            <h4 class="header-title mb-3">
+                Principal Office Functions
+            </h4>
+
+            <p class="text-muted">
+                Only functions assigned to your account are displayed.
+            </p>
+
+        </div>
+
+
+
+        {{-- =====================================================
+             EXECUTIVE OVERVIEW
+        ====================================================== --}}
+
+        @can(
+            'principal-office.executive-dashboard.view'
+        )
+
+            <div class="col-xl-3 col-md-6">
+
+                <a
+                    href="#"
+                    class="text-decoration-none"
+                >
+
+                    <div class="card">
+
+                        <div class="card-body">
+
+                            <div class="d-flex align-items-center">
+
+                                <div class="avatar-sm me-3">
+
+                                    <span
+                                        class="
+                                            avatar-title
+                                            rounded-circle
+                                            bg-soft-primary
+                                            text-primary
+                                        "
+                                    >
+
+                                        <i
+                                            class="
+                                                mdi
+                                                mdi-view-dashboard-outline
+                                                font-size-22
+                                            "
+                                        ></i>
+
+                                    </span>
+
+                                </div>
+
+
+                                <div>
+
+                                    <h5 class="font-size-16 mb-1">
+                                        Executive Overview
+                                    </h5>
+
+                                    <p class="text-muted mb-0">
+                                        Organisation overview
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+        @endcan
+
+
+
+        {{-- =====================================================
+             HUMAN RESOURCES
+        ====================================================== --}}
+
+        @can(
+            'hr.employees.view'
+        )
+
+            <div class="col-xl-3 col-md-6">
+
+                <a
+                    href="#"
+                    class="text-decoration-none"
+                >
+
+                    <div class="card">
+
+                        <div class="card-body">
+
+                            <div class="d-flex align-items-center">
+
+                                <div class="avatar-sm me-3">
+
+                                    <span
+                                        class="
+                                            avatar-title
+                                            rounded-circle
+                                            bg-soft-success
+                                            text-success
+                                        "
+                                    >
+
+                                        <i
+                                            class="
+                                                mdi
+                                                mdi-account-tie-outline
+                                                font-size-22
+                                            "
+                                        ></i>
+
+                                    </span>
+
+                                </div>
+
+
+                                <div>
+
+                                    <h5 class="font-size-16 mb-1">
+                                        Human Resources
+                                    </h5>
+
+                                    <p class="text-muted mb-0">
+                                        HR administration
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+        @endcan
+
+
+
+        {{-- =====================================================
+             PROCUREMENT
+        ====================================================== --}}
+
+        @can(
+            'procurement.procurement.view'
+        )
+
+            <div class="col-xl-3 col-md-6">
+
+                <a
+                    href="#"
+                    class="text-decoration-none"
+                >
+
+                    <div class="card">
+
+                        <div class="card-body">
+
+                            <div class="d-flex align-items-center">
+
+                                <div class="avatar-sm me-3">
+
+                                    <span
+                                        class="
+                                            avatar-title
+                                            rounded-circle
+                                            bg-soft-warning
+                                            text-warning
+                                        "
+                                    >
+
+                                        <i
+                                            class="
+                                                mdi
+                                                mdi-cart-check
+                                                font-size-22
+                                            "
+                                        ></i>
+
+                                    </span>
+
+                                </div>
+
+
+                                <div>
+
+                                    <h5 class="font-size-16 mb-1">
+                                        Procurement
+                                    </h5>
+
+                                    <p class="text-muted mb-0">
+                                        Procurement processes
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+        @endcan
+
+
+
+        {{-- =====================================================
+             APPROVALS
+        ====================================================== --}}
+
+        @can(
+            'principal-office.approvals.view'
+        )
+
+            <div class="col-xl-3 col-md-6">
+
+                <a
+                    href="#"
+                    class="text-decoration-none"
+                >
+
+                    <div class="card">
+
+                        <div class="card-body">
+
+                            <div class="d-flex align-items-center">
+
+                                <div class="avatar-sm me-3">
+
+                                    <span
+                                        class="
+                                            avatar-title
+                                            rounded-circle
+                                            bg-soft-info
+                                            text-info
+                                        "
+                                    >
+
+                                        <i
+                                            class="
+                                                mdi
+                                                mdi-checkbox-marked-circle-outline
+                                                font-size-22
+                                            "
+                                        ></i>
+
+                                    </span>
+
+                                </div>
+
+
+                                <div>
+
+                                    <h5 class="font-size-16 mb-1">
+                                        Approvals
+                                    </h5>
+
+                                    <p class="text-muted mb-0">
+                                        Executive approvals
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+        @endcan
+
+
+
+        {{-- =====================================================
+             MANAGEMENT REPORTS
+        ====================================================== --}}
+
+        @can(
+            'principal-office.reports.view'
+        )
+
+            <div class="col-xl-3 col-md-6">
+
+                <a
+                    href="#"
+                    class="text-decoration-none"
+                >
+
+                    <div class="card">
+
+                        <div class="card-body">
+
+                            <div class="d-flex align-items-center">
+
+                                <div class="avatar-sm me-3">
+
+                                    <span
+                                        class="
+                                            avatar-title
+                                            rounded-circle
+                                            bg-soft-danger
+                                            text-danger
+                                        "
+                                    >
+
+                                        <i
+                                            class="
+                                                mdi
+                                                mdi-chart-line
+                                                font-size-22
+                                            "
+                                        ></i>
+
+                                    </span>
+
+                                </div>
+
+
+                                <div>
+
+                                    <h5 class="font-size-16 mb-1">
+                                        Management Reports
+                                    </h5>
+
+                                    <p class="text-muted mb-0">
+                                        Executive reports
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            </div>
+
+        @endcan
+
 
     </div>
 
+@else
 
-    <div class="dashboard-grid">
+    {{-- =========================================================
+         NO ACCESS
+    ========================================================== --}}
 
-        {{-- Executive Overview --}}
-        @can('principal-office.executive-dashboard.view')
-            <a
-                href="#"
-                class="dashboard-card"
-            >
-                <div class="dashboard-card-icon">
-                    <i class="bi bi-speedometer2"></i>
-                </div>
+    <div class="row">
 
-                <div class="dashboard-card-body">
-                    <h3>Executive Overview</h3>
+        <div class="col-12">
 
-                    <p>
-                        View high-level organisational information
-                        and performance indicators.
+            <div class="card">
+
+                <div class="card-body text-center py-5">
+
+                    <div class="avatar-md mx-auto mb-3">
+
+                        <span
+                            class="
+                                avatar-title
+                                rounded-circle
+                                bg-soft-danger
+                                text-danger
+                            "
+                        >
+
+                            <i
+                                class="
+                                    mdi
+                                    mdi-shield-lock-outline
+                                    font-size-24
+                                "
+                            ></i>
+
+                        </span>
+
+                    </div>
+
+
+                    <h4>
+                        No Principal Office Functions Assigned
+                    </h4>
+
+
+                    <p class="text-muted mb-0">
+
+                        You currently do not have permission
+                        to access any Principal Officer's Office
+                        functions.
+
                     </p>
-                </div>
-            </a>
-        @endcan
 
-
-        {{-- Human Resources --}}
-        @can('hr.employees.view')
-            <a
-                href="#"
-                class="dashboard-card"
-            >
-                <div class="dashboard-card-icon">
-                    <i class="bi bi-person-workspace"></i>
                 </div>
 
-                <div class="dashboard-card-body">
-                    <h3>Human Resources</h3>
+            </div>
 
-                    <p>
-                        Access authorised human resources functions.
-                    </p>
-                </div>
-            </a>
-        @endcan
-
-
-        {{-- Procurement --}}
-        @can('procurement.procurement.view')
-            <a
-                href="#"
-                class="dashboard-card"
-            >
-                <div class="dashboard-card-icon">
-                    <i class="bi bi-cart-check"></i>
-                </div>
-
-                <div class="dashboard-card-body">
-                    <h3>Procurement</h3>
-
-                    <p>
-                        Access procurement requests and processes.
-                    </p>
-                </div>
-            </a>
-        @endcan
-
-
-        {{-- Approvals --}}
-        @can('principal-office.approvals.view')
-            <a
-                href="#"
-                class="dashboard-card"
-            >
-                <div class="dashboard-card-icon">
-                    <i class="bi bi-check2-square"></i>
-                </div>
-
-                <div class="dashboard-card-body">
-                    <h3>Approvals</h3>
-
-                    <p>
-                        Review items requiring executive approval.
-                    </p>
-                </div>
-            </a>
-        @endcan
-
-
-        {{-- Reports --}}
-        @can('principal-office.reports.view')
-            <a
-                href="#"
-                class="dashboard-card"
-            >
-                <div class="dashboard-card-icon">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </div>
-
-                <div class="dashboard-card-body">
-                    <h3>Management Reports</h3>
-
-                    <p>
-                        Access authorised executive reports.
-                    </p>
-                </div>
-            </a>
-        @endcan
+        </div>
 
     </div>
 
-</div>
+@endif
+
 
 @endsection

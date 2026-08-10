@@ -23,6 +23,12 @@ use App\Http\Controllers\PensionsAdministration\Updates\MemberController;
 
 use App\Http\Controllers\PensionsAdministration\PensionsDashboardController;
 use App\Http\Controllers\PensionsAdministration\Updates\UpdatesDashboardController;
+use App\Http\Controllers\PensionsAdministration\Updates\MembershipImportController;
+use App\Http\Controllers\PensionsAdministration\Updates\MembershipImportReviewController;
+use App\Http\Controllers\PensionsAdministration\Updates\MembershipImportDataController;
+use App\Http\Controllers\PensionsAdministration\Updates\MembershipImportCommitController;
+
+use App\Http\Controllers\PensionsAdministration\Updates\EmployerImportController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -336,11 +342,104 @@ Route::prefix('pensions-administration')
                     EmployerController::class
                 );
 
+Route::get('employer-imports', [EmployerImportController::class, 'index'])
+    ->name('employer-imports.index');
+
+Route::get('employer-imports/create', [EmployerImportController::class, 'create'])
+    ->name('employer-imports.create');
+
+Route::post('employer-imports', [EmployerImportController::class, 'store'])
+    ->name('employer-imports.store');
+
+Route::get('employer-imports/{batch}', [EmployerImportController::class, 'show'])
+    ->name('employer-imports.show');
+
+Route::post('employer-imports/{batch}/validate', [EmployerImportController::class, 'validateImport'])
+    ->name('employer-imports.validate');
+
+Route::post('employer-imports/{batch}/approve-valid', [EmployerImportController::class, 'approveValid'])
+    ->name('employer-imports.approve-valid');
+
+Route::post('employer-imports/{batch}/import', [EmployerImportController::class, 'importApproved'])
+    ->name('employer-imports.import');
+
+Route::get('employer-imports/{batch}/status', [EmployerImportController::class, 'status'])
+    ->name('employer-imports.status');
+
+Route::get('employer-imports/{batch}/review', [EmployerImportController::class, 'review'])
+    ->name('employer-imports.review');
+
+Route::delete('employer-imports/{batch}', [EmployerImportController::class, 'destroy'])
+    ->name('employer-imports.destroy');
+
 
                 Route::resource(
                     'members',
                     MemberController::class
                 );
+
+                /*
+|--------------------------------------------------------------------------
+| Membership Excel Imports
+|--------------------------------------------------------------------------
+*/
+
+Route::get('imports', [MembershipImportController::class, 'index'])
+    ->name('imports.index');
+
+Route::get('imports/create', [MembershipImportController::class, 'create'])
+    ->name('imports.create');
+
+Route::post('imports', [MembershipImportController::class, 'store'])
+    ->name('imports.store');
+
+Route::get('imports/{batch}', [MembershipImportController::class, 'show'])
+    ->name('imports.show');
+
+Route::post('imports/{batch}/validate', [MembershipImportController::class, 'validateImport'])
+    ->name('imports.validate');
+
+Route::get('imports/{batch}/status', [MembershipImportController::class, 'status'])
+    ->name('imports.status');
+
+Route::get('imports/{batch}/review/data', [MembershipImportDataController::class, 'data'])
+    ->name('imports.review.data');
+
+Route::get('imports/{batch}/review/exceptions', [MembershipImportDataController::class, 'exceptions'])
+    ->name('imports.review.exceptions');
+
+Route::get('imports/{batch}/review/exceptions/download', [MembershipImportDataController::class, 'downloadExceptions'])
+    ->name('imports.review.exceptions.download');
+
+Route::delete('imports/{batch}', [MembershipImportController::class, 'destroy'])
+    ->name('imports.destroy');
+
+Route::get('imports/{batch}/review', [MembershipImportReviewController::class, 'index'])
+    ->name('imports.review');
+
+Route::get('imports/{batch}/rows/{row}/edit', [MembershipImportReviewController::class, 'edit'])
+    ->name('imports.rows.edit');
+
+Route::put('imports/{batch}/rows/{row}', [MembershipImportReviewController::class, 'update'])
+    ->name('imports.rows.update');
+
+Route::post('imports/{batch}/rows/{row}/decision', [MembershipImportReviewController::class, 'decision'])
+    ->name('imports.rows.decision');
+
+Route::post('imports/{batch}/approve-valid', [MembershipImportReviewController::class, 'approveValid'])
+    ->name('imports.approve-valid');
+
+Route::post('imports/{batch}/reject-errors', [MembershipImportReviewController::class, 'rejectErrors'])
+    ->name('imports.reject-errors');
+
+Route::delete('imports/{batch}/rows/{row}/remove', [MembershipImportReviewController::class, 'removeRow'])
+    ->name('imports.rows.remove');
+
+Route::post('imports/{batch}/import', [MembershipImportCommitController::class, 'store'])
+    ->name('imports.import');
+
+Route::get('imports/{batch}/import-status', [MembershipImportCommitController::class, 'status'])
+    ->name('imports.import-status');
             });
     });
 

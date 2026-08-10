@@ -1,11 +1,8 @@
 @extends('layouts.app')
 
-
 @section('title', 'System Administration')
 
-
 @section('page-heading', 'System Administration')
-
 
 @section('content')
 
@@ -37,13 +34,10 @@
                             System Administration
                         </h4>
 
-
                         <p class="text-muted mb-0">
-
                             Manage users, organisational structure,
-                            security policies, access control and
-                            system audit information.
-
+                            security, access control, audit information
+                            and ERP modules.
                         </p>
 
                     </div>
@@ -83,86 +77,70 @@
 
 
 {{-- =========================================================
-     ERP MODULE NAVIGATION
+     MODULES
 ========================================================= --}}
 
-@can('dashboard.pensions.view')
+<div class="row mt-2">
 
-    <div class="row">
+    <div class="col-12">
 
-        <div class="col-12">
+        <h4 class="header-title mb-3">
+            Modules
+        </h4>
 
-            <h4 class="header-title mb-3">
-                ERP Navigation
-            </h4>
-
-        </div>
+    </div>
 
 
-        <div class="col-xl-4 col-md-6">
 
-            <a
-                href="{{ route(
-                    'pensions-administration.dashboard'
-                ) }}"
-                class="text-decoration-none"
-            >
+    {{-- Pensions Administration --}}
+    <div class="col-xl-3 col-md-6">
 
-                <div class="card">
+        <a
+            href="{{ route(
+                'pensions-administration.dashboard'
+            ) }}"
+            class="text-decoration-none"
+        >
 
-                    <div class="card-body">
+            <div class="card">
 
-                        <div class="d-flex align-items-center">
+                <div class="card-body">
 
-                            <div class="avatar-sm me-3">
+                    <div class="d-flex align-items-center">
 
-                                <span
-                                    class="
-                                        avatar-title
-                                        rounded-circle
-                                        bg-soft-primary
-                                        text-primary
-                                    "
-                                >
+                        <div class="avatar-sm me-3">
 
-                                    <i
-                                        class="
-                                            mdi
-                                            mdi-account-group-outline
-                                            font-size-22
-                                        "
-                                    ></i>
-
-                                </span>
-
-                            </div>
-
-
-                            <div class="flex-grow-1">
-
-                                <h5 class="font-size-16 mb-1">
-                                    Pensions Administration
-                                </h5>
-
-                                <p class="text-muted mb-0">
-                                    Membership, payroll and claims
-                                </p>
-
-                            </div>
-
-
-                            <div>
+                            <span
+                                class="
+                                    avatar-title
+                                    rounded-circle
+                                    bg-soft-primary
+                                    text-primary
+                                "
+                            >
 
                                 <i
                                     class="
                                         mdi
-                                        mdi-chevron-right
-                                        font-size-20
-                                        text-muted
+                                        mdi-account-group-outline
+                                        font-size-22
                                     "
                                 ></i>
 
-                            </div>
+                            </span>
+
+                        </div>
+
+
+                        <div>
+
+                            <h5 class="font-size-16 mb-1">
+                                Pensions Administration
+                            </h5>
+
+                            <p class="text-muted mb-0">
+                                Pensions module
+                            </p>
 
                         </div>
 
@@ -170,88 +148,297 @@
 
                 </div>
 
-            </a>
+            </div>
 
-        </div>
+        </a>
 
-
-        @can('updates.members.view')
-
-            <div class="col-xl-4 col-md-6">
-
-                <a
-                    href="{{ route(
-                        'pensions-administration.updates.dashboard'
-                    ) }}"
-                    class="text-decoration-none"
-                >
-
-                    <div class="card">
-
-                        <div class="card-body">
-
-                            <div class="d-flex align-items-center">
-
-                                <div class="avatar-sm me-3">
-
-                                    <span
-                                        class="
-                                            avatar-title
-                                            rounded-circle
-                                            bg-soft-success
-                                            text-success
-                                        "
-                                    >
-
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-account-multiple-outline
-                                                font-size-22
-                                            "
-                                        ></i>
-
-                                    </span>
-
-                                </div>
+    </div>
 
 
-                                <div class="flex-grow-1">
 
-                                    <h5 class="font-size-16 mb-1">
-                                        Updates / Membership
-                                    </h5>
+    {{-- Updates / Membership --}}
+    <div class="col-xl-3 col-md-6">
 
-                                    <p class="text-muted mb-0">
-                                        Open Updates Dashboard
-                                    </p>
+        <a
+            href="{{ route(
+                'pensions-administration.updates.dashboard'
+            ) }}"
+            class="text-decoration-none"
+        >
 
-                                </div>
+            <div class="card">
 
+                <div class="card-body">
+
+                    <div class="d-flex align-items-center">
+
+                        <div class="avatar-sm me-3">
+
+                            <span
+                                class="
+                                    avatar-title
+                                    rounded-circle
+                                    bg-soft-success
+                                    text-success
+                                "
+                            >
 
                                 <i
                                     class="
                                         mdi
-                                        mdi-chevron-right
-                                        text-muted
+                                        mdi-account-multiple-outline
+                                        font-size-22
                                     "
                                 ></i>
 
-                            </div>
+                            </span>
+
+                        </div>
+
+
+                        <div>
+
+                            <h5 class="font-size-16 mb-1">
+                                Updates / Membership
+                            </h5>
+
+                            <p class="text-muted mb-0">
+                                Members & employers
+                            </p>
 
                         </div>
 
                     </div>
 
-                </a>
+                </div>
 
             </div>
 
-        @endcan
+        </a>
 
     </div>
 
-@endcan
+
+
+    {{-- Pension Payroll --}}
+    <div class="col-xl-3 col-md-6">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar-sm me-3">
+
+                        <span
+                            class="
+                                avatar-title
+                                rounded-circle
+                                bg-soft-info
+                                text-info
+                            "
+                        >
+
+                            <i
+                                class="
+                                    mdi
+                                    mdi-cash-multiple
+                                    font-size-22
+                                "
+                            ></i>
+
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <h5 class="font-size-16 mb-1">
+                            Pension Payroll
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            Coming next
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    {{-- Benefit Claims --}}
+    <div class="col-xl-3 col-md-6">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar-sm me-3">
+
+                        <span
+                            class="
+                                avatar-title
+                                rounded-circle
+                                bg-soft-warning
+                                text-warning
+                            "
+                        >
+
+                            <i
+                                class="
+                                    mdi
+                                    mdi-file-document-outline
+                                    font-size-22
+                                "
+                            ></i>
+
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <h5 class="font-size-16 mb-1">
+                            Benefit Claims
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            Planned later
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    {{-- Document Management --}}
+    <div class="col-xl-3 col-md-6">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar-sm me-3">
+
+                        <span
+                            class="
+                                avatar-title
+                                rounded-circle
+                                bg-soft-secondary
+                                text-secondary
+                            "
+                        >
+
+                            <i
+                                class="
+                                    mdi
+                                    mdi-folder-multiple-outline
+                                    font-size-22
+                                "
+                            ></i>
+
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <h5 class="font-size-16 mb-1">
+                            Document Management
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            Future module
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    {{-- Property Management --}}
+    <div class="col-xl-3 col-md-6">
+
+        <div class="card">
+
+            <div class="card-body">
+
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar-sm me-3">
+
+                        <span
+                            class="
+                                avatar-title
+                                rounded-circle
+                                bg-soft-danger
+                                text-danger
+                            "
+                        >
+
+                            <i
+                                class="
+                                    mdi
+                                    mdi-office-building-outline
+                                    font-size-22
+                                "
+                            ></i>
+
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <h5 class="font-size-16 mb-1">
+                            Property Management
+                        </h5>
+
+                        <p class="text-muted mb-0">
+                            Future module
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
 
 
@@ -259,7 +446,7 @@
      USER MANAGEMENT
 ========================================================= --}}
 
-<div class="row">
+<div class="row mt-4">
 
     <div class="col-12">
 
@@ -272,7 +459,13 @@
 
 
     {{-- Users --}}
-    @can('user-management.users.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'user-management.users.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -335,12 +528,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
     {{-- Roles --}}
-    @can('user-management.roles.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'user-management.roles.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -388,7 +587,7 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Manage access roles
+                                    Manage system roles
                                 </p>
 
                             </div>
@@ -403,12 +602,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
     {{-- Permissions --}}
-    @can('user-management.permissions.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'user-management.permissions.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -456,7 +661,7 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Review access permissions
+                                    Manage access permissions
                                 </p>
 
                             </div>
@@ -471,12 +676,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
-    {{-- Organisation --}}
-    @can('user-management.organisation-units.view')
+    {{-- Organisation Structure --}}
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'user-management.organisation-units.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -539,12 +750,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
     {{-- Job Titles --}}
-    @can('user-management.job-titles.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'user-management.job-titles.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -592,7 +809,7 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Maintain positions
+                                    Maintain job titles
                                 </p>
 
                             </div>
@@ -607,12 +824,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
     {{-- Grades --}}
-    @can('user-management.grades.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'user-management.grades.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -675,17 +898,17 @@
 
         </div>
 
-    @endcan
+    @endif
 
 </div>
 
 
 
 {{-- =========================================================
-     SECURITY
+     SECURITY & ACCESS
 ========================================================= --}}
 
-<div class="row mt-2">
+<div class="row mt-4">
 
     <div class="col-12">
 
@@ -698,8 +921,12 @@
 
 
     {{-- Password Policy --}}
-    @can(
-        'user-management.password-policies.view'
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'user-management.password-policies.view'
+        )
     )
 
         <div class="col-xl-3 col-md-6">
@@ -763,12 +990,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
     {{-- Audit Trail --}}
-    @can('audit.audit-trails.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'audit.audit-trails.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -831,12 +1064,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
     {{-- User Sessions --}}
-    @can('audit.user-sessions.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'audit.user-sessions.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -884,7 +1123,7 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Review sessions
+                                    Review active sessions
                                 </p>
 
                             </div>
@@ -899,12 +1138,18 @@
 
         </div>
 
-    @endcan
+    @endif
 
 
 
     {{-- Login Attempts --}}
-    @can('audit.login-attempts.view')
+    @if(
+        auth()->user()->is_system_administrator
+        ||
+        auth()->user()->can(
+            'audit.login-attempts.view'
+        )
+    )
 
         <div class="col-xl-3 col-md-6">
 
@@ -967,7 +1212,7 @@
 
         </div>
 
-    @endcan
+    @endif
 
 </div>
 

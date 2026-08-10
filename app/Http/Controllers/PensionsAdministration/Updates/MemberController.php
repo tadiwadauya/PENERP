@@ -29,142 +29,247 @@ class MemberController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function index(
-        Request $request
-    ): View {
-        $query = Member::query()
-            ->with([
-                'currentEmployment.employer',
-            ])
-            ->orderBy('surname')
-            ->orderBy('first_names');
+    public function index(Request $request): View
+{
+    $query = Member::query()
+        ->with([
+            'currentEmployment.employer',
+        ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Search
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | General Search
+    |--------------------------------------------------------------------------
+    */
 
-        if ($request->filled('search')) {
-            $search =
-                trim(
-                    $request->input('search')
-                );
+    if ($request->filled('search')) {
 
-            $normalizedId =
-                Member::normalizeNationalId(
-                    $search
-                );
-
-            $query->where(
-                function ($q) use (
-                    $search,
-                    $normalizedId
-                ): void {
-
-                    $q->where(
-                        'member_number',
-                        'like',
-                        '%' . $search . '%'
-                    )
-                    ->orWhere(
-                        'penad_member_number',
-                        'like',
-                        '%' . $search . '%'
-                    )
-                    ->orWhere(
-                        'fundworx_member_number',
-                        'like',
-                        '%' . $search . '%'
-                    )
-                    ->orWhere(
-                        'surname',
-                        'like',
-                        '%' . $search . '%'
-                    )
-                    ->orWhere(
-                        'first_names',
-                        'like',
-                        '%' . $search . '%'
-                    )
-                    ->orWhere(
-                        'national_id',
-                        'like',
-                        '%' . $search . '%'
-                    );
-
-                    if ($normalizedId) {
-                        $q->orWhere(
-                            'national_id_normalized',
-                            $normalizedId
-                        );
-                    }
-                }
-            );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Employer Filter
-        |--------------------------------------------------------------------------
-        */
-
-        if ($request->filled('employer_id')) {
-            $query->whereHas(
-                'currentEmployment',
-                function ($q) use ($request): void {
-                    $q->where(
-                        'employer_id',
-                        $request->input(
-                            'employer_id'
-                        )
-                    );
-                }
-            );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Status Filter
-        |--------------------------------------------------------------------------
-        */
-
-        if ($request->filled('status')) {
-            $query->where(
-                'membership_status',
-                $request->input('status')
-            );
-        }
-
-
-        $members =
-            $query
-                ->paginate(50)
-                ->withQueryString();
-
-
-        $employers =
-            Employer::query()
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->orderBy('name')
-                ->get();
-
-
-        return view(
-            'pensions-administration.updates.members.index',
-            compact(
-                'members',
-                'employers'
-            )
+        $search = trim(
+            $request->input('search')
         );
+
+        $query->where(function ($query) use ($search) {
+
+            $query
+                ->where(
+                    'member_number',
+                    'like',
+                    '%' . $search . '%'
+                )
+                ->orWhere(
+                    'penad_member_number',
+                    'like',
+                    '%' . $search . '%'
+                )
+                ->orWhere(
+                    'fundworx_member_number',
+                    'like',
+                    '%' . $search . '%'
+                )
+                ->orWhere(
+                    'national_id',
+                    'like',
+                    '%' . $search . '%'
+                )
+                ->orWhere(
+                    'surname',
+                    'like',
+                    '%' . $search . '%'
+                )
+                ->orWhere(
+                    'first_names',
+                    'like',
+                    '%' . $search . '%'
+                )
+                ->orWhere(
+                    'other_names',
+                    'like',
+                    '%' . $search . '%'
+                )
+                ->orWhere(
+                    'maiden_name',
+                    'like',
+                    '%' . $search . '%'
+                );
+
+        });
+
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | PENERP Member Number
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->filled(
+            'penerp_member_number'
+        )
+    ) {
+
+        $query->where(
+            'member_number',
+            'like',
+            '%'
+            . trim(
+                $request->input(
+                    'penerp_member_number'
+                )
+            )
+            . '%'
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PenAd Member Number
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->filled(
+            'penad_member_number'
+        )
+    ) {
+
+        $query->where(
+            'penad_member_number',
+            'like',
+            '%'
+            . trim(
+                $request->input(
+                    'penad_member_number'
+                )
+            )
+            . '%'
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fundworx Member Number
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->filled(
+            'fundworx_member_number'
+        )
+    ) {
+
+        $query->where(
+            'fundworx_member_number',
+            'like',
+            '%'
+            . trim(
+                $request->input(
+                    'fundworx_member_number'
+                )
+            )
+            . '%'
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Membership Status
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->filled(
+            'status'
+        )
+    ) {
+
+        $query->where(
+            'membership_status',
+            $request->input(
+                'status'
+            )
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employer
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->filled(
+            'employer_id'
+        )
+    ) {
+
+        $employerId =
+            (int)
+            $request->input(
+                'employer_id'
+            );
+
+
+        $query->whereHas(
+            'currentEmployment',
+            function ($query) use ($employerId) {
+
+                $query->where(
+                    'employer_id',
+                    $employerId
+                );
+
+            }
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Members
+    |--------------------------------------------------------------------------
+    */
+
+    $members = $query
+        ->orderBy('surname')
+        ->orderBy('first_names')
+        ->get();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employers for Filter
+    |--------------------------------------------------------------------------
+    */
+
+    $employers = Employer::query()
+        ->where(
+            'is_active',
+            true
+        )
+        ->orderBy('name')
+        ->get();
+
+
+    return view(
+        'pensions-administration.updates.members.index',
+        compact(
+            'members',
+            'employers'
+        )
+    );
+}
 
     /*
     |--------------------------------------------------------------------------
