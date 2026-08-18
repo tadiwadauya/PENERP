@@ -5,11 +5,23 @@ namespace Database\Seeders;
 use App\Models\UserManagement\SystemModule;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class ModulePermissionSeeder extends Seeder
 {
     public function run(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Clear Permission Cache
+        |--------------------------------------------------------------------------
+        */
+
+        app(
+            PermissionRegistrar::class
+        )->forgetCachedPermissions();
+
+
         /*
         |--------------------------------------------------------------------------
         | System Modules and Permissions
@@ -77,12 +89,6 @@ class ModulePermissionSeeder extends Seeder
 
                 'permissions' => [
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Users
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'user-management.users.view',
                         'display_name' => 'View Users',
@@ -125,13 +131,6 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'reset-password',
                     ],
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Roles
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'user-management.roles.view',
                         'display_name' => 'View Roles',
@@ -162,25 +161,11 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'assign-permissions',
                     ],
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Permissions
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'user-management.permissions.view',
                         'display_name' => 'View Permissions',
                         'action' => 'view',
                     ],
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Organisation Units
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'user-management.organisation-units.view',
@@ -206,13 +191,6 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'delete',
                     ],
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Job Titles
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'user-management.job-titles.view',
                         'display_name' => 'View Job Titles',
@@ -231,13 +209,6 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'update',
                     ],
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Grades
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'user-management.grades.view',
                         'display_name' => 'View Grades',
@@ -255,13 +226,6 @@ class ModulePermissionSeeder extends Seeder
                         'display_name' => 'Update Grades',
                         'action' => 'update',
                     ],
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Password Policies
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'user-management.password-policies.view',
@@ -337,24 +301,11 @@ class ModulePermissionSeeder extends Seeder
 
                 'permissions' => [
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Updates Dashboard
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'updates.dashboard.view',
                         'display_name' => 'View Updates Dashboard',
                         'action' => 'view',
                     ],
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Employer Groups
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'updates.employer-groups.view',
@@ -380,13 +331,6 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'delete',
                     ],
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Employers
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'updates.employers.view',
                         'display_name' => 'View Employers',
@@ -410,13 +354,6 @@ class ModulePermissionSeeder extends Seeder
                         'display_name' => 'Delete Employers',
                         'action' => 'delete',
                     ],
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Employer Imports
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'updates.employer-imports.view',
@@ -454,13 +391,6 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'delete',
                     ],
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Members
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'updates.members.view',
                         'display_name' => 'View Members',
@@ -484,13 +414,6 @@ class ModulePermissionSeeder extends Seeder
                         'display_name' => 'Delete Members',
                         'action' => 'delete',
                     ],
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Membership Imports
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'updates.membership-imports.view',
@@ -534,13 +457,6 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'delete',
                     ],
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Member Movements
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'updates.member-movements.view',
                         'display_name' => 'View Member Movements',
@@ -558,13 +474,6 @@ class ModulePermissionSeeder extends Seeder
                         'display_name' => 'Update Member Movements',
                         'action' => 'update',
                     ],
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Reports
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'updates.reports.membership.view',
@@ -593,12 +502,6 @@ class ModulePermissionSeeder extends Seeder
                 'display_order' => 5,
 
                 'permissions' => [
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Monthly Contribution Imports
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'contributions.monthly-imports.view',
@@ -631,17 +534,16 @@ class ModulePermissionSeeder extends Seeder
                     ],
 
                     [
+                        'name' => 'contributions.monthly-imports.reject',
+                        'display_name' => 'Reject Monthly Contributions',
+                        'action' => 'reject',
+                    ],
+
+                    [
                         'name' => 'contributions.monthly-imports.post',
                         'display_name' => 'Post Monthly Contributions',
                         'action' => 'post',
                     ],
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Contribution Reports
-                    |--------------------------------------------------------------------------
-                    */
 
                     [
                         'name' => 'contributions.reports.view',
@@ -659,34 +561,41 @@ class ModulePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        foreach ($modules as $moduleData) {
-
+        foreach (
+            $modules
+            as $moduleData
+        ) {
             $permissions =
-                $moduleData['permissions'];
+                $moduleData[
+                    'permissions'
+                ];
+
 
             unset(
-                $moduleData['permissions']
+                $moduleData[
+                    'permissions'
+                ]
             );
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | System Module
-            |--------------------------------------------------------------------------
-            */
 
             $module =
                 SystemModule::updateOrCreate(
                     [
                         'code' =>
-                            $moduleData['code'],
+                            $moduleData[
+                                'code'
+                            ],
                     ],
                     [
                         'name' =>
-                            $moduleData['name'],
+                            $moduleData[
+                                'name'
+                            ],
 
                         'display_order' =>
-                            $moduleData['display_order'],
+                            $moduleData[
+                                'display_order'
+                            ],
 
                         'is_active' =>
                             true,
@@ -697,21 +606,16 @@ class ModulePermissionSeeder extends Seeder
                 );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Permissions
-            |--------------------------------------------------------------------------
-            */
-
             foreach (
                 $permissions
                 as $permissionData
             ) {
-
                 Permission::updateOrCreate(
                     [
                         'name' =>
-                            $permissionData['name'],
+                            $permissionData[
+                                'name'
+                            ],
 
                         'guard_name' =>
                             'web',
@@ -735,7 +639,9 @@ class ModulePermissionSeeder extends Seeder
 
                         'is_sensitive' =>
                             $this->isSensitivePermission(
-                                $permissionData['action']
+                                $permissionData[
+                                    'action'
+                                ]
                             ),
                     ]
                 );
@@ -745,24 +651,20 @@ class ModulePermissionSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | Clear Spatie Permission Cache
+        | Clear Permission Cache
         |--------------------------------------------------------------------------
         */
 
         app(
-            \Spatie\Permission\PermissionRegistrar::class
+            PermissionRegistrar::class
         )->forgetCachedPermissions();
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Sensitive Permission Actions
+    | Sensitive Permissions
     |--------------------------------------------------------------------------
-    |
-    | These actions have a higher operational impact and are marked sensitive
-    | so that the application can identify them separately where required.
-    |
     */
 
     private function isSensitivePermission(
@@ -773,6 +675,7 @@ class ModulePermissionSeeder extends Seeder
             [
                 'delete',
                 'approve',
+                'reject',
                 'post',
                 'terminate',
                 'reset-password',

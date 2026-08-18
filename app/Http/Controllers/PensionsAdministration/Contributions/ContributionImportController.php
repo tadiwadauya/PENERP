@@ -5,8 +5,8 @@ namespace App\Http\Controllers\PensionsAdministration\Contributions;
 use App\Http\Controllers\Controller;
 use App\Jobs\PensionsAdministration\Contributions\ProcessContributionImport;
 use App\Models\PensionsAdministration\Contributions\ContributionImportBatch;
-use App\Models\PensionsAdministration\Contributions\ContributionPeriod;
 use App\Models\PensionsAdministration\Contributions\ContributionImportRow;
+use App\Models\PensionsAdministration\Contributions\ContributionPeriod;
 use App\Models\PensionsAdministration\Contributions\ContributionPeriodMemberStatus;
 use App\Models\PensionsAdministration\Updates\Employer;
 use App\Services\Audit\AuditService;
@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use RuntimeException;
@@ -35,103 +36,147 @@ class ContributionImportController extends Controller
     */
 
     public function index(
-        Request $request
-    ): View {
-        $this->ensurePermission(
-            'contributions.monthly-imports.view'
-        );
+    Request $request
+): View {
+    $this->ensurePermission(
+        'contributions.monthly-imports.view'
+    );
 
 
-        $query =
-            ContributionImportBatch::query()
-                ->with([
-                    'employer',
-                    'contributionPeriod',
-                    'uploadedBy',
-                    'approvedBy',
-                    'postedBy',
-                ])
-                ->orderByDesc(
-                    'id'
-                );
-
-
-        if (
-            $request->filled(
-                'employer_id'
-            )
-        ) {
-            $query->where(
-                'employer_id',
-                $request->input(
-                    'employer_id'
-                )
-            );
-        }
-
-
-        if (
-            $request->filled(
-                'status'
-            )
-        ) {
-            $query->where(
-                'status',
-                $request->input(
-                    'status'
-                )
-            );
-        }
-
-
-        if (
-            $request->filled(
-                'year'
-            )
-        ) {
-            $query->whereHas(
+    $query =
+        ContributionImportBatch::query()
+            ->with([
+                'employer',
                 'contributionPeriod',
-                function ($query) use (
-                    $request
-                ): void {
-
-                    $query->where(
-                        'period_year',
-                        $request->input(
-                            'year'
-                        )
-                    );
-                }
-            );
-        }
+                'uploadedBy',
+                'approvedBy',
+                'postedBy',
+            ])
+            ->orderByDesc('id');
 
 
-        $batches =
-            $query
-                ->paginate(25)
-                ->withQueryString();
+    /*
+    |--------------------------------------------------------------------------
+    | Employer Filter
+    |--------------------------------------------------------------------------
+    */
 
-
-        $employers =
-            Employer::query()
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->orderBy(
-                    'name'
-                )
-                ->get();
-
-
-        return view(
-            'pensions-administration.contributions.imports.index',
-            compact(
-                'batches',
-                'employers'
+    if (
+        $request->filled(
+            'employer_id'
+        )
+    ) {
+        $query->where(
+            'employer_id',
+            $request->input(
+                'employer_id'
             )
         );
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status Filter
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->filled(
+            'status'
+        )
+    ) {
+        $query->where(
+            'status',
+            $request->input(
+                'status'
+            )
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Year Filter
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->filled(
+            'year'
+        )
+    ) {
+        $year =
+            (int)
+            $request->input(
+                'year'
+            );
+
+
+        $query->whereHas(
+            'contributionPeriod',
+            function ($periodQuery) use (
+                $year
+            ): void {
+
+                $periodQuery->where(
+                    'period_year',
+                    $year
+                );
+            }
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Results
+    |--------------------------------------------------------------------------
+    |
+    | DataTables handles:
+    |
+    | - Pagination
+    | - Quick Search
+    | - Sorting
+    | - Excel Export
+    | - CSV Export
+    | - PDF Export
+    | - Print
+    |
+    | Therefore Laravel pagination is intentionally NOT used here.
+    |
+    */
+
+    $batches =
+        $query->get();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employer Filter Values
+    |--------------------------------------------------------------------------
+    */
+
+    $employers =
+        Employer::query()
+            ->where(
+                'is_active',
+                true
+            )
+            ->orderBy(
+                'name'
+            )
+            ->get();
+
+
+    return view(
+        'pensions-administration.contributions.imports.index',
+        compact(
+            'batches',
+            'employers'
+        )
+    );
+}
 
 
     /*
@@ -153,9 +198,7 @@ class ContributionImportController extends Controller
                     'is_active',
                     true
                 )
-                ->orderBy(
-                    'name'
-                )
+                ->orderBy('name')
                 ->get();
 
 
@@ -170,7 +213,7 @@ class ContributionImportController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Store Upload
+    | Store Contribution Upload
     |--------------------------------------------------------------------------
     */
 
@@ -181,6 +224,12 @@ class ContributionImportController extends Controller
             'contributions.monthly-imports.create'
         );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
 
         $validated =
             $request->validate([
@@ -200,6 +249,12 @@ class ContributionImportController extends Controller
                     'required',
                     'integer',
                     'between:2000,2100',
+                ],
+
+                'currency_code' => [
+                    'required',
+                    'string',
+                    'in:ZWG,USD',
                 ],
 
                 'due_date' => [
@@ -231,6 +286,12 @@ class ContributionImportController extends Controller
                         $validated
                     ): ContributionImportBatch {
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Employer
+                        |--------------------------------------------------------------------------
+                        */
+
                         $employer =
                             Employer::query()
                                 ->where(
@@ -248,7 +309,7 @@ class ContributionImportController extends Controller
 
                         /*
                         |--------------------------------------------------------------------------
-                        | Period Date
+                        | Contribution Period
                         |--------------------------------------------------------------------------
                         */
 
@@ -266,26 +327,17 @@ class ContributionImportController extends Controller
                                 ->startOfDay();
 
 
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Contribution Period
-                        |--------------------------------------------------------------------------
-                        */
-
                         $period =
                             ContributionPeriod::firstOrCreate(
                                 [
                                     'employer_id' =>
-                                        $employer
-                                            ->id,
+                                        $employer->id,
 
                                     'period_year' =>
-                                        $periodDate
-                                            ->year,
+                                        $periodDate->year,
 
                                     'period_month' =>
-                                        $periodDate
-                                            ->month,
+                                        $periodDate->month,
                                 ],
                                 [
                                     'period_date' =>
@@ -307,6 +359,18 @@ class ContributionImportController extends Controller
                                     'status' =>
                                         'open',
 
+                                    'scheduled_members' =>
+                                        0,
+
+                                    'existing_members' =>
+                                        0,
+
+                                    'new_members' =>
+                                        0,
+
+                                    'nil_contributors' =>
+                                        0,
+
                                     'created_by' =>
                                         auth()->id(),
 
@@ -318,54 +382,160 @@ class ContributionImportController extends Controller
 
                         /*
                         |--------------------------------------------------------------------------
-                        | Prevent Duplicate Active Import
+                        | Existing Active / Completed Import
                         |--------------------------------------------------------------------------
+                        |
+                        | IMPORTANT:
+                        |
+                        | We block another schedule ONLY when an existing batch
+                        | is still active in the workflow or has already been
+                        | successfully posted.
+                        |
+                        | Failure statuses DO NOT block another upload.
+                        |
+                        | Therefore:
+                        |
+                        | BLOCK:
+                        | uploaded
+                        | processing
+                        | awaiting_review
+                        | approved
+                        | posting
+                        | posted
+                        |
+                        | ALLOW REPLACEMENT:
+                        | failed
+                        | validation_failed
+                        | posting_failed
+                        | cancelled
+                        |
                         */
 
-                        $existing =
+                        $blockingBatch =
                             ContributionImportBatch::query()
                                 ->where(
                                     'contribution_period_id',
-                                    $period
-                                        ->id
+                                    $period->id
                                 )
-                                ->whereNotIn(
+                                ->whereIn(
                                     'status',
                                     [
-                                        'cancelled',
-                                        'failed',
+                                        'uploaded',
+                                        'processing',
+                                        'awaiting_review',
+                                        'approved',
+                                        'posting',
+                                        'posted',
                                     ]
                                 )
-                                ->exists();
+                                ->orderByDesc('id')
+                                ->first();
 
 
-                        if ($existing) {
+                        if ($blockingBatch) {
+
+                            $statusLabel =
+                                $blockingBatch
+                                    ->status_label;
+
+
                             throw new RuntimeException(
-                                'A contribution import already exists for '
-                                . $employer
-                                    ->name
+                                'A contribution schedule already exists for '
+                                . $employer->name
                                 . ' for '
-                                . $periodDate
-                                    ->format(
-                                        'F Y'
-                                    )
-                                . '. Cancel the existing batch before uploading another schedule.'
+                                . $periodDate->format(
+                                    'F Y'
+                                )
+                                . '. Existing batch: #'
+                                . $blockingBatch->id
+                                . ' ('
+                                . $statusLabel
+                                . ').'
                             );
                         }
 
 
                         /*
                         |--------------------------------------------------------------------------
-                        | File
+                        | Uploaded File
                         |--------------------------------------------------------------------------
                         */
 
                         $file =
-                            $request
-                                ->file(
-                                    'import_file'
-                                );
+                            $request->file(
+                                'import_file'
+                            );
 
+
+                        if (!$file) {
+                            throw new RuntimeException(
+                                'No contribution Excel file was received.'
+                            );
+                        }
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | File Hash
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $fileHash =
+                            hash_file(
+                                'sha256',
+                                $file->getRealPath()
+                            );
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Duplicate File Check
+                        |--------------------------------------------------------------------------
+                        |
+                        | The exact same file should only be blocked when it is
+                        | currently active or was already successfully posted.
+                        |
+                        | A failed upload may legitimately be submitted again
+                        | after the underlying problem has been corrected.
+                        |
+                        */
+
+                        $duplicateActiveFile =
+                            ContributionImportBatch::query()
+                                ->where(
+                                    'file_hash',
+                                    $fileHash
+                                )
+                                ->whereIn(
+                                    'status',
+                                    [
+                                        'uploaded',
+                                        'processing',
+                                        'awaiting_review',
+                                        'approved',
+                                        'posting',
+                                        'posted',
+                                    ]
+                                )
+                                ->orderByDesc('id')
+                                ->first();
+
+
+                        if ($duplicateActiveFile) {
+
+                            throw new RuntimeException(
+                                'This Excel file is already associated with active or posted contribution batch #'
+                                . $duplicateActiveFile->id
+                                . '.'
+                            );
+                        }
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | UUID / Filename
+                        |--------------------------------------------------------------------------
+                        */
 
                         $uuid =
                             (string)
@@ -385,52 +555,42 @@ class ContributionImportController extends Controller
                             . $extension;
 
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Store On Local Disk
+                        |--------------------------------------------------------------------------
+                        */
+
                         $path =
                             $file->storeAs(
                                 'contribution-imports',
-                                $storedFilename
+                                $storedFilename,
+                                'local'
                             );
 
 
                         if (!$path) {
                             throw new RuntimeException(
-                                'The contribution file could not be stored.'
+                                'The contribution Excel file could not be stored.'
                             );
                         }
 
 
-                        $fileHash =
-                            hash_file(
-                                'sha256',
-                                $file
-                                    ->getRealPath()
-                            );
-
-
                         /*
                         |--------------------------------------------------------------------------
-                        | Prevent Same File Being Uploaded Twice
+                        | Verify Stored File
                         |--------------------------------------------------------------------------
                         */
 
-                        $duplicateFile =
-                            ContributionImportBatch::query()
-                                ->where(
-                                    'file_hash',
-                                    $fileHash
-                                )
-                                ->whereNotIn(
-                                    'status',
-                                    [
-                                        'cancelled',
-                                    ]
-                                )
-                                ->exists();
-
-
-                        if ($duplicateFile) {
+                        if (
+                            !Storage::disk(
+                                'local'
+                            )->exists(
+                                $path
+                            )
+                        ) {
                             throw new RuntimeException(
-                                'This exact Excel file has already been uploaded.'
+                                'The contribution file was uploaded but could not be verified in storage.'
                             );
                         }
 
@@ -447,12 +607,10 @@ class ContributionImportController extends Controller
                                     $uuid,
 
                                 'contribution_period_id' =>
-                                    $period
-                                        ->id,
+                                    $period->id,
 
                                 'employer_id' =>
-                                    $employer
-                                        ->id,
+                                    $employer->id,
 
                                 'original_filename' =>
                                     $file
@@ -468,14 +626,29 @@ class ContributionImportController extends Controller
                                     $extension,
 
                                 'file_size' =>
-                                    $file
-                                        ->getSize(),
+                                    $file->getSize(),
 
                                 'file_hash' =>
                                     $fileHash,
 
                                 'source_system' =>
                                     'monthly_excel',
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Currency
+                                |--------------------------------------------------------------------------
+                                */
+
+                                'currency_code' =>
+                                    strtoupper(
+                                        $validated[
+                                            'currency_code'
+                                        ]
+                                    ),
+
+                                'exchange_rate_to_base' =>
+                                    null,
 
                                 'scheme_code' =>
                                     $validated[
@@ -489,10 +662,40 @@ class ContributionImportController extends Controller
                                     ]
                                     ?? null,
 
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Processing
+                                |--------------------------------------------------------------------------
+                                */
+
                                 'status' =>
                                     'uploaded',
 
                                 'progress_percentage' =>
+                                    0,
+
+                                'total_rows' =>
+                                    0,
+
+                                'processed_rows' =>
+                                    0,
+
+                                'valid_rows' =>
+                                    0,
+
+                                'warning_rows' =>
+                                    0,
+
+                                'error_rows' =>
+                                    0,
+
+                                'existing_member_rows' =>
+                                    0,
+
+                                'new_member_rows' =>
+                                    0,
+
+                                'nil_contributor_rows' =>
                                     0,
 
                                 'uploaded_by' =>
@@ -500,25 +703,50 @@ class ContributionImportController extends Controller
                             ]);
 
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Reopen / Reset Contribution Period
+                        |--------------------------------------------------------------------------
+                        |
+                        | A previous failed batch may have left the period with
+                        | a failed/processing status. A replacement upload starts
+                        | a fresh validation cycle for the same period.
+                        |
+                        */
+
                         $period->update([
+                            'period_date' =>
+                                $periodDate
+                                    ->toDateString(),
+
                             'due_date' =>
                                 $validated[
                                     'due_date'
                                 ]
                                 ??
-                                $period
-                                    ->due_date,
+                                $period->due_date,
 
                             'scheme_code' =>
                                 $validated[
                                     'scheme_code'
                                 ]
                                 ??
-                                $period
-                                    ->scheme_code,
+                                $period->scheme_code,
 
                             'status' =>
                                 'uploading',
+
+                            'scheduled_members' =>
+                                0,
+
+                            'existing_members' =>
+                                0,
+
+                            'new_members' =>
+                                0,
+
+                            'nil_contributors' =>
+                                0,
 
                             'updated_by' =>
                                 auth()->id(),
@@ -532,7 +760,7 @@ class ContributionImportController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Audit
+            | Audit Successful Upload
             |--------------------------------------------------------------------------
             */
 
@@ -548,8 +776,7 @@ class ContributionImportController extends Controller
 
                 description:
                     'Monthly contribution schedule '
-                    . $batch
-                        ->original_filename
+                    . $batch->original_filename
                     . ' was uploaded.',
 
                 auditable:
@@ -564,20 +791,25 @@ class ContributionImportController extends Controller
 
                 metadata: [
                     'batch_id' =>
-                        $batch
-                            ->id,
+                        $batch->id,
 
                     'employer_id' =>
-                        $batch
-                            ->employer_id,
+                        $batch->employer_id,
 
                     'contribution_period_id' =>
                         $batch
                             ->contribution_period_id,
 
+                    'currency_code' =>
+                        $batch
+                            ->currency_code,
+
                     'file_hash' =>
                         $batch
                             ->file_hash,
+
+                    'replacement_upload' =>
+                        true,
                 ],
 
                 request:
@@ -587,17 +819,15 @@ class ContributionImportController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | Start Validation
+            | Start Validation Queue
             |--------------------------------------------------------------------------
             */
 
             ProcessContributionImport::dispatch(
-                $batch
-                    ->id
-            )
-                ->onQueue(
-                    'contribution-imports'
-                );
+                $batch->id
+            )->onQueue(
+                'contribution-imports'
+            );
 
 
             return redirect()
@@ -611,6 +841,12 @@ class ContributionImportController extends Controller
                 );
 
         } catch (Throwable $e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Audit Failed Upload
+            |--------------------------------------------------------------------------
+            */
 
             $this->auditService->failure(
                 eventType:
@@ -626,8 +862,33 @@ class ContributionImportController extends Controller
                     'Monthly contribution schedule upload failed.',
 
                 failureReason:
-                    $e
-                        ->getMessage(),
+                    $e->getMessage(),
+
+                metadata: [
+                    'employer_id' =>
+                        $validated[
+                            'employer_id'
+                        ]
+                        ?? null,
+
+                    'period_year' =>
+                        $validated[
+                            'period_year'
+                        ]
+                        ?? null,
+
+                    'period_month' =>
+                        $validated[
+                            'period_month'
+                        ]
+                        ?? null,
+
+                    'currency_code' =>
+                        $validated[
+                            'currency_code'
+                        ]
+                        ?? null,
+                ],
 
                 request:
                     $request
@@ -638,8 +899,7 @@ class ContributionImportController extends Controller
                 ->withInput()
                 ->with(
                     'error',
-                    $e
-                        ->getMessage()
+                    $e->getMessage()
                 );
         }
     }
@@ -712,7 +972,7 @@ class ContributionImportController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Progress Status
+    | Processing Status
     |--------------------------------------------------------------------------
     */
 
@@ -729,12 +989,15 @@ class ContributionImportController extends Controller
 
         return response()->json([
             'status' =>
-                $batch
-                    ->status,
+                $batch->status,
 
             'status_label' =>
                 $batch
                     ->status_label,
+
+            'currency_code' =>
+                $batch
+                    ->currency_code,
 
             'progress_percentage' =>
                 (float)
@@ -796,7 +1059,7 @@ class ContributionImportController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Cancel Batch
+    | Cancel Contribution Import
     |--------------------------------------------------------------------------
     */
 
@@ -809,12 +1072,16 @@ class ContributionImportController extends Controller
         );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Posted Transactions Cannot Be Cancelled
+        |--------------------------------------------------------------------------
+        */
+
         if (
             in_array(
-                $batch
-                    ->status,
+                $batch->status,
                 [
-                    'processing',
                     'approved',
                     'posting',
                     'posted',
@@ -826,6 +1093,25 @@ class ContributionImportController extends Controller
                 ->with(
                     'error',
                     'This contribution import cannot be cancelled at its current stage.'
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Processing Batch
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $batch->status
+            ===
+            'processing'
+        ) {
+            return back()
+                ->with(
+                    'error',
+                    'This contribution import is currently being validated. Wait for validation to finish before cancelling it.'
                 );
         }
 
@@ -843,29 +1129,54 @@ class ContributionImportController extends Controller
                 $batch
             ): void {
 
+                /*
+                |--------------------------------------------------------------------------
+                | Delete Staging Monthly Statuses
+                |--------------------------------------------------------------------------
+                */
+
                 ContributionPeriodMemberStatus::query()
                     ->where(
                         'import_batch_id',
-                        $batch
-                            ->id
+                        $batch->id
                     )
                     ->delete();
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | Delete Staging Rows
+                |--------------------------------------------------------------------------
+                */
 
                 ContributionImportRow::query()
                     ->where(
                         'import_batch_id',
-                        $batch
-                            ->id
+                        $batch->id
                     )
                     ->delete();
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | Cancel Batch
+                |--------------------------------------------------------------------------
+                */
+
                 $batch->update([
                     'status' =>
                         'cancelled',
+
+                    'progress_percentage' =>
+                        0,
                 ]);
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | Reopen Contribution Period
+                |--------------------------------------------------------------------------
+                */
 
                 $batch
                     ->contributionPeriod
@@ -892,6 +1203,12 @@ class ContributionImportController extends Controller
         );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Audit
+        |--------------------------------------------------------------------------
+        */
+
         $this->auditService->log(
             eventType:
                 'contribution_import',
@@ -904,8 +1221,7 @@ class ContributionImportController extends Controller
 
             description:
                 'Contribution import '
-                . $batch
-                    ->import_uuid
+                . $batch->import_uuid
                 . ' was cancelled.',
 
             auditable:
@@ -921,6 +1237,15 @@ class ContributionImportController extends Controller
                         $batch
                     ),
 
+            metadata: [
+                'batch_id' =>
+                    $batch->id,
+
+                'contribution_period_id' =>
+                    $batch
+                        ->contribution_period_id,
+            ],
+
             request:
                 $request
         );
@@ -932,7 +1257,7 @@ class ContributionImportController extends Controller
             )
             ->with(
                 'success',
-                'Monthly contribution import cancelled successfully.'
+                'Monthly contribution import cancelled successfully. A replacement schedule may now be uploaded.'
             );
     }
 

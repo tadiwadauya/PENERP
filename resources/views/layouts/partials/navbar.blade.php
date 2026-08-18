@@ -154,65 +154,376 @@
 
 
 
-            {{-- Notifications --}}
-            <div class="dropdown d-inline-block">
+         {{-- Notifications --}}
 
-                <button
-                    type="button"
-                    class="btn header-item noti-icon waves-effect"
-                    id="page-header-notifications-dropdown"
-                    data-bs-toggle="dropdown"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                >
+@php
 
-                    <i class="mdi mdi-bell-outline"></i>
-
-                </button>
-
-
-                <div
-                    class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
-                    aria-labelledby="page-header-notifications-dropdown"
-                >
+    $headerNotifications =
+        auth()
+            ->user()
+            ->notifications()
+            ->reorder()
+            ->orderByDesc(
+                'created_at'
+            )
+            ->limit(10)
+            ->get();
 
 
-                    <div class="p-3">
+    $unreadNotificationCount =
+        auth()
+            ->user()
+            ->unreadNotifications()
+            ->count();
 
-                        <div class="row align-items-center">
+@endphp
 
-                            <div class="col">
 
-                                <h6 class="m-0">
-                                    Notifications
+<div class="dropdown d-inline-block">
+
+    <button
+        type="button"
+        class="btn header-item noti-icon waves-effect position-relative"
+        id="page-header-notifications-dropdown"
+        data-bs-toggle="dropdown"
+        aria-haspopup="true"
+        aria-expanded="false"
+    >
+
+        <i class="mdi mdi-bell-outline"></i>
+
+
+        @if(
+            $unreadNotificationCount > 0
+        )
+
+            <span
+                class="
+                    badge
+                    bg-danger
+                    rounded-pill
+                "
+                style="
+                    position:absolute;
+                    top:7px;
+                    right:5px;
+                    font-size:10px;
+                "
+            >
+
+                {{
+                    $unreadNotificationCount > 99
+                        ? '99+'
+                        : $unreadNotificationCount
+                }}
+
+            </span>
+
+        @endif
+
+    </button>
+
+
+    <div
+        class="
+            dropdown-menu
+            dropdown-menu-lg
+            dropdown-menu-end
+            p-0
+        "
+        aria-labelledby="page-header-notifications-dropdown"
+        style="min-width:360px;"
+    >
+
+        <div class="p-3 border-bottom">
+
+            <div class="row align-items-center">
+
+                <div class="col">
+
+                    <h6 class="m-0">
+                        Notifications
+                    </h6>
+
+                    <small class="text-muted">
+
+                        {{
+                            number_format(
+                                $unreadNotificationCount
+                            )
+                        }}
+
+                        unread
+
+                    </small>
+
+                </div>
+
+
+                @if(
+                    $unreadNotificationCount > 0
+                )
+
+                    <div class="col-auto">
+
+                        <form
+                            method="POST"
+                            action="{{
+                                route(
+                                    'notifications.mark-all-read'
+                                )
+                            }}"
+                        >
+
+                            @csrf
+
+                            <button
+                                type="submit"
+                                class="
+                                    btn
+                                    btn-sm
+                                    btn-link
+                                    text-decoration-none
+                                "
+                            >
+
+                                Mark all read
+
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                @endif
+
+            </div>
+
+        </div>
+
+
+        @if(
+            $headerNotifications->isEmpty()
+        )
+
+            <div class="p-4 text-center">
+
+                <i
+                    class="
+                        mdi
+                        mdi-bell-outline
+                        font-size-24
+                        text-muted
+                    "
+                ></i>
+
+
+                <p class="text-muted mt-2 mb-0">
+
+                    No notifications at the moment.
+
+                </p>
+
+            </div>
+
+        @else
+
+            <div
+                style="
+                    max-height:420px;
+                    overflow-y:auto;
+                "
+            >
+
+                @foreach(
+                    $headerNotifications
+                    as $notification
+                )
+
+                    @php
+
+                        $notificationData =
+                            $notification->data
+                            ?? [];
+
+
+                        $isUnread =
+                            is_null(
+                                $notification->read_at
+                            );
+
+                    @endphp
+
+
+                    <a
+                        href="{{
+                            route(
+                                'notifications.open',
+                                $notification->id
+                            )
+                        }}"
+                        class="
+                            dropdown-item
+                            text-wrap
+                            border-bottom
+                            py-3
+                            {{
+                                $isUnread
+                                    ? 'bg-light'
+                                    : ''
+                            }}
+                        "
+                    >
+
+                        <div class="d-flex">
+
+                            <div class="flex-shrink-0 me-3">
+
+                                <span
+                                    class="
+                                        rounded-circle
+                                        bg-danger
+                                        d-inline-flex
+                                        align-items-center
+                                        justify-content-center
+                                        text-white
+                                    "
+                                    style="
+                                        width:40px;
+                                        height:40px;
+                                    "
+                                >
+
+                                    <i
+                                        class="
+                                            mdi
+                                            mdi-alert-circle-outline
+                                            font-size-18
+                                        "
+                                    ></i>
+
+                                </span>
+
+                            </div>
+
+
+                            <div class="flex-grow-1">
+
+                                <h6 class="mb-1">
+
+                                    {{
+                                        $notificationData[
+                                            'title'
+                                        ]
+                                        ??
+                                        'Notification'
+                                    }}
+
+
+                                    @if($isUnread)
+
+                                        <span
+                                            class="
+                                                badge
+                                                bg-primary
+                                                ms-1
+                                            "
+                                        >
+
+                                            New
+
+                                        </span>
+
+                                    @endif
+
                                 </h6>
+
+
+                                <p
+                                    class="
+                                        text-muted
+                                        font-size-13
+                                        mb-1
+                                    "
+                                >
+
+                                    {{
+                                        $notificationData[
+                                            'message'
+                                        ]
+                                        ??
+                                        ''
+                                    }}
+
+                                </p>
+
+
+                                @if(
+                                    filled(
+                                        $notificationData[
+                                            'reason'
+                                        ]
+                                        ??
+                                        null
+                                    )
+                                )
+
+                                    <p
+                                        class="
+                                            text-danger
+                                            font-size-12
+                                            mb-1
+                                        "
+                                    >
+
+                                        <strong>
+                                            Reason:
+                                        </strong>
+
+                                        {{
+                                            $notificationData[
+                                                'reason'
+                                            ]
+                                        }}
+
+                                    </p>
+
+                                @endif
+
+
+                                <small class="text-muted">
+
+                                    <i
+                                        class="
+                                            mdi
+                                            mdi-clock-outline
+                                            me-1
+                                        "
+                                    ></i>
+
+                                    {{
+                                        $notification
+                                            ->created_at
+                                            ->diffForHumans()
+                                    }}
+
+                                </small>
 
                             </div>
 
                         </div>
 
-                    </div>
+                    </a>
 
-
-                    <div class="p-4 text-center border-top">
-
-                        <i
-                            class="mdi mdi-bell-outline
-                                   font-size-24
-                                   text-muted"
-                        ></i>
-
-
-                        <p class="text-muted mt-2 mb-0">
-                            No notifications at the moment.
-                        </p>
-
-                    </div>
-
-
-                </div>
+                @endforeach
 
             </div>
+
+        @endif
+
+    </div>
+
+</div>
 
 
 

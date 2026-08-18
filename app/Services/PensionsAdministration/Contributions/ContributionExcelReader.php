@@ -15,14 +15,23 @@ class ContributionExcelReader
     | Column Aliases
     |--------------------------------------------------------------------------
     |
-    | We accept common variations because employer schedules may not always
-    | use exactly the same spelling/capitalisation.
+    | The first value in each list is our preferred PENERP template heading.
+    |
+    | We also support older employer schedules containing spaces,
+    | alternative descriptions and legacy USD / ZWG-specific headings.
     |
     */
 
     private array $aliases = [
 
+        /*
+        |--------------------------------------------------------------------------
+        | Employer / Scheme
+        |--------------------------------------------------------------------------
+        */
+
         'employer_number' => [
+            'employer_number',
             'employer number',
             'employer no',
             'employer no.',
@@ -30,37 +39,51 @@ class ContributionExcelReader
         ],
 
         'scheme_code' => [
+            'scheme_code',
             'scheme code',
             'scheme',
             'fund code',
         ],
 
         'due_date' => [
+            'due_date',
             'due date',
             'contribution date',
             'period date',
         ],
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Member Details
+        |--------------------------------------------------------------------------
+        */
+
         'surname' => [
             'surname',
             'last name',
+            'lastname',
         ],
 
         'first_names' => [
-            'first name',
+            'first_names',
             'first names',
+            'first name',
             'firstname',
             'forename',
             'forenames',
         ],
 
         'other_names' => [
+            'other_names',
             'other names',
-            'middle names',
             'other name',
+            'middle names',
+            'middle name',
         ],
 
         'date_of_birth' => [
+            'date_of_birth',
             'date of birth',
             'dob',
             'birth date',
@@ -72,57 +95,86 @@ class ContributionExcelReader
         ],
 
         'national_id' => [
-            'national registration number',
+            'national_id',
             'national id',
             'national id no',
             'national id number',
+            'national registration number',
             'id number',
             'nationalidno',
         ],
 
         'date_joined_fund' => [
+            'date_joined_fund',
             'date joined fund',
             'fund join date',
             'date joined scheme',
         ],
 
         'date_joined_employer' => [
+            'date_joined_employer',
             'date joined employer',
             'employment date',
             'date employed',
         ],
 
         'staff_number' => [
-            'employee code or works number',
-            'employee code',
-            'works number',
+            'staff_number',
             'staff number',
             'staff no',
             'staff no.',
             'employee number',
+            'employee code',
+            'employee code or works number',
+            'works number',
+        ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Member Numbers
+        |--------------------------------------------------------------------------
+        */
+
+        'penad_member_number' => [
+            'penad_member_number',
+            'penad member number',
+            'penad number',
+            'penad no',
+            'pension reference number',
+            'pension reference',
         ],
 
         'pension_reference_number' => [
+            'pension_reference_number',
             'pension reference number',
             'pension reference',
+            'penad member number',
+            'penad number',
             'member number',
             'member no',
             'member no.',
-            'penad number',
-            'penad member number',
         ],
 
         'penerp_member_number' => [
-            'penerp number',
+            'penerp_member_number',
             'penerp member number',
+            'penerp number',
             'penerp no',
         ],
 
         'fundworx_member_number' => [
-            'fundworx number',
+            'fundworx_member_number',
             'fundworx member number',
+            'fundworx number',
             'fundworx no',
         ],
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Employment Details
+        |--------------------------------------------------------------------------
+        */
 
         'occupation' => [
             'occupation',
@@ -138,129 +190,277 @@ class ContributionExcelReader
         ],
 
         'payment_flag' => [
+            'payment_flag',
             'payment flag',
             'payment status',
         ],
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Generic Multi-Currency Financial Columns
+        |--------------------------------------------------------------------------
+        |
+        | These are the preferred columns in the new PENERP template.
+        |
+        | The contribution upload screen determines whether these values are
+        | mapped to ZWG or USD.
+        |
+        */
+
+        'basic_pay' => [
+            'basic_pay',
+            'basic pay',
+            'pensionable salary',
+            'salary',
+        ],
+
+        'employee_rate' => [
+            'employee_rate',
+            'employee rate',
+            'member rate',
+        ],
+
+        'employer_rate' => [
+            'employer_rate',
+            'employer rate',
+        ],
+
+        'employee_contribution' => [
+            'employee_contribution',
+            'employee contribution',
+            'member contribution',
+        ],
+
+        'employer_contribution' => [
+            'employer_contribution',
+            'employer contribution',
+        ],
+
+        'employee_avc' => [
+            'employee_avc',
+            'employee avc',
+            'employee voluntary contribution',
+            'member avc',
+        ],
+
+        'employer_avc' => [
+            'employer_avc',
+            'employer avc',
+            'employer voluntary contribution',
+        ],
+
+        'employee_arrear' => [
+            'employee_arrear',
+            'employee arrear',
+            'employee arrear contribution',
+            'member arrear contribution',
+        ],
+
+        'employer_arrear' => [
+            'employer_arrear',
+            'employer arrear',
+            'employer arrear contribution',
+        ],
+
+        'employee_transfer_in' => [
+            'employee_transfer_in',
+            'employee transfer in',
+            'member transfer in',
+        ],
+
+        'employer_transfer_in' => [
+            'employer_transfer_in',
+            'employer transfer in',
+        ],
+
+        'employee_late_interest' => [
+            'employee_late_interest',
+            'employee late interest',
+            'employee late payment interest',
+        ],
+
+        'employer_late_interest' => [
+            'employer_late_interest',
+            'employer late interest',
+            'employer late payment interest',
+        ],
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Legacy USD Columns
+        |--------------------------------------------------------------------------
+        |
+        | These are retained for compatibility with older schedules.
+        |
+        */
+
         'usd_basic_pay' => [
+            'usd_basic_pay',
             'usd basic pay',
             'usd salary',
             'usd pensionable salary',
         ],
 
         'usd_employee_rate' => [
+            'usd_employee_rate',
             'usd employee rate',
             'usd member rate',
         ],
 
         'usd_employer_rate' => [
+            'usd_employer_rate',
             'usd employer rate',
         ],
 
         'usd_employee_contribution' => [
+            'usd_employee_contribution',
             'usd employee contribution',
             'usd member contribution',
         ],
 
         'usd_employer_contribution' => [
+            'usd_employer_contribution',
             'usd employer contribution',
         ],
 
         'usd_employee_avc' => [
-            'usd employee voluntary contribution',
+            'usd_employee_avc',
             'usd employee avc',
+            'usd employee voluntary contribution',
             'usd member avc',
         ],
 
         'usd_employer_avc' => [
-            'usd employer voluntary contribution',
+            'usd_employer_avc',
             'usd employer avc',
+            'usd employer voluntary contribution',
         ],
 
         'usd_employee_arrear' => [
+            'usd_employee_arrear',
+            'usd employee arrear',
             'usd employee arrear contribution',
-            'usd member arrear contribution',
         ],
 
         'usd_employer_arrear' => [
+            'usd_employer_arrear',
+            'usd employer arrear',
             'usd employer arrear contribution',
         ],
 
         'usd_employee_transfer_in' => [
+            'usd_employee_transfer_in',
             'usd employee transfer in',
-            'usd member transfer in',
         ],
 
         'usd_employer_transfer_in' => [
+            'usd_employer_transfer_in',
             'usd employer transfer in',
         ],
 
         'usd_employee_late_interest' => [
+            'usd_employee_late_interest',
+            'usd employee late interest',
             'usd employee late payment interest',
         ],
 
         'usd_employer_late_interest' => [
+            'usd_employer_late_interest',
+            'usd employer late interest',
             'usd employer late payment interest',
         ],
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Legacy ZWG Columns
+        |--------------------------------------------------------------------------
+        */
+
         'zwg_basic_pay' => [
+            'zwg_basic_pay',
             'zwg basic pay',
             'zwg salary',
             'zwg pensionable salary',
         ],
 
         'zwg_employee_rate' => [
+            'zwg_employee_rate',
             'zwg employee rate',
             'zwg member rate',
         ],
 
         'zwg_employer_rate' => [
+            'zwg_employer_rate',
             'zwg employer rate',
         ],
 
         'zwg_employee_contribution' => [
+            'zwg_employee_contribution',
             'zwg employee contribution',
             'zwg member contribution',
         ],
 
         'zwg_employer_contribution' => [
+            'zwg_employer_contribution',
             'zwg employer contribution',
         ],
 
         'zwg_employee_avc' => [
-            'zwg employee voluntary contribution',
+            'zwg_employee_avc',
             'zwg employee avc',
+            'zwg employee voluntary contribution',
             'zwg member avc',
         ],
 
         'zwg_employer_avc' => [
-            'zwg employer voluntary contribution',
+            'zwg_employer_avc',
             'zwg employer avc',
+            'zwg employer voluntary contribution',
         ],
 
         'zwg_employee_arrear' => [
+            'zwg_employee_arrear',
+            'zwg employee arrear',
             'zwg employee arrear contribution',
         ],
 
         'zwg_employer_arrear' => [
+            'zwg_employer_arrear',
+            'zwg employer arrear',
             'zwg employer arrear contribution',
         ],
 
         'zwg_employee_transfer_in' => [
+            'zwg_employee_transfer_in',
             'zwg employee transfer in',
         ],
 
         'zwg_employer_transfer_in' => [
+            'zwg_employer_transfer_in',
             'zwg employer transfer in',
         ],
 
         'zwg_employee_late_interest' => [
+            'zwg_employee_late_interest',
+            'zwg employee late interest',
             'zwg employee late payment interest',
         ],
 
         'zwg_employer_late_interest' => [
+            'zwg_employer_late_interest',
+            'zwg employer late interest',
             'zwg employer late payment interest',
         ],
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Comments
+        |--------------------------------------------------------------------------
+        */
 
         'comments' => [
             'comments',
@@ -273,20 +473,36 @@ class ContributionExcelReader
 
     /*
     |--------------------------------------------------------------------------
-    | Mandatory Logical Fields
+    | Required Template Columns
     |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    |
+    | We no longer require:
+    |
+    | usd_employee_contribution
+    | usd_employer_contribution
+    |
+    | because the upload currency is selected separately.
+    |
+    | The generic contribution fields work for either ZWG or USD.
+    |
     */
 
     private array $requiredFields = [
         'surname',
         'first_names',
-
         'staff_number',
-
-        'usd_employee_contribution',
-        'usd_employer_contribution',
+        'employee_contribution',
+        'employer_contribution',
     ];
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Read Excel File
+    |--------------------------------------------------------------------------
+    */
 
     public function read(
         string $path
@@ -302,6 +518,12 @@ class ContributionExcelReader
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Load Spreadsheet
+        |--------------------------------------------------------------------------
+        */
+
         $spreadsheet =
             IOFactory::load(
                 $path
@@ -312,6 +534,12 @@ class ContributionExcelReader
             $spreadsheet
                 ->getActiveSheet();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Spreadsheet Dimensions
+        |--------------------------------------------------------------------------
+        */
 
         $highestRow =
             $sheet
@@ -327,14 +555,14 @@ class ContributionExcelReader
             $highestRow < 2
         ) {
             throw new RuntimeException(
-                'The contribution Excel file does not contain contribution rows.'
+                'The contribution Excel file does not contain any contribution rows.'
             );
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Headers
+        | Header Row
         |--------------------------------------------------------------------------
         */
 
@@ -349,11 +577,23 @@ class ContributionExcelReader
             )[0];
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Build Column Map
+        |--------------------------------------------------------------------------
+        */
+
         $columnMap =
             $this->buildColumnMap(
                 $headerRow
             );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Template
+        |--------------------------------------------------------------------------
+        */
 
         $this->validateRequiredColumns(
             $columnMap
@@ -362,7 +602,7 @@ class ContributionExcelReader
 
         /*
         |--------------------------------------------------------------------------
-        | Rows
+        | Read Contribution Rows
         |--------------------------------------------------------------------------
         */
 
@@ -389,6 +629,12 @@ class ContributionExcelReader
                 )[0];
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Ignore Blank Rows
+            |--------------------------------------------------------------------------
+            */
+
             if (
                 $this->isEmptyRow(
                     $values
@@ -400,7 +646,7 @@ class ContributionExcelReader
 
             /*
             |--------------------------------------------------------------------------
-            | Ignore Total Rows
+            | Ignore Totals Rows
             |--------------------------------------------------------------------------
             */
 
@@ -413,6 +659,12 @@ class ContributionExcelReader
             }
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Raw Excel Values
+            |--------------------------------------------------------------------------
+            */
+
             $rawData =
                 [];
 
@@ -424,12 +676,14 @@ class ContributionExcelReader
 
                 $heading =
                     trim(
-                        (string) $heading
+                        (string)
+                        $heading
                     );
 
 
                 if (
-                    $heading === ''
+                    $heading ===
+                    ''
                 ) {
                     continue;
                 }
@@ -445,12 +699,24 @@ class ContributionExcelReader
             }
 
 
-            $normalized =
+            /*
+            |--------------------------------------------------------------------------
+            | Normalized Values
+            |--------------------------------------------------------------------------
+            */
+
+            $normalizedData =
                 $this->normalizeRow(
                     $values,
                     $columnMap
                 );
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Add Row
+            |--------------------------------------------------------------------------
+            */
 
             $rows[] = [
                 'row_number' =>
@@ -460,10 +726,16 @@ class ContributionExcelReader
                     $rawData,
 
                 'normalized_data' =>
-                    $normalized,
+                    $normalizedData,
             ];
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Parsed Excel
+        |--------------------------------------------------------------------------
+        */
 
         return [
             'rows' =>
@@ -496,6 +768,12 @@ class ContributionExcelReader
             [];
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize Excel Headers
+        |--------------------------------------------------------------------------
+        */
+
         foreach (
             $headers
             as $index => $header
@@ -508,6 +786,12 @@ class ContributionExcelReader
                 );
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Match Logical Fields To Columns
+        |--------------------------------------------------------------------------
+        */
 
         $map =
             [];
@@ -550,6 +834,12 @@ class ContributionExcelReader
         return $map;
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Required Columns
+    |--------------------------------------------------------------------------
+    */
 
     private function validateRequiredColumns(
         array $columnMap
@@ -594,7 +884,7 @@ class ContributionExcelReader
 
     /*
     |--------------------------------------------------------------------------
-    | Normalise Row
+    | Normalize Contribution Row
     |--------------------------------------------------------------------------
     */
 
@@ -603,6 +893,13 @@ class ContributionExcelReader
         array $map
     ): array {
         return [
+
+            /*
+            |--------------------------------------------------------------------------
+            | Employer / Period
+            |--------------------------------------------------------------------------
+            */
+
             'employer_number' =>
                 $this->stringValue(
                     $this->value(
@@ -627,6 +924,74 @@ class ContributionExcelReader
                         $values,
                         $map,
                         'due_date'
+                    )
+                ),
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Member Numbers
+            |--------------------------------------------------------------------------
+            */
+
+            'penad_member_number' =>
+                $this->stringValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'penad_member_number'
+                    )
+                ),
+
+            'pension_reference_number' =>
+                $this->stringValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'pension_reference_number'
+                    )
+                ),
+
+            'penerp_member_number' =>
+                $this->stringValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'penerp_member_number'
+                    )
+                ),
+
+            'fundworx_member_number' =>
+                $this->stringValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'fundworx_member_number'
+                    )
+                ),
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Member Details
+            |--------------------------------------------------------------------------
+            */
+
+            'staff_number' =>
+                $this->stringValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'staff_number'
+                    )
+                ),
+
+            'national_id' =>
+                $this->stringValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'national_id'
                     )
                 ),
 
@@ -675,15 +1040,6 @@ class ContributionExcelReader
                     )
                 ),
 
-            'national_id' =>
-                $this->stringValue(
-                    $this->value(
-                        $values,
-                        $map,
-                        'national_id'
-                    )
-                ),
-
             'date_joined_fund' =>
                 $this->dateValue(
                     $this->value(
@@ -699,42 +1055,6 @@ class ContributionExcelReader
                         $values,
                         $map,
                         'date_joined_employer'
-                    )
-                ),
-
-            'staff_number' =>
-                $this->stringValue(
-                    $this->value(
-                        $values,
-                        $map,
-                        'staff_number'
-                    )
-                ),
-
-            'pension_reference_number' =>
-                $this->stringValue(
-                    $this->value(
-                        $values,
-                        $map,
-                        'pension_reference_number'
-                    )
-                ),
-
-            'penerp_member_number' =>
-                $this->stringValue(
-                    $this->value(
-                        $values,
-                        $map,
-                        'penerp_member_number'
-                    )
-                ),
-
-            'fundworx_member_number' =>
-                $this->stringValue(
-                    $this->value(
-                        $values,
-                        $map,
-                        'fundworx_member_number'
                     )
                 ),
 
@@ -774,9 +1094,138 @@ class ContributionExcelReader
                     )
                 ),
 
+
             /*
             |--------------------------------------------------------------------------
-            | USD
+            | Generic Financial Values
+            |--------------------------------------------------------------------------
+            |
+            | The validator maps these to ZWG or USD according to the selected
+            | contribution batch currency.
+            |
+            */
+
+            'basic_pay' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'basic_pay'
+                    )
+                ),
+
+            'employee_rate' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employee_rate'
+                    )
+                ),
+
+            'employer_rate' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employer_rate'
+                    )
+                ),
+
+            'employee_contribution' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employee_contribution'
+                    )
+                ),
+
+            'employer_contribution' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employer_contribution'
+                    )
+                ),
+
+            'employee_avc' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employee_avc'
+                    )
+                ),
+
+            'employer_avc' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employer_avc'
+                    )
+                ),
+
+            'employee_arrear' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employee_arrear'
+                    )
+                ),
+
+            'employer_arrear' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employer_arrear'
+                    )
+                ),
+
+            'employee_transfer_in' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employee_transfer_in'
+                    )
+                ),
+
+            'employer_transfer_in' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employer_transfer_in'
+                    )
+                ),
+
+            'employee_late_interest' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employee_late_interest'
+                    )
+                ),
+
+            'employer_late_interest' =>
+                $this->numberValue(
+                    $this->value(
+                        $values,
+                        $map,
+                        'employer_late_interest'
+                    )
+                ),
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Legacy USD Values
             |--------------------------------------------------------------------------
             */
 
@@ -897,9 +1346,10 @@ class ContributionExcelReader
                     )
                 ),
 
+
             /*
             |--------------------------------------------------------------------------
-            | ZWG
+            | Legacy ZWG Values
             |--------------------------------------------------------------------------
             */
 
@@ -1020,6 +1470,13 @@ class ContributionExcelReader
                     )
                 ),
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Comments
+            |--------------------------------------------------------------------------
+            */
+
             'comments' =>
                 $this->stringValue(
                     $this->value(
@@ -1031,6 +1488,12 @@ class ContributionExcelReader
         ];
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Cell Value
+    |--------------------------------------------------------------------------
+    */
 
     private function value(
         array $values,
@@ -1048,11 +1511,30 @@ class ContributionExcelReader
 
 
         return $values[
-            $map[$field]
+            $map[
+                $field
+            ]
         ]
             ?? null;
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize Heading
+    |--------------------------------------------------------------------------
+    |
+    | Important:
+    |
+    | "first_names"
+    | "First Names"
+    | "first-names"
+    |
+    | all become:
+    |
+    | first names
+    |
+    */
 
     private function normalizeHeading(
         mixed $value
@@ -1060,10 +1542,34 @@ class ContributionExcelReader
         $value =
             strtolower(
                 trim(
-                    (string) $value
+                    (string)
+                    $value
                 )
             );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Replace Underscores / Hyphens
+        |--------------------------------------------------------------------------
+        */
+
+        $value =
+            str_replace(
+                [
+                    '_',
+                    '-',
+                ],
+                ' ',
+                $value
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Remove Repeated Spaces
+        |--------------------------------------------------------------------------
+        */
 
         $value =
             preg_replace(
@@ -1079,6 +1585,12 @@ class ContributionExcelReader
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | String Value
+    |--------------------------------------------------------------------------
+    */
+
     private function stringValue(
         mixed $value
     ): ?string {
@@ -1086,19 +1598,28 @@ class ContributionExcelReader
             $value === null
             ||
             trim(
-                (string) $value
+                (string)
+                $value
             )
-            === ''
+            ===
+            ''
         ) {
             return null;
         }
 
 
         return trim(
-            (string) $value
+            (string)
+            $value
         );
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Number Value
+    |--------------------------------------------------------------------------
+    */
 
     private function numberValue(
         mixed $value
@@ -1106,7 +1627,12 @@ class ContributionExcelReader
         if (
             $value === null
             ||
-            $value === ''
+            trim(
+                (string)
+                $value
+            )
+            ===
+            ''
         ) {
             return 0.0;
         }
@@ -1117,23 +1643,40 @@ class ContributionExcelReader
                 $value
             )
         ) {
-            return (float) $value;
+            return (float)
+                $value;
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Clean Formatted Numbers
+        |--------------------------------------------------------------------------
+        */
+
         $clean =
-            str_replace(
-                [
-                    ',',
-                    '$',
-                    ' ',
-                ],
-                '',
-                (string) $value
+            trim(
+                (string)
+                $value
             );
 
 
-        if (
+        /*
+        |--------------------------------------------------------------------------
+        | Accounting Negative Format
+        |--------------------------------------------------------------------------
+        |
+        | Example:
+        |
+        | (1,000.00)
+        |
+        | becomes:
+        |
+        | -1000.00
+        |
+        */
+
+        $negative =
             str_starts_with(
                 $clean,
                 '('
@@ -1142,24 +1685,53 @@ class ContributionExcelReader
             str_ends_with(
                 $clean,
                 ')'
-            )
+            );
+
+
+        $clean =
+            str_replace(
+                [
+                    ',',
+                    '$',
+                    'ZWG',
+                    'USD',
+                    ' ',
+                    '(',
+                    ')',
+                ],
+                '',
+                $clean
+            );
+
+
+        if (
+            $negative
         ) {
             $clean =
                 '-'
-                . trim(
-                    $clean,
-                    '()'
-                );
+                . $clean;
         }
 
 
-        return is_numeric(
-            $clean
-        )
-            ? (float) $clean
-            : 0.0;
+        if (
+            !is_numeric(
+                $clean
+            )
+        ) {
+            return 0.0;
+        }
+
+
+        return (float)
+            $clean;
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Date Value
+    |--------------------------------------------------------------------------
+    */
 
     private function dateValue(
         mixed $value
@@ -1167,13 +1739,24 @@ class ContributionExcelReader
         if (
             $value === null
             ||
-            $value === ''
+            trim(
+                (string)
+                $value
+            )
+            ===
+            ''
         ) {
             return null;
         }
 
 
         try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Excel Serial Date
+            |--------------------------------------------------------------------------
+            */
 
             if (
                 is_numeric(
@@ -1184,13 +1767,22 @@ class ContributionExcelReader
                     ExcelDate::excelToDateTimeObject(
                         $value
                     )
-                )->toDateString();
+                )
+                    ->toDateString();
             }
 
 
+            /*
+            |--------------------------------------------------------------------------
+            | Text Date
+            |--------------------------------------------------------------------------
+            */
+
             return Carbon::parse(
-                (string) $value
-            )->toDateString();
+                (string)
+                $value
+            )
+                ->toDateString();
 
         } catch (Throwable) {
 
@@ -1198,6 +1790,12 @@ class ContributionExcelReader
         }
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Empty Row
+    |--------------------------------------------------------------------------
+    */
 
     private function isEmptyRow(
         array $values
@@ -1211,9 +1809,11 @@ class ContributionExcelReader
                 $value !== null
                 &&
                 trim(
-                    (string) $value
+                    (string)
+                    $value
                 )
-                !== ''
+                !==
+                ''
             ) {
                 return false;
             }
@@ -1224,6 +1824,12 @@ class ContributionExcelReader
     }
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Total Row
+    |--------------------------------------------------------------------------
+    */
+
     private function looksLikeTotalRow(
         array $values
     ): bool {
@@ -1231,19 +1837,31 @@ class ContributionExcelReader
             array_slice(
                 $values,
                 0,
-                5
+                10
             )
             as $value
         ) {
 
-            if (
+            $text =
                 strtoupper(
                     trim(
-                        (string) $value
+                        (string)
+                        $value
                     )
+                );
+
+
+            if (
+                in_array(
+                    $text,
+                    [
+                        'TOTAL',
+                        'TOTALS',
+                        'GRAND TOTAL',
+                        'GRAND TOTALS',
+                    ],
+                    true
                 )
-                ===
-                'TOTAL'
             ) {
                 return true;
             }

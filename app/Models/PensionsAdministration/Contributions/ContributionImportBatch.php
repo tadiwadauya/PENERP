@@ -24,6 +24,10 @@ class ContributionImportBatch extends Model
         'file_hash',
 
         'source_system',
+
+        'currency_code',
+        'exchange_rate_to_base',
+
         'scheme_code',
         'due_date',
 
@@ -41,6 +45,12 @@ class ContributionImportBatch extends Model
         'new_member_rows',
         'nil_contributor_rows',
 
+        /*
+        |--------------------------------------------------------------------------
+        | USD Totals
+        |--------------------------------------------------------------------------
+        */
+
         'usd_basic_pay_total',
 
         'usd_employee_contribution_total',
@@ -48,6 +58,12 @@ class ContributionImportBatch extends Model
 
         'usd_employee_avc_total',
         'usd_employer_avc_total',
+
+        /*
+        |--------------------------------------------------------------------------
+        | ZWG Totals
+        |--------------------------------------------------------------------------
+        */
 
         'zwg_basic_pay_total',
 
@@ -83,6 +99,9 @@ class ContributionImportBatch extends Model
             'progress_percentage' =>
                 'decimal:2',
 
+            'exchange_rate_to_base' =>
+                'decimal:8',
+
             'processing_started_at' =>
                 'datetime',
 
@@ -101,12 +120,6 @@ class ContributionImportBatch extends Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Contribution Period
-    |--------------------------------------------------------------------------
-    */
-
     public function contributionPeriod(): BelongsTo
     {
         return $this->belongsTo(
@@ -115,12 +128,6 @@ class ContributionImportBatch extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Employer
-    |--------------------------------------------------------------------------
-    */
 
     public function employer(): BelongsTo
     {
@@ -131,12 +138,6 @@ class ContributionImportBatch extends Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Uploaded By
-    |--------------------------------------------------------------------------
-    */
-
     public function uploadedBy(): BelongsTo
     {
         return $this->belongsTo(
@@ -145,12 +146,6 @@ class ContributionImportBatch extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Approved By
-    |--------------------------------------------------------------------------
-    */
 
     public function approvedBy(): BelongsTo
     {
@@ -161,12 +156,6 @@ class ContributionImportBatch extends Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Posted By
-    |--------------------------------------------------------------------------
-    */
-
     public function postedBy(): BelongsTo
     {
         return $this->belongsTo(
@@ -175,12 +164,6 @@ class ContributionImportBatch extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Import Rows
-    |--------------------------------------------------------------------------
-    */
 
     public function rows(): HasMany
     {
@@ -191,12 +174,6 @@ class ContributionImportBatch extends Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Permanent Contributions
-    |--------------------------------------------------------------------------
-    */
-
     public function contributions(): HasMany
     {
         return $this->hasMany(
@@ -205,12 +182,6 @@ class ContributionImportBatch extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Status Label
-    |--------------------------------------------------------------------------
-    */
 
     public function getStatusLabelAttribute(): string
     {
@@ -252,12 +223,6 @@ class ContributionImportBatch extends Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Status Badge
-    |--------------------------------------------------------------------------
-    */
-
     public function getStatusBadgeAttribute(): string
     {
         return match ($this->status) {
@@ -288,6 +253,24 @@ class ContributionImportBatch extends Model
 
             default =>
                 'bg-secondary',
+        };
+    }
+
+
+    public function getCurrencyLabelAttribute(): string
+    {
+        return match (
+            strtoupper(
+                $this->currency_code
+                ?? 'ZWG'
+            )
+        ) {
+
+            'USD' =>
+                'USD',
+
+            default =>
+                'ZWG',
         };
     }
 }

@@ -3,29 +3,12 @@
 @section('title', 'Contribution Import')
 
 @section('content')
+@include(
+    'pensions-administration.partials.navigation'
+)
 
 <div class="container-fluid">
 
-    @if(session('success'))
-
-        <div class="alert alert-success">
-
-            {{ session('success') }}
-
-        </div>
-
-    @endif
-
-
-    @if(session('error'))
-
-        <div class="alert alert-danger">
-
-            {{ session('error') }}
-
-        </div>
-
-    @endif
 
 
     <div
@@ -369,123 +352,560 @@
     @endif
 
 
-    <div class="card">
+    {{-- =========================================================
+     CONTRIBUTION TOTALS
+========================================================= --}}
 
-        <div class="card-body">
-
-            <h5 class="card-title mb-3">
-                USD Totals
-            </h5>
+<div class="row">
 
 
-            <div class="table-responsive">
+    {{-- =====================================================
+         ZWG TOTALS
+    ====================================================== --}}
 
-                <table class="table table-bordered">
+    <div class="col-xl-6">
 
-                    <thead>
+        <div class="card h-100">
 
-                        <tr>
+            <div class="card-body">
 
-                            <th>
-                                Basic Pay
-                            </th>
+                <div
+                    class="
+                        d-flex
+                        justify-content-between
+                        align-items-center
+                        mb-3
+                    "
+                >
 
-                            <th>
-                                Employee
-                            </th>
+                    <div>
 
-                            <th>
-                                Employer
-                            </th>
+                        <h5 class="card-title mb-1">
 
-                            <th>
-                                Employee AVC
-                            </th>
+                            ZWG Contribution Totals
 
-                            <th>
-                                Employer AVC
-                            </th>
-
-                        </tr>
-
-                    </thead>
+                        </h5>
 
 
-                    <tbody>
+                        <p class="text-muted mb-0">
 
-                        <tr>
+                            Zimbabwe Gold
 
-                            <td>
+                        </p>
 
-                                {{
-                                    number_format(
-                                        $batch
-                                            ->usd_basic_pay_total,
-                                        2
-                                    )
-                                }}
+                    </div>
 
-                            </td>
 
-                            <td>
+                    <span class="badge bg-primary font-size-14">
 
-                                {{
-                                    number_format(
-                                        $batch
-                                            ->usd_employee_contribution_total,
-                                        2
-                                    )
-                                }}
+                        Base Currency
 
-                            </td>
+                    </span>
 
-                            <td>
+                </div>
 
-                                {{
-                                    number_format(
-                                        $batch
-                                            ->usd_employer_contribution_total,
-                                        2
-                                    )
-                                }}
 
-                            </td>
+                <div class="table-responsive">
 
-                            <td>
+                    <table
+                        class="
+                            table
+                            table-bordered
+                            mb-0
+                        "
+                    >
 
-                                {{
-                                    number_format(
-                                        $batch
-                                            ->usd_employee_avc_total,
-                                        2
-                                    )
-                                }}
+                        <thead>
 
-                            </td>
+                            <tr>
 
-                            <td>
+                                <th>
+                                    Component
+                                </th>
 
-                                {{
-                                    number_format(
-                                        $batch
-                                            ->usd_employer_avc_total,
-                                        2
-                                    )
-                                }}
+                                <th class="text-end">
+                                    ZWG Amount
+                                </th>
 
-                            </td>
+                            </tr>
 
-                        </tr>
+                        </thead>
 
-                    </tbody>
 
-                </table>
+                        <tbody>
+
+                            <tr>
+
+                                <td>
+                                    Basic Pay
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->zwg_basic_pay_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employee Contribution
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->zwg_employee_contribution_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employer Contribution
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->zwg_employer_contribution_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employee AVC
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->zwg_employee_avc_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employer AVC
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->zwg_employer_avc_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr class="table-light">
+
+                                <th>
+                                    Total Expected Contributions
+                                </th>
+
+                                <th class="text-end">
+
+                                    ZWG
+
+                                    {{
+                                        number_format(
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->zwg_employee_contribution_total
+                                                    ??
+                                                    0
+                                                )
+                                            )
+                                            +
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->zwg_employer_contribution_total
+                                                    ??
+                                                    0
+                                                )
+                                            )
+                                            +
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->zwg_employee_avc_total
+                                                    ??
+                                                    0
+                                                )
+                                            )
+                                            +
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->zwg_employer_avc_total
+                                                    ??
+                                                    0
+                                                )
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </th>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
 
             </div>
 
         </div>
 
     </div>
+
+
+    {{-- =====================================================
+         USD TOTALS
+    ====================================================== --}}
+
+    <div class="col-xl-6">
+
+        <div class="card h-100">
+
+            <div class="card-body">
+
+                <div
+                    class="
+                        d-flex
+                        justify-content-between
+                        align-items-center
+                        mb-3
+                    "
+                >
+
+                    <div>
+
+                        <h5 class="card-title mb-1">
+
+                            USD Contribution Totals
+
+                        </h5>
+
+
+                        <p class="text-muted mb-0">
+
+                            United States Dollar
+
+                        </p>
+
+                    </div>
+
+
+                    <span class="badge bg-success font-size-14">
+
+                        Foreign Currency
+
+                    </span>
+
+                </div>
+
+
+                <div class="table-responsive">
+
+                    <table
+                        class="
+                            table
+                            table-bordered
+                            mb-0
+                        "
+                    >
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Component
+                                </th>
+
+                                <th class="text-end">
+                                    USD Amount
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            <tr>
+
+                                <td>
+                                    Basic Pay
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->usd_basic_pay_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employee Contribution
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->usd_employee_contribution_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employer Contribution
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->usd_employer_contribution_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employee AVC
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->usd_employee_avc_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    Employer AVC
+                                </td>
+
+                                <td class="text-end">
+
+                                    {{
+                                        number_format(
+                                            (float) (
+                                                $batch
+                                                    ->usd_employer_avc_total
+                                                ??
+                                                0
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </td>
+
+                            </tr>
+
+
+                            <tr class="table-light">
+
+                                <th>
+                                    Total Expected Contributions
+                                </th>
+
+                                <th class="text-end">
+
+                                    USD
+
+                                    {{
+                                        number_format(
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->usd_employee_contribution_total
+                                                    ??
+                                                    0
+                                                )
+                                            )
+                                            +
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->usd_employer_contribution_total
+                                                    ??
+                                                    0
+                                                )
+                                            )
+                                            +
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->usd_employee_avc_total
+                                                    ??
+                                                    0
+                                                )
+                                            )
+                                            +
+                                            (
+                                                (float) (
+                                                    $batch
+                                                        ->usd_employer_avc_total
+                                                    ??
+                                                    0
+                                                )
+                                            ),
+                                            2
+                                        )
+                                    }}
+
+                                </th>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="alert alert-light border">
+
+    <i class="mdi mdi-information-outline me-1"></i>
+
+    ZWG and USD are displayed separately.
+
+    No automatic currency conversion is performed on this page.
+
+</div>
 
 
     @can(
