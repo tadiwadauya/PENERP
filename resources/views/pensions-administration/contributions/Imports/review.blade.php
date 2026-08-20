@@ -164,8 +164,22 @@
 
             @endif
 
-
-            {{-- =================================================
+                @can('contributions.reports.view')
+                <a href="{{ route('pensions-administration.contributions.imports.exceptions', $batch) }}" class="btn btn-warning">
+                    <i class="mdi mdi-alert-outline me-1"></i>
+                    Rate / Contribution Exceptions
+                    @if((int) $batch->warning_rows > 0)
+                        <span class="badge bg-danger ms-1">{{ $batch->warning_rows }}</span>
+                    @endif
+                </a>
+                @endcan
+           @can('contributions.reports.view')
+                <a href="{{ route('pensions-administration.contributions.imports.exceptions.excel', $batch) }}" class="btn btn-success">
+                    <i class="mdi mdi-microsoft-excel me-1"></i>
+                    Exception Excel
+                </a>
+            @endcan
+                        {{-- =================================================
                  EXPORT NIL CONTRIBUTORS
             ================================================= --}}
 
@@ -1132,6 +1146,24 @@
                     warning row(s).
 
                     Warnings do not prevent approval.
+
+                    @can('contributions.reports.view')
+
+                        <div class="mt-2 d-flex flex-wrap gap-2">
+
+                            <a href="{{ route('pensions-administration.contributions.imports.exceptions', $batch) }}" class="btn btn-sm btn-warning">
+                                <i class="mdi mdi-alert-outline me-1"></i>
+                                Review Rate / Contribution Exceptions
+                            </a>
+
+                            <a href="{{ route('pensions-administration.contributions.imports.exceptions.excel', $batch) }}" class="btn btn-sm btn-success">
+                                <i class="mdi mdi-microsoft-excel me-1"></i>
+                                Download Exception Excel
+                            </a>
+
+                        </div>
+
+                    @endcan
 
                 </div>
 
@@ -2317,6 +2349,14 @@
                             </th>
 
                             <th class="text-end">
+                                Employee Rate
+                            </th>
+
+                            <th class="text-end">
+                                Employer Rate
+                            </th>
+
+                            <th class="text-end">
                                 Employee Contribution
                             </th>
 
@@ -2382,6 +2422,34 @@
                                         );
 
 
+                                    $employeeRate =
+                                        (float) (
+                                            $data[
+                                                'usd_employee_rate'
+                                            ]
+                                            ??
+                                            $data[
+                                                'employee_rate'
+                                            ]
+                                            ??
+                                            0
+                                        );
+
+
+                                    $employerRate =
+                                        (float) (
+                                            $data[
+                                                'usd_employer_rate'
+                                            ]
+                                            ??
+                                            $data[
+                                                'employer_rate'
+                                            ]
+                                            ??
+                                            0
+                                        );
+
+
                                     $employeeContribution =
                                         (float) (
                                             $data[
@@ -2433,6 +2501,34 @@
                                         );
 
 
+                                    $employeeRate =
+                                        (float) (
+                                            $data[
+                                                'zwg_employee_rate'
+                                            ]
+                                            ??
+                                            $data[
+                                                'employee_rate'
+                                            ]
+                                            ??
+                                            0
+                                        );
+
+
+                                    $employerRate =
+                                        (float) (
+                                            $data[
+                                                'zwg_employer_rate'
+                                            ]
+                                            ??
+                                            $data[
+                                                'employer_rate'
+                                            ]
+                                            ??
+                                            0
+                                        );
+
+
                                     $employeeContribution =
                                         (float) (
                                             $data[
@@ -2471,6 +2567,32 @@
                                             ??
                                             0
                                         );
+                                }
+
+
+                                /*
+                                |--------------------------------------------------------------
+                                | Normalise Excel Percentage Rates
+                                |--------------------------------------------------------------
+                                | Excel may return 6% as 0.06 and 17.3% as 0.173.
+                                | The review screen always displays percentage values.
+                                */
+
+                                if (
+                                    $employeeRate > 0
+                                    &&
+                                    $employeeRate <= 1
+                                ) {
+                                    $employeeRate *= 100;
+                                }
+
+
+                                if (
+                                    $employerRate > 0
+                                    &&
+                                    $employerRate <= 1
+                                ) {
+                                    $employerRate *= 100;
                                 }
 
 
@@ -2730,6 +2852,59 @@
 
                                 <td class="text-end">
 
+                                    <strong>
+                                        {{
+                                            number_format(
+                                                $employeeRate,
+                                                2
+                                            )
+                                        }}%
+                                    </strong>
+
+                                    <br>
+
+                                    @if(
+                                        $row
+                                            ->is_new_member
+                                    )
+
+                                        <small class="text-muted">
+                                            Expected 6.00%
+                                        </small>
+
+                                    @else
+
+                                        <small class="text-muted">
+                                            Expected 5.00% - 6.00%
+                                        </small>
+
+                                    @endif
+
+                                </td>
+
+
+                                <td class="text-end">
+
+                                    <strong>
+                                        {{
+                                            number_format(
+                                                $employerRate,
+                                                2
+                                            )
+                                        }}%
+                                    </strong>
+
+                                    <br>
+
+                                    <small class="text-muted">
+                                        Expected 17.30%
+                                    </small>
+
+                                </td>
+
+
+                                <td class="text-end">
+
                                     {{
                                         number_format(
                                             $employeeContribution,
@@ -2894,7 +3069,7 @@
                             <tr>
 
                                 <td
-                                    colspan="15"
+                                    colspan="17"
                                     class="
                                         text-center
                                         text-muted
@@ -3260,6 +3435,53 @@
 
 
                         <div class="modal-body">
+
+                            @if(
+                                (int) (
+                                    $summary[
+                                        'warning_rows'
+                                    ]
+                                    ??
+                                    0
+                                )
+                                >
+                                0
+                            )
+
+                                <div class="alert alert-warning">
+
+                                    <i class="mdi mdi-alert-outline me-1"></i>
+
+                                    <strong>
+                                        Contribution exceptions require acknowledgement.
+                                    </strong>
+
+                                    This batch contains
+                                    <strong>{{ number_format($summary['warning_rows'] ?? 0) }}</strong>
+                                    warning row(s). These warnings do not block approval, but the approver should review the employee/employer rate and contribution amount exceptions before confirming approval.
+
+                                    @can('contributions.reports.view')
+
+                                        <div class="mt-2 d-flex flex-wrap gap-2">
+
+                                            <a href="{{ route('pensions-administration.contributions.imports.exceptions', $batch) }}" class="btn btn-sm btn-warning" target="_blank">
+                                                <i class="mdi mdi-alert-outline me-1"></i>
+                                                Review Exceptions
+                                            </a>
+
+                                            <a href="{{ route('pensions-administration.contributions.imports.exceptions.excel', $batch) }}" class="btn btn-sm btn-success">
+                                                <i class="mdi mdi-microsoft-excel me-1"></i>
+                                                Exception Excel
+                                            </a>
+
+                                        </div>
+
+                                    @endcan
+
+                                </div>
+
+                            @endif
+
 
                             <div class="alert alert-info">
 

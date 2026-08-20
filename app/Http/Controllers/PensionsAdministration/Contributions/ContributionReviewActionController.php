@@ -627,7 +627,150 @@ class ContributionReviewActionController extends Controller
     | Reject Contribution Batch
     |--------------------------------------------------------------------------
     */
+public function exceptions(
+    ContributionImportBatch $batch
+): View {
+    $this->ensurePermission(
+        'contributions.reports.view'
+    );
 
+
+    $batch->load([
+        'employer',
+        'contributionPeriod',
+        'uploadedBy',
+        'approvedBy',
+        'postedBy',
+    ]);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Contribution Exception Rows
+    |--------------------------------------------------------------------------
+    |
+    | We include warning rows that relate to contribution rates,
+    | calculated contribution amounts and other financial validation
+    | discrepancies.
+    |
+    | Warnings do NOT block approval.
+    |
+    */
+
+    $rows =
+        ContributionImportRow::query()
+            ->with([
+                'matchedMember',
+                'createdMember',
+            ])
+            ->where(
+                'import_batch_id',
+                $batch->id
+            )
+            ->where(
+                'validation_status',
+                'warning'
+            )
+            ->orderBy(
+                'row_number'
+            )
+            ->get()
+            ->filter(
+                function (
+                    ContributionImportRow $row
+                ): bool {
+                    $warnings =
+                        $row->warning_messages
+                        ??
+                        [];
+
+
+                    if (!is_array($warnings)) {
+                        return false;
+                    }
+
+
+                    return collect(
+                        $warnings
+                    )->contains(
+                        function (
+                            $warning
+                        ): bool {
+                            $warning =
+                                strtolower(
+                                    (string) $warning
+                                );
+
+
+                            return
+                                str_contains(
+                                    $warning,
+                                    'rate'
+                                )
+                                ||
+                                str_contains(
+                                    $warning,
+                                    'does not agree'
+                                )
+                                ||
+                                str_contains(
+                                    $warning,
+                                    'contribution'
+                                )
+                                ||
+                                str_contains(
+                                    $warning,
+                                    'difference'
+                                );
+                        }
+                    );
+                }
+            )
+            ->values();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Summary
+    |--------------------------------------------------------------------------
+    */
+
+    $summary = [
+        'warning_rows' =>
+            $rows->count(),
+
+        'batch_warning_rows' =>
+            (int) (
+                $batch->warning_rows
+                ??
+                0
+            ),
+
+        'error_rows' =>
+            (int) (
+                $batch->error_rows
+                ??
+                0
+            ),
+
+        'currency' =>
+            strtoupper(
+                $batch->currency_code
+                ??
+                'ZWG'
+            ),
+    ];
+
+
+    return view(
+        'pensions-administration.contributions.imports.exceptions',
+        compact(
+            'batch',
+            'rows',
+            'summary'
+        )
+    );
+}
     public function reject(
         Request $request,
         ContributionImportBatch $batch
@@ -1233,5 +1376,401 @@ class ContributionReviewActionController extends Controller
             $filename
         )
         ->deleteFileAfterSend(true);
+}
+public function exportContributionExceptions(
+    ContributionImportBatch $batch
+): BinaryFileResponse {
+    $this->ensurePermission(
+        'contributions.reports.view'
+    );
+
+
+    $batch->load([
+        'employer',
+        'contributionPeriod',
+    ]);
+
+
+    $rows =
+        ContributionImportRow::query()
+            ->with([
+                'matchedMember',
+            ])
+            ->where(
+                'import_batch_id',
+                $batch->id
+            )
+            ->where(
+                'validation_status',
+                'warning'
+            )
+            ->orderBy(
+                'row_number'
+            )
+            ->get()
+            ->filter(
+                function (
+                    ContributionImportRow $row
+                ): bool {
+                    $warnings =
+                        $row->warning_messages
+                        ??
+                        [];
+
+
+                    if (!is_array($warnings)) {
+                        return false;
+                    }
+
+
+                    return collect(
+                        $warnings
+                    )->contains(
+                        function (
+                            string $warning
+                        ): bool {
+                            return
+                                str_contains(
+                                    strtolower($warning),
+                                    'rate'
+                                )
+                                ||
+                                str_contains(
+                                    strtolower($warning),
+                                    'does not agree'
+                                );
+                        }
+                    );
+                }
+            );
+
+
+    $spreadsheet =
+        new Spreadsheet();
+
+
+    $sheet =
+        $spreadsheet
+            ->getActiveSheet();
+
+
+    $sheet->setTitle(
+        'Contribution Exceptions'
+    );
+
+
+    $headers = [
+        'Excel Row',
+        'PENERP No.',
+        'PenAd No.',
+        'Staff No.',
+        'National ID',
+        'Surname',
+        'First Names',
+        'Basic Pay',
+        'Employee Rate',
+        'System Employee Contribution',
+        'Schedule Employee Contribution',
+        'Employee Variance',
+        'Employer Rate',
+        'System Employer Contribution',
+        'Schedule Employer Contribution',
+        'Employer Variance',
+        'Warnings',
+    ];
+
+
+    $sheet->fromArray(
+        $headers,
+        null,
+        'A1'
+    );
+
+
+    $sheet
+        ->getStyle(
+            'A1:Q1'
+        )
+        ->getFont()
+        ->setBold(
+            true
+        );
+
+
+    $excelRow =
+        2;
+
+
+    foreach (
+        $rows
+        as $row
+    ) {
+        $data =
+            $row->normalized_data
+            ??
+            [];
+
+
+        $currency =
+            strtolower(
+                $batch->currency_code
+                ??
+                'ZWG'
+            );
+
+
+        $basicPay =
+            (float) (
+                $data[
+                    $currency
+                    . '_basic_pay'
+                ]
+                ??
+                0
+            );
+
+
+        $employeeRate =
+            (float) (
+                $data[
+                    $currency
+                    . '_employee_rate'
+                ]
+                ??
+                0
+            );
+
+
+        if (
+            $employeeRate > 0
+            &&
+            $employeeRate <= 1
+        ) {
+            $employeeRate *= 100;
+        }
+
+
+        $employerRate =
+            (float) (
+                $data[
+                    $currency
+                    . '_employer_rate'
+                ]
+                ??
+                0
+            );
+
+
+        if (
+            $employerRate > 0
+            &&
+            $employerRate <= 1
+        ) {
+            $employerRate *= 100;
+        }
+
+
+        $systemEmployeeRate =
+            $row->is_new_member
+                ? 6.0
+                : $employeeRate;
+
+
+        $systemEmployeeContribution =
+            round(
+                $basicPay
+                *
+                $systemEmployeeRate
+                /
+                100,
+                2
+            );
+
+
+        $systemEmployerContribution =
+            round(
+                $basicPay
+                *
+                17.3
+                /
+                100,
+                2
+            );
+
+
+        $scheduleEmployee =
+            (float) (
+                $data[
+                    $currency
+                    . '_employee_contribution'
+                ]
+                ??
+                0
+            );
+
+
+        $scheduleEmployer =
+            (float) (
+                $data[
+                    $currency
+                    . '_employer_contribution'
+                ]
+                ??
+                0
+            );
+
+
+        $warnings =
+            $row->warning_messages
+            ??
+            [];
+
+
+        $sheet->fromArray(
+            [
+                $row->row_number,
+
+                $row
+                    ->matchedMember
+                    ?->member_number
+                ??
+                '',
+
+                $row
+                    ->matchedMember
+                    ?->penad_member_number
+                ??
+                '',
+
+                $data[
+                    'staff_number'
+                ]
+                ??
+                '',
+
+                $data[
+                    'national_id'
+                ]
+                ??
+                '',
+
+                $data[
+                    'surname'
+                ]
+                ??
+                '',
+
+                $data[
+                    'first_names'
+                ]
+                ??
+                '',
+
+                $basicPay,
+
+                $employeeRate,
+
+                $systemEmployeeContribution,
+
+                $scheduleEmployee,
+
+                $systemEmployeeContribution
+                -
+                $scheduleEmployee,
+
+                $employerRate,
+
+                $systemEmployerContribution,
+
+                $scheduleEmployer,
+
+                $systemEmployerContribution
+                -
+                $scheduleEmployer,
+
+                implode(
+                    ' | ',
+                    is_array($warnings)
+                        ? $warnings
+                        : []
+                ),
+            ],
+            null,
+            'A'
+            . $excelRow
+        );
+
+
+        $excelRow++;
+    }
+
+
+    foreach (
+        range(
+            'A',
+            'Q'
+        )
+        as $column
+    ) {
+        $sheet
+            ->getColumnDimension(
+                $column
+            )
+            ->setAutoSize(
+                true
+            );
+    }
+
+
+    $filename =
+        'contribution_rate_exceptions_batch_'
+        . $batch->id
+        . '_'
+        . now()->format(
+            'Ymd_His'
+        )
+        . '.xlsx';
+
+
+    $directory =
+        storage_path(
+            'app/tmp/contributions'
+        );
+
+
+    if (!is_dir($directory)) {
+        mkdir(
+            $directory,
+            0775,
+            true
+        );
+    }
+
+
+    $path =
+        $directory
+        . DIRECTORY_SEPARATOR
+        . $filename;
+
+
+    $writer =
+        new Xlsx(
+            $spreadsheet
+        );
+
+
+    $writer->save(
+        $path
+    );
+
+
+    return response()
+        ->download(
+            $path,
+            $filename
+        )
+        ->deleteFileAfterSend(
+            true
+        );
 }
 }

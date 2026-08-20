@@ -39,6 +39,10 @@ class Member extends Model
         'physical_suburb',
         'physical_city',
         'physical_country',
+        'marital_status',
+        'cellphone_number',
+        'email_address',
+        'home_address',
 
         'postal_address_1',
         'postal_address_2',

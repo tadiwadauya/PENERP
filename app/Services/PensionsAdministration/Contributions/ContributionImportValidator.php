@@ -61,9 +61,7 @@ class ContributionImportValidator
         |--------------------------------------------------------------------------
         */
 
-        if (
-            !$batch->contributionPeriod
-        ) {
+        if (!$batch->contributionPeriod) {
             throw new RuntimeException(
                 'The contribution batch does not have a valid contribution period.'
             );
@@ -75,9 +73,9 @@ class ContributionImportValidator
         | Currency
         |--------------------------------------------------------------------------
         |
-        | PENERP BASE CURRENCY = ZWG
+        | PENERP base currency = ZWG.
         |
-        | Supported contribution upload currencies:
+        | Supported upload currencies:
         |
         | ZWG
         | USD
@@ -89,7 +87,8 @@ class ContributionImportValidator
                 trim(
                     (string) (
                         $batch->currency_code
-                        ?? 'ZWG'
+                        ??
+                        'ZWG'
                     )
                 )
             );
@@ -117,14 +116,6 @@ class ContributionImportValidator
         |--------------------------------------------------------------------------
         | Stage 1 - Start Processing
         |--------------------------------------------------------------------------
-        |
-        | 5% means:
-        |
-        | - Queue job started
-        | - Employer found
-        | - Contribution period found
-        | - Currency accepted
-        |
         */
 
         $batch->update([
@@ -167,7 +158,6 @@ class ContributionImportValidator
 
 
         try {
-
             /*
             |--------------------------------------------------------------------------
             | Stage 2 - Resolve Uploaded Excel File
@@ -198,12 +188,6 @@ class ContributionImportValidator
                 );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | File Found
-            |--------------------------------------------------------------------------
-            */
-
             $batch->update([
                 'progress_percentage' =>
                     8,
@@ -212,7 +196,7 @@ class ContributionImportValidator
 
             /*
             |--------------------------------------------------------------------------
-            | Read Excel File
+            | Read Excel
             |--------------------------------------------------------------------------
             */
 
@@ -223,12 +207,6 @@ class ContributionImportValidator
                         $fullPath
                     );
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Stage 3 - Excel Successfully Read
-            |--------------------------------------------------------------------------
-            */
 
             $batch->update([
                 'progress_percentage' =>
@@ -246,7 +224,8 @@ class ContributionImportValidator
                 $excel[
                     'rows'
                 ]
-                ?? [];
+                ??
+                [];
 
 
             $totalRows =
@@ -255,9 +234,7 @@ class ContributionImportValidator
                 );
 
 
-            if (
-                $totalRows === 0
-            ) {
+            if ($totalRows === 0) {
                 throw new RuntimeException(
                     'The contribution Excel file does not contain any contribution rows.'
                 );
@@ -268,11 +245,6 @@ class ContributionImportValidator
             |--------------------------------------------------------------------------
             | Store Total Rows Early
             |--------------------------------------------------------------------------
-            |
-            | This allows the progress page to immediately show:
-            |
-            | Processed 0 of 500
-            |
             */
 
             $batch->update([
@@ -288,9 +260,6 @@ class ContributionImportValidator
             |--------------------------------------------------------------------------
             | Clear Previous Validation Results
             |--------------------------------------------------------------------------
-            |
-            | This allows a previously failed batch to be safely revalidated.
-            |
             */
 
             ContributionPeriodMemberStatus::query()
@@ -308,12 +277,6 @@ class ContributionImportValidator
                 )
                 ->delete();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Stage 4 - Staging Area Ready
-            |--------------------------------------------------------------------------
-            */
 
             $batch->update([
                 'progress_percentage' =>
@@ -355,7 +318,7 @@ class ContributionImportValidator
 
             /*
             |--------------------------------------------------------------------------
-            | Duplicate Row Detection
+            | Duplicate Detection
             |--------------------------------------------------------------------------
             */
 
@@ -370,13 +333,6 @@ class ContributionImportValidator
             */
 
             $totals = [
-
-                /*
-                |--------------------------------------------------------------------------
-                | USD
-                |--------------------------------------------------------------------------
-                */
-
                 'usd_basic_pay_total' =>
                     0.0,
 
@@ -391,13 +347,6 @@ class ContributionImportValidator
 
                 'usd_employer_avc_total' =>
                     0.0,
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | ZWG
-                |--------------------------------------------------------------------------
-                */
 
                 'zwg_basic_pay_total' =>
                     0.0,
@@ -420,25 +369,12 @@ class ContributionImportValidator
             |--------------------------------------------------------------------------
             | Stage 5 - Process Excel Rows
             |--------------------------------------------------------------------------
-            |
-            | Row processing uses:
-            |
-            | 20% -> 80%
-            |
-            | We deliberately reserve the remaining percentage for:
-            |
-            | - Nil contributors
-            | - Totals
-            | - Period summary
-            | - Final database update
-            |
             */
 
             foreach (
                 $excelRows
                 as $position => $excelRow
             ) {
-
                 /*
                 |--------------------------------------------------------------------------
                 | Normalized Data
@@ -449,12 +385,13 @@ class ContributionImportValidator
                     $excelRow[
                         'normalized_data'
                     ]
-                    ?? [];
+                    ??
+                    [];
 
 
                 /*
                 |--------------------------------------------------------------------------
-                | Map Currency Values
+                | Map Generic Values To Selected Currency
                 |--------------------------------------------------------------------------
                 */
 
@@ -467,7 +404,7 @@ class ContributionImportValidator
 
                 /*
                 |--------------------------------------------------------------------------
-                | Row Errors / Warnings
+                | Row Messages
                 |--------------------------------------------------------------------------
                 */
 
@@ -480,7 +417,7 @@ class ContributionImportValidator
 
                 /*
                 |--------------------------------------------------------------------------
-                | Required Member Information
+                | Required Basic Member Information
                 |--------------------------------------------------------------------------
                 */
 
@@ -505,25 +442,12 @@ class ContributionImportValidator
 
                 /*
                 |--------------------------------------------------------------------------
-                | Contribution Period
+                | Period
                 |--------------------------------------------------------------------------
                 */
 
                 $this->validatePeriod(
                     $batch,
-                    $data,
-                    $warnings
-                );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Financial Validation
-                |--------------------------------------------------------------------------
-                */
-
-                $this->validateFinancialValues(
-                    $currency,
                     $data,
                     $warnings
                 );
@@ -556,14 +480,14 @@ class ContributionImportValidator
                         . '.';
 
                 } else {
-
                     $seenFingerprints[
                         $fingerprint
                     ] =
                         $excelRow[
                             'row_number'
                         ]
-                        ?? (
+                        ??
+                        (
                             $position
                             +
                             2
@@ -576,7 +500,7 @@ class ContributionImportValidator
                 | Member Matching
                 |--------------------------------------------------------------------------
                 |
-                | Matching priority:
+                | Priority:
                 |
                 | 1. PenAd member number
                 | 2. PENERP member number
@@ -598,15 +522,26 @@ class ContributionImportValidator
                     $match[
                         'member'
                     ]
-                    ?? null;
+                    ??
+                    null;
 
 
                 $matchType =
                     $match[
                         'match_type'
                     ]
-                    ?? null;
+                    ??
+                    null;
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | IMPORTANT
+                |--------------------------------------------------------------------------
+                |
+                | Determine new/existing member BEFORE rate validation.
+                |
+                */
 
                 $isNewMember =
                     false;
@@ -622,7 +557,8 @@ class ContributionImportValidator
                     $match[
                         'conflict'
                     ]
-                    ?? false
+                    ??
+                    false
                 ) {
                     $errors[] =
                         $match[
@@ -640,7 +576,6 @@ class ContributionImportValidator
                 */
 
                 if ($member) {
-
                     $existingMemberRows++;
 
 
@@ -650,7 +585,7 @@ class ContributionImportValidator
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Employer Check
+                    | Existing Member Employer
                     |--------------------------------------------------------------------------
                     */
 
@@ -663,7 +598,7 @@ class ContributionImportValidator
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Identity Check
+                    | Existing Member Identity
                     |--------------------------------------------------------------------------
                     */
 
@@ -710,10 +645,10 @@ class ContributionImportValidator
                         $match[
                             'conflict'
                         ]
-                        ?? false
+                        ??
+                        false
                     )
                 ) {
-
                     /*
                     |--------------------------------------------------------------------------
                     | Proposed New Member
@@ -738,8 +673,12 @@ class ContributionImportValidator
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Count New Member Candidate
+                    | Count Postable New Member Candidate
                     |--------------------------------------------------------------------------
+                    |
+                    | Rows containing hard errors are not counted as new members
+                    | ready for posting.
+                    |
                     */
 
                     if (
@@ -754,6 +693,60 @@ class ContributionImportValidator
 
                 /*
                 |--------------------------------------------------------------------------
+                | Financial Validation
+                |--------------------------------------------------------------------------
+                |
+                | IMPORTANT:
+                |
+                | This MUST happen after member matching because:
+                |
+                | New member employee rate      = 6%
+                | Existing member employee rate = 5% to 6%
+                | Employer rate                 = 17.3%
+                |
+                | Rate/calculation mismatches are WARNINGS.
+                |
+                */
+
+                $this->validateFinancialValues(
+                    currency:
+                        $currency,
+
+                    data:
+                        $data,
+
+                    isNewMember:
+                        $isNewMember,
+
+                    warnings:
+                        $warnings
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Remove Duplicate Messages
+                |--------------------------------------------------------------------------
+                */
+
+                $errors =
+                    array_values(
+                        array_unique(
+                            $errors
+                        )
+                    );
+
+
+                $warnings =
+                    array_values(
+                        array_unique(
+                            $warnings
+                        )
+                    );
+
+
+                /*
+                |--------------------------------------------------------------------------
                 | Determine Validation Status
                 |--------------------------------------------------------------------------
                 */
@@ -763,7 +756,6 @@ class ContributionImportValidator
                         $errors
                     )
                 ) {
-
                     $validationStatus =
                         'error';
 
@@ -774,10 +766,7 @@ class ContributionImportValidator
                     !empty(
                         $warnings
                     )
-                    ||
-                    $isNewMember
                 ) {
-
                     $validationStatus =
                         'warning';
 
@@ -785,7 +774,6 @@ class ContributionImportValidator
                     $warningRows++;
 
                 } else {
-
                     $validationStatus =
                         'valid';
 
@@ -796,8 +784,11 @@ class ContributionImportValidator
 
                 /*
                 |--------------------------------------------------------------------------
-                | Add Financial Totals
+                | Batch Financial Totals
                 |--------------------------------------------------------------------------
+                |
+                | These represent the actual uploaded schedule.
+                |
                 */
 
                 $this->addTotals(
@@ -820,7 +811,8 @@ class ContributionImportValidator
                         $excelRow[
                             'row_number'
                         ]
-                        ?? (
+                        ??
+                        (
                             $position
                             +
                             2
@@ -830,7 +822,8 @@ class ContributionImportValidator
                         $excelRow[
                             'raw_data'
                         ]
-                        ?? [],
+                        ??
+                        [],
 
                     'normalized_data' =>
                         $data,
@@ -866,9 +859,6 @@ class ContributionImportValidator
                 |--------------------------------------------------------------------------
                 | Row Progress
                 |--------------------------------------------------------------------------
-                |
-                | Row validation occupies 20% through 80%.
-                |
                 */
 
                 $processedRows =
@@ -898,16 +888,8 @@ class ContributionImportValidator
 
                 /*
                 |--------------------------------------------------------------------------
-                | Update Progress
+                | Reduce Progress UPDATE Statements
                 |--------------------------------------------------------------------------
-                |
-                | To avoid excessive UPDATE statements on very large files,
-                | update at:
-                |
-                | - every row for small files
-                | - approximately every 1% for large files
-                | - always on the final row
-                |
                 */
 
                 $progressUpdateInterval =
@@ -996,10 +978,10 @@ class ContributionImportValidator
             | Stage 7 - Identify Nil Contributors
             |--------------------------------------------------------------------------
             |
-            | Existing active members under the employer who are NOT on this
-            | month's schedule become NIL CONTRIBUTORS.
+            | Existing active members under the employer who do not appear on
+            | the current schedule become NIL CONTRIBUTORS.
             |
-            | They are NOT exited.
+            | They are not exited.
             |
             */
 
@@ -1014,12 +996,6 @@ class ContributionImportValidator
                 );
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Nil Contributor Processing Complete
-            |--------------------------------------------------------------------------
-            */
-
             $batch->update([
                 'nil_contributor_rows' =>
                     $nilContributorCount,
@@ -1031,7 +1007,7 @@ class ContributionImportValidator
 
             /*
             |--------------------------------------------------------------------------
-            | Stage 8 - Calculate Contribution Period Summary
+            | Stage 8 - Contribution Period Summary
             |--------------------------------------------------------------------------
             */
 
@@ -1047,14 +1023,6 @@ class ContributionImportValidator
             |--------------------------------------------------------------------------
             | Stage 9 - Save Batch Totals
             |--------------------------------------------------------------------------
-            |
-            | IMPORTANT:
-            |
-            | Do NOT set status to awaiting_review yet.
-            | Do NOT set progress to 100 yet.
-            |
-            | There is still final database work to complete.
-            |
             */
 
             $batch->update([
@@ -1146,12 +1114,6 @@ class ContributionImportValidator
                         'zwg_employer_avc_total'
                     ],
 
-                /*
-                |--------------------------------------------------------------------------
-                | Still Processing
-                |--------------------------------------------------------------------------
-                */
-
                 'progress_percentage' =>
                     94,
             ]);
@@ -1189,12 +1151,6 @@ class ContributionImportValidator
                 ]);
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Contribution Period Successfully Updated
-            |--------------------------------------------------------------------------
-            */
-
             $batch->update([
                 'progress_percentage' =>
                     98,
@@ -1203,16 +1159,8 @@ class ContributionImportValidator
 
             /*
             |--------------------------------------------------------------------------
-            | Stage 11 - Validation Completely Finished
+            | Stage 11 - Validation Complete
             |--------------------------------------------------------------------------
-            |
-            | ONLY NOW:
-            |
-            | status = awaiting_review
-            | progress = 100
-            |
-            | The UI can safely redirect to the Review page.
-            |
             */
 
             $batch->update([
@@ -1230,7 +1178,6 @@ class ContributionImportValidator
             ]);
 
         } catch (Throwable $e) {
-
             /*
             |--------------------------------------------------------------------------
             | Failed Validation
@@ -1264,37 +1211,40 @@ class ContributionImportValidator
         string $currency,
         array $data
     ): array {
+        /*
+        |--------------------------------------------------------------------------
+        | Start With Existing Legacy Values
+        |--------------------------------------------------------------------------
+        */
+
         $mapped = [
             ...$data,
-
-            /*
-            |--------------------------------------------------------------------------
-            | USD
-            |--------------------------------------------------------------------------
-            */
 
             'usd_basic_pay' =>
                 (float) (
                     $data[
                         'usd_basic_pay'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employee_rate' =>
-                (float) (
+                $this->normalisePercentageRate(
                     $data[
                         'usd_employee_rate'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employer_rate' =>
-                (float) (
+                $this->normalisePercentageRate(
                     $data[
                         'usd_employer_rate'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employee_contribution' =>
@@ -1302,7 +1252,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employee_contribution'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employer_contribution' =>
@@ -1310,7 +1261,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employer_contribution'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employee_avc' =>
@@ -1318,7 +1270,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employee_avc'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employer_avc' =>
@@ -1326,7 +1279,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employer_avc'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employee_arrear' =>
@@ -1334,7 +1288,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employee_arrear'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employer_arrear' =>
@@ -1342,7 +1297,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employer_arrear'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employee_transfer_in' =>
@@ -1350,7 +1306,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employee_transfer_in'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employer_transfer_in' =>
@@ -1358,7 +1315,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employer_transfer_in'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employee_late_interest' =>
@@ -1366,7 +1324,8 @@ class ContributionImportValidator
                     $data[
                         'usd_employee_late_interest'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'usd_employer_late_interest' =>
@@ -1374,38 +1333,36 @@ class ContributionImportValidator
                     $data[
                         'usd_employer_late_interest'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | ZWG
-            |--------------------------------------------------------------------------
-            */
 
             'zwg_basic_pay' =>
                 (float) (
                     $data[
                         'zwg_basic_pay'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employee_rate' =>
-                (float) (
+                $this->normalisePercentageRate(
                     $data[
                         'zwg_employee_rate'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employer_rate' =>
-                (float) (
+                $this->normalisePercentageRate(
                     $data[
                         'zwg_employer_rate'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employee_contribution' =>
@@ -1413,7 +1370,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employee_contribution'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employer_contribution' =>
@@ -1421,7 +1379,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employer_contribution'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employee_avc' =>
@@ -1429,7 +1388,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employee_avc'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employer_avc' =>
@@ -1437,7 +1397,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employer_avc'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employee_arrear' =>
@@ -1445,7 +1406,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employee_arrear'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employer_arrear' =>
@@ -1453,7 +1415,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employer_arrear'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employee_transfer_in' =>
@@ -1461,7 +1424,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employee_transfer_in'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employer_transfer_in' =>
@@ -1469,7 +1433,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employer_transfer_in'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employee_late_interest' =>
@@ -1477,7 +1442,8 @@ class ContributionImportValidator
                     $data[
                         'zwg_employee_late_interest'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
 
             'zwg_employer_late_interest' =>
@@ -1485,14 +1451,15 @@ class ContributionImportValidator
                     $data[
                         'zwg_employer_late_interest'
                     ]
-                    ?? 0
+                    ??
+                    0
                 ),
         ];
 
 
         /*
         |--------------------------------------------------------------------------
-        | Neutral Template Values
+        | Generic Template Values
         |--------------------------------------------------------------------------
         */
 
@@ -1501,25 +1468,28 @@ class ContributionImportValidator
                 $data[
                     'basic_pay'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
         $employeeRate =
-            (float) (
+            $this->normalisePercentageRate(
                 $data[
                     'employee_rate'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
         $employerRate =
-            (float) (
+            $this->normalisePercentageRate(
                 $data[
                     'employer_rate'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1528,7 +1498,8 @@ class ContributionImportValidator
                 $data[
                     'employee_contribution'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1537,7 +1508,8 @@ class ContributionImportValidator
                 $data[
                     'employer_contribution'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1546,7 +1518,8 @@ class ContributionImportValidator
                 $data[
                     'employee_avc'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1555,7 +1528,8 @@ class ContributionImportValidator
                 $data[
                     'employer_avc'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1564,7 +1538,8 @@ class ContributionImportValidator
                 $data[
                     'employee_arrear'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1573,7 +1548,8 @@ class ContributionImportValidator
                 $data[
                     'employer_arrear'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1582,7 +1558,8 @@ class ContributionImportValidator
                 $data[
                     'employee_transfer_in'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1591,7 +1568,8 @@ class ContributionImportValidator
                 $data[
                     'employer_transfer_in'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1600,7 +1578,8 @@ class ContributionImportValidator
                 $data[
                     'employee_late_interest'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -1609,375 +1588,186 @@ class ContributionImportValidator
                 $data[
                     'employer_late_interest'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
         /*
         |--------------------------------------------------------------------------
-        | ZWG Schedule
+        | ZWG
         |--------------------------------------------------------------------------
         */
 
-        if (
-            $currency ===
-            'ZWG'
-        ) {
-
-            if (
-                array_key_exists(
-                    'basic_pay',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_basic_pay'
-                ] =
-                    $basicPay;
-            }
+        if ($currency === 'ZWG') {
+            $mapped[
+                'zwg_basic_pay'
+            ] =
+                $basicPay;
 
 
-            if (
-                array_key_exists(
-                    'employee_rate',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employee_rate'
-                ] =
-                    $employeeRate;
-            }
+            $mapped[
+                'zwg_employee_rate'
+            ] =
+                $employeeRate;
 
 
-            if (
-                array_key_exists(
-                    'employer_rate',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employer_rate'
-                ] =
-                    $employerRate;
-            }
+            $mapped[
+                'zwg_employer_rate'
+            ] =
+                $employerRate;
 
 
-            if (
-                array_key_exists(
-                    'employee_contribution',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employee_contribution'
-                ] =
-                    $employeeContribution;
-            }
+            $mapped[
+                'zwg_employee_contribution'
+            ] =
+                $employeeContribution;
 
 
-            if (
-                array_key_exists(
-                    'employer_contribution',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employer_contribution'
-                ] =
-                    $employerContribution;
-            }
+            $mapped[
+                'zwg_employer_contribution'
+            ] =
+                $employerContribution;
 
 
-            if (
-                array_key_exists(
-                    'employee_avc',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employee_avc'
-                ] =
-                    $employeeAvc;
-            }
+            $mapped[
+                'zwg_employee_avc'
+            ] =
+                $employeeAvc;
 
 
-            if (
-                array_key_exists(
-                    'employer_avc',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employer_avc'
-                ] =
-                    $employerAvc;
-            }
+            $mapped[
+                'zwg_employer_avc'
+            ] =
+                $employerAvc;
 
 
-            if (
-                array_key_exists(
-                    'employee_arrear',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employee_arrear'
-                ] =
-                    $employeeArrear;
-            }
+            $mapped[
+                'zwg_employee_arrear'
+            ] =
+                $employeeArrear;
 
 
-            if (
-                array_key_exists(
-                    'employer_arrear',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employer_arrear'
-                ] =
-                    $employerArrear;
-            }
+            $mapped[
+                'zwg_employer_arrear'
+            ] =
+                $employerArrear;
 
 
-            if (
-                array_key_exists(
-                    'employee_transfer_in',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employee_transfer_in'
-                ] =
-                    $employeeTransferIn;
-            }
+            $mapped[
+                'zwg_employee_transfer_in'
+            ] =
+                $employeeTransferIn;
 
 
-            if (
-                array_key_exists(
-                    'employer_transfer_in',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employer_transfer_in'
-                ] =
-                    $employerTransferIn;
-            }
+            $mapped[
+                'zwg_employer_transfer_in'
+            ] =
+                $employerTransferIn;
 
 
-            if (
-                array_key_exists(
-                    'employee_late_interest',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employee_late_interest'
-                ] =
-                    $employeeLateInterest;
-            }
+            $mapped[
+                'zwg_employee_late_interest'
+            ] =
+                $employeeLateInterest;
 
 
-            if (
-                array_key_exists(
-                    'employer_late_interest',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'zwg_employer_late_interest'
-                ] =
-                    $employerLateInterest;
-            }
+            $mapped[
+                'zwg_employer_late_interest'
+            ] =
+                $employerLateInterest;
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | USD Schedule
+        | USD
         |--------------------------------------------------------------------------
         */
 
-        if (
-            $currency ===
-            'USD'
-        ) {
-
-            if (
-                array_key_exists(
-                    'basic_pay',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_basic_pay'
-                ] =
-                    $basicPay;
-            }
+        if ($currency === 'USD') {
+            $mapped[
+                'usd_basic_pay'
+            ] =
+                $basicPay;
 
 
-            if (
-                array_key_exists(
-                    'employee_rate',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employee_rate'
-                ] =
-                    $employeeRate;
-            }
+            $mapped[
+                'usd_employee_rate'
+            ] =
+                $employeeRate;
 
 
-            if (
-                array_key_exists(
-                    'employer_rate',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employer_rate'
-                ] =
-                    $employerRate;
-            }
+            $mapped[
+                'usd_employer_rate'
+            ] =
+                $employerRate;
 
 
-            if (
-                array_key_exists(
-                    'employee_contribution',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employee_contribution'
-                ] =
-                    $employeeContribution;
-            }
+            $mapped[
+                'usd_employee_contribution'
+            ] =
+                $employeeContribution;
 
 
-            if (
-                array_key_exists(
-                    'employer_contribution',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employer_contribution'
-                ] =
-                    $employerContribution;
-            }
+            $mapped[
+                'usd_employer_contribution'
+            ] =
+                $employerContribution;
 
 
-            if (
-                array_key_exists(
-                    'employee_avc',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employee_avc'
-                ] =
-                    $employeeAvc;
-            }
+            $mapped[
+                'usd_employee_avc'
+            ] =
+                $employeeAvc;
 
 
-            if (
-                array_key_exists(
-                    'employer_avc',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employer_avc'
-                ] =
-                    $employerAvc;
-            }
+            $mapped[
+                'usd_employer_avc'
+            ] =
+                $employerAvc;
 
 
-            if (
-                array_key_exists(
-                    'employee_arrear',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employee_arrear'
-                ] =
-                    $employeeArrear;
-            }
+            $mapped[
+                'usd_employee_arrear'
+            ] =
+                $employeeArrear;
 
 
-            if (
-                array_key_exists(
-                    'employer_arrear',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employer_arrear'
-                ] =
-                    $employerArrear;
-            }
+            $mapped[
+                'usd_employer_arrear'
+            ] =
+                $employerArrear;
 
 
-            if (
-                array_key_exists(
-                    'employee_transfer_in',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employee_transfer_in'
-                ] =
-                    $employeeTransferIn;
-            }
+            $mapped[
+                'usd_employee_transfer_in'
+            ] =
+                $employeeTransferIn;
 
 
-            if (
-                array_key_exists(
-                    'employer_transfer_in',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employer_transfer_in'
-                ] =
-                    $employerTransferIn;
-            }
+            $mapped[
+                'usd_employer_transfer_in'
+            ] =
+                $employerTransferIn;
 
 
-            if (
-                array_key_exists(
-                    'employee_late_interest',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employee_late_interest'
-                ] =
-                    $employeeLateInterest;
-            }
+            $mapped[
+                'usd_employee_late_interest'
+            ] =
+                $employeeLateInterest;
 
 
-            if (
-                array_key_exists(
-                    'employer_late_interest',
-                    $data
-                )
-            ) {
-                $mapped[
-                    'usd_employer_late_interest'
-                ] =
-                    $employerLateInterest;
-            }
+            $mapped[
+                'usd_employer_late_interest'
+            ] =
+                $employerLateInterest;
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Keep Currency With Normalised Row
+        | Keep Currency
         |--------------------------------------------------------------------------
         */
 
@@ -2006,7 +1796,8 @@ class ContributionImportValidator
                 $data[
                     'surname'
                 ]
-                ?? null
+                ??
+                null
             )
         ) {
             $errors[] =
@@ -2019,7 +1810,8 @@ class ContributionImportValidator
                 $data[
                     'first_names'
                 ]
-                ?? null
+                ??
+                null
             )
         ) {
             $errors[] =
@@ -2038,32 +1830,44 @@ class ContributionImportValidator
                 $data[
                     'pension_reference_number'
                 ]
-                ?? null
+                ??
+                null
+            )
+            &&
+            blank(
+                $data[
+                    'penad_member_number'
+                ]
+                ??
+                null
             )
             &&
             blank(
                 $data[
                     'penerp_member_number'
                 ]
-                ?? null
+                ??
+                null
             )
             &&
             blank(
                 $data[
                     'staff_number'
                 ]
-                ?? null
+                ??
+                null
             )
             &&
             blank(
                 $data[
                     'national_id'
                 ]
-                ?? null
+                ??
+                null
             )
         ) {
             $errors[] =
-                'No PenAd/PENSION reference number, PENERP member number, staff number or National ID was supplied.';
+                'No PenAd/Pension reference number, PENERP member number, staff number or National ID was supplied.';
         }
     }
 
@@ -2084,9 +1888,13 @@ class ContributionImportValidator
                 $data[
                     'employer_number'
                 ]
-                ?? null
+                ??
+                null
             )
         ) {
+            $errors[] =
+                'Employer Number is missing from the contribution row.';
+
             return;
         }
 
@@ -2107,17 +1915,20 @@ class ContributionImportValidator
                 $batch
                     ->employer
                     ->employer_number
-                    ?? null,
+                    ??
+                    null,
 
                 $batch
                     ->employer
                     ->penad_employer_number
-                    ?? null,
+                    ??
+                    null,
 
                 $batch
                     ->employer
                     ->fundworx_employer_number
-                    ?? null,
+                    ??
+                    null,
             ])
                 ->filter(
                     fn ($value) =>
@@ -2169,15 +1980,18 @@ class ContributionImportValidator
                 $data[
                     'due_date'
                 ]
-                ?? null
+                ??
+                null
             )
         ) {
+            $warnings[] =
+                'The contribution Due Date is missing.';
+
             return;
         }
 
 
         try {
-
             $rowDate =
                 Carbon::parse(
                     $data[
@@ -2207,14 +2021,19 @@ class ContributionImportValidator
                         'd M Y'
                     )
                     . ' is not in the selected contribution month '
-                    . $batch
-                        ->contributionPeriod
-                        ->period_label
+                    . (
+                        $batch
+                            ->contributionPeriod
+                            ->period_label
+                        ??
+                        $batch
+                            ->contributionPeriod
+                            ->period_date
+                    )
                     . '.';
             }
 
         } catch (Throwable) {
-
             $warnings[] =
                 'The due date supplied in this row could not be interpreted.';
         }
@@ -2225,145 +2044,129 @@ class ContributionImportValidator
     |--------------------------------------------------------------------------
     | Financial Validation
     |--------------------------------------------------------------------------
+    |
+    | Rate/calculation exceptions are WARNINGS.
+    |
+    | They do NOT prevent approval.
+    |
     */
 
     private function validateFinancialValues(
         string $currency,
         array $data,
+        bool $isNewMember,
         array &$warnings
     ): void {
-        if (
-            $currency ===
-            'USD'
-        ) {
-
-            $basicPay =
-                (float) (
-                    $data[
-                        'usd_basic_pay'
-                    ]
-                    ?? 0
-                );
+        $prefix =
+            strtolower(
+                $currency
+            );
 
 
-            $employeeContribution =
-                (float) (
-                    $data[
-                        'usd_employee_contribution'
-                    ]
-                    ?? 0
-                );
+        $basicPay =
+            (float) (
+                $data[
+                    $prefix
+                    . '_basic_pay'
+                ]
+                ??
+                0
+            );
 
 
-            $employerContribution =
-                (float) (
-                    $data[
-                        'usd_employer_contribution'
-                    ]
-                    ?? 0
-                );
+        $employeeRate =
+            $this->normalisePercentageRate(
+                $data[
+                    $prefix
+                    . '_employee_rate'
+                ]
+                ??
+                0
+            );
 
 
-            $employeeAvc =
-                (float) (
-                    $data[
-                        'usd_employee_avc'
-                    ]
-                    ?? 0
-                );
+        $employerRate =
+            $this->normalisePercentageRate(
+                $data[
+                    $prefix
+                    . '_employer_rate'
+                ]
+                ??
+                0
+            );
 
 
-            $employerAvc =
-                (float) (
-                    $data[
-                        'usd_employer_avc'
-                    ]
-                    ?? 0
-                );
+        $employeeContribution =
+            (float) (
+                $data[
+                    $prefix
+                    . '_employee_contribution'
+                ]
+                ??
+                0
+            );
 
 
-            $employeeArrear =
-                (float) (
-                    $data[
-                        'usd_employee_arrear'
-                    ]
-                    ?? 0
-                );
+        $employerContribution =
+            (float) (
+                $data[
+                    $prefix
+                    . '_employer_contribution'
+                ]
+                ??
+                0
+            );
 
 
-            $employerArrear =
-                (float) (
-                    $data[
-                        'usd_employer_arrear'
-                    ]
-                    ?? 0
-                );
-
-        } else {
-
-            $basicPay =
-                (float) (
-                    $data[
-                        'zwg_basic_pay'
-                    ]
-                    ?? 0
-                );
+        $employeeAvc =
+            (float) (
+                $data[
+                    $prefix
+                    . '_employee_avc'
+                ]
+                ??
+                0
+            );
 
 
-            $employeeContribution =
-                (float) (
-                    $data[
-                        'zwg_employee_contribution'
-                    ]
-                    ?? 0
-                );
+        $employerAvc =
+            (float) (
+                $data[
+                    $prefix
+                    . '_employer_avc'
+                ]
+                ??
+                0
+            );
 
 
-            $employerContribution =
-                (float) (
-                    $data[
-                        'zwg_employer_contribution'
-                    ]
-                    ?? 0
-                );
+        $employeeArrear =
+            (float) (
+                $data[
+                    $prefix
+                    . '_employee_arrear'
+                ]
+                ??
+                0
+            );
 
 
-            $employeeAvc =
-                (float) (
-                    $data[
-                        'zwg_employee_avc'
-                    ]
-                    ?? 0
-                );
+        $employerArrear =
+            (float) (
+                $data[
+                    $prefix
+                    . '_employer_arrear'
+                ]
+                ??
+                0
+            );
 
 
-            $employerAvc =
-                (float) (
-                    $data[
-                        'zwg_employer_avc'
-                    ]
-                    ?? 0
-                );
-
-
-            $employeeArrear =
-                (float) (
-                    $data[
-                        'zwg_employee_arrear'
-                    ]
-                    ?? 0
-                );
-
-
-            $employerArrear =
-                (float) (
-                    $data[
-                        'zwg_employer_arrear'
-                    ]
-                    ?? 0
-                );
-        }
-
+        /*
+        |--------------------------------------------------------------------------
+        | Negative Contributions
+        |--------------------------------------------------------------------------
+        */
 
         $financialValues = [
             $employeeContribution,
@@ -2375,73 +2178,354 @@ class ContributionImportValidator
         ];
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Negative Contributions
-        |--------------------------------------------------------------------------
-        */
-
         if (
             collect(
                 $financialValues
+            )->contains(
+                fn ($amount) =>
+                    (float)
+                    $amount < 0
             )
-                ->contains(
-                    fn ($amount) =>
-                        (float)
-                        $amount
-                        <
-                        0
-                )
         ) {
             $warnings[] =
-                'Negative '
+                'CONTRIBUTION EXCEPTION: Negative '
                 . $currency
-                . ' expected contribution detected. This row will require review and will later be posted as an adjustment.';
+                . ' contribution detected. '
+                . 'This row requires review as a possible adjustment/correction.';
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Zero Contribution
+        | Basic Pay
         |--------------------------------------------------------------------------
         */
 
-        $allZero =
-            collect(
-                $financialValues
+        if ($basicPay <= 0) {
+            if (
+                $employeeContribution != 0
+                ||
+                $employerContribution != 0
+            ) {
+                $warnings[] =
+                    'CONTRIBUTION EXCEPTION: '
+                    . $currency
+                    . ' contribution exists but pensionable Basic Pay is zero or negative.';
+            }
+
+
+            return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Employer Rate = 17.30%
+        |--------------------------------------------------------------------------
+        */
+
+        $requiredEmployerRate =
+            17.30;
+
+
+        if (
+            abs(
+                $employerRate
+                -
+                $requiredEmployerRate
             )
-                ->every(
-                    fn ($amount) =>
-                        (float)
-                        $amount
-                        ===
-                        0.0
-                );
+            >
+            0.001
+        ) {
+            $warnings[] =
+                'RATE EXCEPTION: '
+                . $currency
+                . ' Employer Rate is '
+                . number_format(
+                    $employerRate,
+                    2
+                )
+                . '%. Expected employer rate is 17.30%.';
+        }
 
 
-        if ($allZero) {
+        /*
+        |--------------------------------------------------------------------------
+        | System Employer Contribution
+        |--------------------------------------------------------------------------
+        */
+
+        $expectedEmployerContribution =
+            round(
+                $basicPay
+                *
+                (
+                    $requiredEmployerRate
+                    /
+                    100
+                ),
+                2
+            );
+
+
+        if (
+            abs(
+                $employerContribution
+                -
+                $expectedEmployerContribution
+            )
+            >
+            0.01
+        ) {
+            /*
+            |--------------------------------------------------------------------------
+            | Variance
+            |--------------------------------------------------------------------------
+            |
+            | System calculated - uploaded schedule
+            |
+            */
+
+            $variance =
+                $expectedEmployerContribution
+                -
+                $employerContribution;
+
+
+            $warnings[] =
+                'CONTRIBUTION EXCEPTION: '
+                . $currency
+                . ' Employer Contribution does not agree with 17.30% of Basic Pay. '
+                . 'Basic Pay: '
+                . number_format(
+                    $basicPay,
+                    2
+                )
+                . ', System calculated: '
+                . number_format(
+                    $expectedEmployerContribution,
+                    2
+                )
+                . ', Schedule amount: '
+                . number_format(
+                    $employerContribution,
+                    2
+                )
+                . ', Variance: '
+                . number_format(
+                    $variance,
+                    2
+                )
+                . '.';
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Employee Rate
+        |--------------------------------------------------------------------------
+        */
+
+        if ($isNewMember) {
+            /*
+            |--------------------------------------------------------------------------
+            | New Member = exactly 6.00%
+            |--------------------------------------------------------------------------
+            */
+
+            $calculationEmployeeRate =
+                6.00;
+
+
+            if (
+                abs(
+                    $employeeRate
+                    -
+                    6.00
+                )
+                >
+                0.001
+            ) {
+                $warnings[] =
+                    'RATE EXCEPTION: '
+                    . $currency
+                    . ' Employee Rate for a proposed new member is '
+                    . number_format(
+                        $employeeRate,
+                        2
+                    )
+                    . '%. New members must contribute at 6.00%.';
+            }
+
+        } else {
+            /*
+            |--------------------------------------------------------------------------
+            | Existing Member = 5.00% to 6.00%
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $employeeRate < 5.00
+                ||
+                $employeeRate > 6.00
+            ) {
+                $warnings[] =
+                    'RATE EXCEPTION: '
+                    . $currency
+                    . ' Employee Rate is '
+                    . number_format(
+                        $employeeRate,
+                        2
+                    )
+                    . '%. Existing members are expected to have an employee contribution rate between 5.00% and 6.00%.';
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Existing Member Calculation Uses Uploaded Rate
+            |--------------------------------------------------------------------------
+            */
+
+            $calculationEmployeeRate =
+                $employeeRate;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | System Employee Contribution
+        |--------------------------------------------------------------------------
+        */
+
+        $expectedEmployeeContribution =
+            round(
+                $basicPay
+                *
+                (
+                    $calculationEmployeeRate
+                    /
+                    100
+                ),
+                2
+            );
+
+
+        if (
+            abs(
+                $employeeContribution
+                -
+                $expectedEmployeeContribution
+            )
+            >
+            0.01
+        ) {
+            $variance =
+                $expectedEmployeeContribution
+                -
+                $employeeContribution;
+
+
+            $warnings[] =
+                'CONTRIBUTION EXCEPTION: '
+                . $currency
+                . ' Employee Contribution does not agree with '
+                . number_format(
+                    $calculationEmployeeRate,
+                    2
+                )
+                . '% of Basic Pay. '
+                . 'Basic Pay: '
+                . number_format(
+                    $basicPay,
+                    2
+                )
+                . ', System calculated: '
+                . number_format(
+                    $expectedEmployeeContribution,
+                    2
+                )
+                . ', Schedule amount: '
+                . number_format(
+                    $employeeContribution,
+                    2
+                )
+                . ', Variance: '
+                . number_format(
+                    $variance,
+                    2
+                )
+                . '.';
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Zero Contributions
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $employeeContribution == 0
+            &&
+            $employerContribution == 0
+            &&
+            $employeeAvc == 0
+            &&
+            $employerAvc == 0
+            &&
+            $employeeArrear == 0
+            &&
+            $employerArrear == 0
+        ) {
             $warnings[] =
                 'All '
                 . $currency
                 . ' contribution amounts are zero.';
         }
+    }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Salary Exists But No Contribution
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize Percentage Rate
+    |--------------------------------------------------------------------------
+    |
+    | Supports:
+    |
+    | 6       => 6%
+    | 0.06    => 6%
+    | 17.3    => 17.3%
+    | 0.173   => 17.3%
+    |
+    */
+
+    private function normalisePercentageRate(
+        mixed $value
+    ): float {
+        $rate =
+            (float) (
+                $value
+                ??
+                0
+            );
+
 
         if (
-            $basicPay > 0
+            $rate > 0
             &&
-            $allZero
+            $rate <= 1
         ) {
-            $warnings[] =
-                $currency
-                . ' pensionable salary exists but all contribution amounts are zero.';
+            return round(
+                $rate
+                *
+                100,
+                6
+            );
         }
+
+
+        return $rate;
     }
 
 
@@ -2514,7 +2598,8 @@ class ContributionImportValidator
                 $data[
                     'national_id'
                 ]
-                ?? null
+                ??
+                null
             );
 
 
@@ -2545,7 +2630,8 @@ class ContributionImportValidator
                 $data[
                     'surname'
                 ]
-                ?? null
+                ??
+                null
             )
             &&
             strtoupper(
@@ -2581,7 +2667,8 @@ class ContributionImportValidator
                 $data[
                     'first_names'
                 ]
-                ?? null
+                ??
+                null
             )
             &&
             filled(
@@ -2608,6 +2695,60 @@ class ContributionImportValidator
         ) {
             $warnings[] =
                 'The first name(s) on the contribution schedule differ from the name(s) stored against the matched member.';
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date Of Birth
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            filled(
+                $data[
+                    'date_of_birth'
+                ]
+                ??
+                null
+            )
+            &&
+            filled(
+                $member
+                    ->date_of_birth
+            )
+        ) {
+            try {
+                $excelDob =
+                    Carbon::parse(
+                        $data[
+                            'date_of_birth'
+                        ]
+                    )
+                        ->toDateString();
+
+
+                $memberDob =
+                    Carbon::parse(
+                        $member
+                            ->date_of_birth
+                    )
+                        ->toDateString();
+
+
+                if (
+                    $excelDob
+                    !==
+                    $memberDob
+                ) {
+                    $warnings[] =
+                        'The Date of Birth on the contribution schedule differs from the Date of Birth stored against the matched member.';
+                }
+
+            } catch (Throwable) {
+                $warnings[] =
+                    'The Date of Birth on the contribution schedule could not be compared with the existing member record.';
+            }
         }
     }
 
@@ -2636,20 +2777,17 @@ class ContributionImportValidator
                     $data[
                         'staff_number'
                     ]
-                    ?? ''
+                    ??
+                    ''
                 )
             );
 
 
-        if (
-            $staffNumber ===
-            ''
-        ) {
+        if ($staffNumber === '') {
             $errors[] =
                 'Staff Number is required for a proposed new member.';
 
         } else {
-
             $staffNumberAlreadyExists =
                 MemberEmployment::query()
                     ->where(
@@ -2667,9 +2805,7 @@ class ContributionImportValidator
                     ->exists();
 
 
-            if (
-                $staffNumberAlreadyExists
-            ) {
+            if ($staffNumberAlreadyExists) {
                 $errors[] =
                     'Staff number '
                     . $staffNumber
@@ -2680,29 +2816,264 @@ class ContributionImportValidator
 
         /*
         |--------------------------------------------------------------------------
-        | Date Joined Fund
+        | Mandatory New Member Fields
         |--------------------------------------------------------------------------
-        |
-        | REQUIRED FOR NEW MEMBERS.
-        |
         */
 
-        if (
-            blank(
-                $data[
-                    'date_joined_fund'
-                ]
-                ?? null
-            )
+        $requiredNewMemberFields = [
+            'date_joined_fund' =>
+                'Date Joined Fund',
+
+            'date_joined_employer' =>
+                'Date Joined Employer',
+
+            'date_of_birth' =>
+                'Date of Birth',
+
+            'gender' =>
+                'Gender',
+
+            'national_id' =>
+                'National ID',
+
+            'marital_status' =>
+                'Marital Status',
+
+            'cellphone_number' =>
+                'Cell Phone Number',
+
+            'email_address' =>
+                'Email Address',
+
+            'home_address' =>
+                'Home Address',
+        ];
+
+
+        foreach (
+            $requiredNewMemberFields
+            as $field => $label
         ) {
-            $errors[] =
-                'Date Joined Fund is required for a proposed new member.';
+            if (
+                blank(
+                    $data[
+                        $field
+                    ]
+                    ??
+                    null
+                )
+            ) {
+                $errors[] =
+                    $label
+                    . ' is required for a proposed new member.';
+            }
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | National ID
+        | New Member Age
+        |--------------------------------------------------------------------------
+        |
+        | HARD RULE:
+        |
+        | Proposed new member aged 60 or above cannot be created through the
+        | monthly contribution upload.
+        |
+        */
+
+        if (
+            filled(
+                $data[
+                    'date_of_birth'
+                ]
+                ??
+                null
+            )
+        ) {
+            try {
+                $dateOfBirth =
+                    Carbon::parse(
+                        $data[
+                            'date_of_birth'
+                        ]
+                    );
+
+
+                $ageDate =
+                    filled(
+                        $data[
+                            'due_date'
+                        ]
+                        ??
+                        null
+                    )
+                        ? Carbon::parse(
+                            $data[
+                                'due_date'
+                            ]
+                        )
+                        : Carbon::parse(
+                            $batch
+                                ->contributionPeriod
+                                ->period_date
+                        );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Future DOB
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $dateOfBirth->gt(
+                        $ageDate
+                    )
+                ) {
+                    $errors[] =
+                        'Date of Birth for the proposed new member cannot be after the contribution period date.';
+
+                } else {
+                    $age =
+                        $dateOfBirth
+                            ->diffInYears(
+                                $ageDate
+                            );
+
+
+                    if ($age >= 60) {
+                        $errors[] =
+                            'The proposed new member is '
+                            . $age
+                            . ' years old at '
+                            . $ageDate->format('d M Y')
+                            . '. A new member aged 60 years or above cannot contribute or be created through the monthly contribution upload.';
+                    }
+                }
+
+            } catch (Throwable) {
+                $errors[] =
+                    'Date of Birth for the proposed new member could not be interpreted.';
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date Joined Fund
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            filled(
+                $data[
+                    'date_joined_fund'
+                ]
+                ??
+                null
+            )
+            &&
+            filled(
+                $data[
+                    'date_of_birth'
+                ]
+                ??
+                null
+            )
+        ) {
+            try {
+                $dateJoinedFund =
+                    Carbon::parse(
+                        $data[
+                            'date_joined_fund'
+                        ]
+                    );
+
+
+                $dateOfBirth =
+                    Carbon::parse(
+                        $data[
+                            'date_of_birth'
+                        ]
+                    );
+
+
+                if (
+                    $dateJoinedFund->lt(
+                        $dateOfBirth
+                    )
+                ) {
+                    $errors[] =
+                        'Date Joined Fund cannot be before Date of Birth.';
+                }
+
+            } catch (Throwable) {
+                $errors[] =
+                    'Date Joined Fund could not be interpreted.';
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date Joined Employer
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            filled(
+                $data[
+                    'date_joined_employer'
+                ]
+                ??
+                null
+            )
+            &&
+            filled(
+                $data[
+                    'date_of_birth'
+                ]
+                ??
+                null
+            )
+        ) {
+            try {
+                $dateJoinedEmployer =
+                    Carbon::parse(
+                        $data[
+                            'date_joined_employer'
+                        ]
+                    );
+
+
+                $dateOfBirth =
+                    Carbon::parse(
+                        $data[
+                            'date_of_birth'
+                        ]
+                    );
+
+
+                if (
+                    $dateJoinedEmployer->lt(
+                        $dateOfBirth
+                    )
+                ) {
+                    $errors[] =
+                        'Date Joined Employer cannot be before Date of Birth.';
+                }
+
+            } catch (Throwable) {
+                $errors[] =
+                    'Date Joined Employer could not be interpreted.';
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | National ID Duplicate
         |--------------------------------------------------------------------------
         */
 
@@ -2711,17 +3082,12 @@ class ContributionImportValidator
                 $data[
                     'national_id'
                 ]
-                ?? null
+                ??
+                null
             );
 
 
-        if (!$normalizedNationalId) {
-
-            $warnings[] =
-                'National ID is missing for the proposed new member.';
-
-        } else {
-
+        if ($normalizedNationalId) {
             $nationalIdExists =
                 Member::query()
                     ->where(
@@ -2732,14 +3098,14 @@ class ContributionImportValidator
 
 
             if ($nationalIdExists) {
-
                 $errors[] =
                     'National ID '
                     . (
                         $data[
                             'national_id'
                         ]
-                        ?? ''
+                        ??
+                        ''
                     )
                     . ' already belongs to an existing PENERP member.';
             }
@@ -2748,31 +3114,35 @@ class ContributionImportValidator
 
         /*
         |--------------------------------------------------------------------------
-        | Date Of Birth
+        | Email Format
         |--------------------------------------------------------------------------
         */
 
         if (
-            blank(
+            filled(
                 $data[
-                    'date_of_birth'
+                    'email_address'
                 ]
-                ?? null
+                ??
+                null
+            )
+            &&
+            !filter_var(
+                $data[
+                    'email_address'
+                ],
+                FILTER_VALIDATE_EMAIL
             )
         ) {
-            $warnings[] =
-                'Date of birth is missing for the proposed new member.';
+            $errors[] =
+                'The Email Address supplied for the proposed new member is invalid.';
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Member Number
+        | Generated Member Number
         |--------------------------------------------------------------------------
-        |
-        | A genuinely new member is NOT required to already have a PENERP
-        | or PenAd number.
-        |
         */
 
         if (
@@ -2780,36 +3150,35 @@ class ContributionImportValidator
                 $data[
                     'penerp_member_number'
                 ]
-                ?? null
+                ??
+                null
             )
             &&
             blank(
                 $data[
                     'penad_member_number'
                 ]
-                ?? null
+                ??
+                null
             )
             &&
             blank(
                 $data[
                     'pension_reference_number'
                 ]
-                ?? null
+                ??
+                null
             )
         ) {
             $warnings[] =
-                'No existing PENERP/PenAd member number was supplied. A new member number will be allocated automatically when this batch is posted.';
+                'No existing PENERP/PenAd member number was supplied. '
+                . 'A new member number will be allocated automatically when this batch is posted.';
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Classification
-        |--------------------------------------------------------------------------
-        */
-
         $warnings[] =
-            'No existing member matched this row. It has been classified as a proposed new member and has not yet been permanently created.';
+            'No existing member matched this row. '
+            . 'It has been classified as a proposed new member and has not yet been permanently created.';
     }
 
 
@@ -2893,7 +3262,6 @@ class ContributionImportValidator
             $members
             as $member
         ) {
-
             ContributionPeriodMemberStatus::updateOrCreate(
                 [
                     'contribution_period_id' =>
@@ -2947,7 +3315,8 @@ class ContributionImportValidator
                                 $data[
                                     'pension_reference_number'
                                 ]
-                                ?? ''
+                                ??
+                                ''
                             )
                         )
                     ),
@@ -2958,7 +3327,8 @@ class ContributionImportValidator
                                 $data[
                                     'penerp_member_number'
                                 ]
-                                ?? ''
+                                ??
+                                ''
                             )
                         )
                     ),
@@ -2969,7 +3339,8 @@ class ContributionImportValidator
                                 $data[
                                     'staff_number'
                                 ]
-                                ?? ''
+                                ??
+                                ''
                             )
                         )
                     ),
@@ -2979,7 +3350,8 @@ class ContributionImportValidator
                             $data[
                                 'national_id'
                             ]
-                            ?? null
+                            ??
+                            null
                         )
                         ??
                         ''
@@ -2994,6 +3366,9 @@ class ContributionImportValidator
     |--------------------------------------------------------------------------
     | Add Batch Totals
     |--------------------------------------------------------------------------
+    |
+    | These are the actual amounts supplied by the employer schedule.
+    |
     */
 
     private function addTotals(
@@ -3013,7 +3388,8 @@ class ContributionImportValidator
                 $data[
                     'usd_basic_pay'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3024,7 +3400,8 @@ class ContributionImportValidator
                 $data[
                     'usd_employee_contribution'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3035,7 +3412,8 @@ class ContributionImportValidator
                 $data[
                     'usd_employer_contribution'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3046,7 +3424,8 @@ class ContributionImportValidator
                 $data[
                     'usd_employee_avc'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3057,7 +3436,8 @@ class ContributionImportValidator
                 $data[
                     'usd_employer_avc'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3074,7 +3454,8 @@ class ContributionImportValidator
                 $data[
                     'zwg_basic_pay'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3085,7 +3466,8 @@ class ContributionImportValidator
                 $data[
                     'zwg_employee_contribution'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3096,7 +3478,8 @@ class ContributionImportValidator
                 $data[
                     'zwg_employer_contribution'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3107,7 +3490,8 @@ class ContributionImportValidator
                 $data[
                     'zwg_employee_avc'
                 ]
-                ?? 0
+                ??
+                0
             );
 
 
@@ -3118,7 +3502,8 @@ class ContributionImportValidator
                 $data[
                     'zwg_employer_avc'
                 ]
-                ?? 0
+                ??
+                0
             );
     }
 }

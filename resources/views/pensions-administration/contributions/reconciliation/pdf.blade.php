@@ -14,247 +14,83 @@
     <style>
 
         @page {
-            margin:
-                14px
-                15px;
+            margin: 18px;
         }
-
 
         body {
-            font-family:
-                DejaVu Sans,
-                sans-serif;
-
-            font-size:
-                10px;
-
-            color:
-                #111111;
-
-            margin:
-                0;
-
-            padding:
-                0;
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 9px;
+            color: #222;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Outer Border
-        |--------------------------------------------------------------------------
-        */
-
-        .document {
-            border:
-                1px solid
-                #111111;
-
-            padding:
-                4px;
-
-            min-height:
-                760px;
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Header
-        |--------------------------------------------------------------------------
-        */
-
-        .header {
-            background:
-                #c9c9c9;
-
-            border:
-                1px solid
-                #111111;
-
-            padding:
-                13px
-                11px;
-
-            font-size:
-                12px;
-
-            font-weight:
-                bold;
-
-            line-height:
-                2;
+        .text-center {
+            text-align: center;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Section Titles
-        |--------------------------------------------------------------------------
-        */
-
-        .section-title {
-            margin:
-                12px
-                26px
-                10px
-                26px;
-
-            font-size:
-                11px;
-
-            font-weight:
-                bold;
+        .text-right {
+            text-align: right;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Tables
-        |--------------------------------------------------------------------------
-        */
-
-        table.reconciliation {
-            width:
-                94%;
-
-            margin-left:
-                3%;
-
-            border-collapse:
-                collapse;
+        .mt-10 {
+            margin-top: 10px;
         }
 
-
-        table.reconciliation td {
-            padding:
-                7px
-                9px;
-
-            border-left:
-                1px solid
-                #111111;
-
-            border-right:
-                1px solid
-                #111111;
+        .mt-15 {
+            margin-top: 15px;
         }
 
-
-        table.reconciliation tr.border-row td {
-            border-top:
-                1px solid
-                #111111;
-
-            border-bottom:
-                1px solid
-                #111111;
+        .heading {
+            font-size: 14px;
+            font-weight: bold;
         }
 
-
-        .amount {
-            width:
-                31%;
-
-            text-align:
-                right;
+        .subheading {
+            font-size: 11px;
+            font-weight: bold;
         }
 
-
-        .strong {
-            font-weight:
-                bold;
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Comments
-        |--------------------------------------------------------------------------
-        */
-
-        .comments-title {
-            margin:
-                20px
-                4%
-                7px
-                4%;
-
-            font-weight:
-                bold;
-
-            font-style:
-                italic;
+        th,
+        td {
+            border: 1px solid #555;
+            padding: 4px;
+            vertical-align: middle;
         }
 
-
-        .comments-box {
-            margin:
-                0
-                4%;
-
-            height:
-                145px;
-
-            border:
-                1px solid
-                #111111;
+        th {
+            background: #e7e7e7;
+            font-weight: bold;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Signatures
-        |--------------------------------------------------------------------------
-        */
-
-        .signature-table {
-            width:
-                100%;
-
-            margin-top:
-                17px;
-
-            border-collapse:
-                collapse;
+        .total {
+            background: #ddebf7;
+            font-weight: bold;
         }
 
+        .warning {
+            background: #fff2cc;
+            font-weight: bold;
+        }
+
+        .success {
+            background: #e2f0d9;
+            font-weight: bold;
+        }
 
         .signature-table td {
-            border:
-                none;
-
-            padding:
-                9px
-                8px;
-        }
-
-
-        .signature-label {
-            width:
-                25%;
-        }
-
-
-        .signature-name {
-            width:
-                35%;
-        }
-
-
-        .date-label {
-            width:
-                9%;
-        }
-
-
-        .signature-line {
-            border-bottom:
-                1px dashed
-                #111111;
-
-            height:
-                10px;
+            border: none;
+            padding-top: 25px;
         }
 
     </style>
@@ -264,626 +100,286 @@
 
 <body>
 
-
 @php
-
-    $batch =
-        $report[
-            'batch'
-        ];
-
-
-    $employer =
-        $report[
-            'employer'
-        ];
-
-
-    $currentPeriod =
-        $report[
-            'current_period'
-        ];
-
-
-    $previousPeriod =
-        $report[
-            'previous_period'
-        ];
-
-
-    $membership =
-        $report[
-            'membership'
-        ];
-
-
-    $contributions =
-        $report[
-            'contributions'
-        ];
-
-
-    $currency =
-        $report[
-            'currency'
-        ];
-
+    $batch = $report['batch'];
+    $employer = $report['employer'];
+    $period = $report['current_period'];
+    $previousPeriod = $report['previous_period'];
+    $currency = $report['currency'];
+    $membership = $report['membership'];
+    $contributions = $report['contributions'];
+    $schedule = $report['schedule'];
+    $calculation = $report['calculation'];
 @endphp
 
 
-<div class="document">
+<div class="text-center">
 
-
-    {{-- =========================================================
-         HEADER
-    ========================================================= --}}
-
-    <div class="header">
-
+    <div class="heading">
         LOCAL AUTHORITIES PENSION FUND
+    </div>
 
-        <br>
+    <div class="subheading mt-10">
+        {{ strtoupper($employer?->name ?? '') }}
+    </div>
 
-        {{
-            strtoupper(
-                $employer
-                    ?->name
-                ??
-                ''
-            )
-        }}
+    <div class="subheading mt-10">
+        MONTHLY CONTRIBUTION RECONCILIATION AS AT
+        {{ strtoupper($period?->period_date?->format('d F Y')) }}
+    </div>
 
+    <div class="mt-10">
+        Currency: {{ $currency }}
+        |
+        Batch #{{ $batch->id }}
+    </div>
+
+</div>
+
+
+{{-- MEMBERSHIP --}}
+
+<div class="mt-15">
+
+    <div class="subheading text-center">
+        MONTHLY MEMBERSHIP RECONCILIATION AS AT
+        {{ $period?->period_date?->format('d F Y') }}
     </div>
 
 
-    {{-- =========================================================
-         MONTHLY MEMBERSHIP RECONCILIATION
-    ========================================================= --}}
+    <table class="mt-10">
 
-    <div class="section-title">
+        <tbody>
 
-        MONTHLY MEMBERSHIP RECONCILIATION AS AT&nbsp;&nbsp;
+            <tr>
+                <td>Membership as at {{ $previousPeriod?->period_date?->format('d F Y') ?? 'Previous Period' }}</td>
+                <td class="text-right">{{ number_format($membership['previous']) }}</td>
+            </tr>
 
-        {{
-            $currentPeriod
-                ->period_date
-                ->format(
-                    'd F Y'
-                )
-        }}
+            <tr>
+                <td>Add New Members</td>
+                <td class="text-right">{{ number_format($membership['new_members']) }}</td>
+            </tr>
 
-    </div>
+            <tr>
+                <td>Add Reinstatements</td>
+                <td class="text-right">{{ number_format($membership['reinstatements']) }}</td>
+            </tr>
 
+            <tr>
+                <td>Less Exits / Suspended / Nil Contributors</td>
+                <td class="text-right">{{ number_format($membership['less_exits_suspended_nil']) }}</td>
+            </tr>
 
-    <table class="reconciliation">
+            <tr class="total">
+                <td>Membership as at {{ $period?->period_date?->format('d F Y') }}</td>
+                <td class="text-right">{{ number_format($membership['current']) }}</td>
+            </tr>
 
-
-        <tr class="border-row">
-
-            <td class="strong">
-
-                Membership as at&nbsp;&nbsp;
-
-                {{
-                    $previousPeriod
-                        ? $previousPeriod
-                            ->period_date
-                            ->format(
-                                'd F Y'
-                            )
-                        : 'Previous Period'
-                }}
-
-            </td>
-
-
-            <td class="amount strong">
-
-                {{
-                    number_format(
-                        $membership[
-                            'previous'
-                        ]
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                Add New Members
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $membership[
-                            'new_members'
-                        ]
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                Add Reinstatements
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $membership[
-                            'reinstatements'
-                        ]
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr class="border-row">
-
-            <td>
-
-                Less Exits/Suspended/Nil Contributors
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $membership[
-                            'less_exits_suspended_nil'
-                        ]
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr class="border-row">
-
-            <td class="strong">
-
-                Membership as at&nbsp;&nbsp;
-
-                {{
-                    $currentPeriod
-                        ->period_date
-                        ->format(
-                            'd F Y'
-                        )
-                }}
-
-            </td>
-
-
-            <td class="amount strong">
-
-                {{
-                    number_format(
-                        $membership[
-                            'current'
-                        ]
-                    )
-                }}
-
-            </td>
-
-        </tr>
+        </tbody>
 
     </table>
 
+</div>
 
-    {{-- =========================================================
-         MONTHLY CONTRIBUTION RECONCILIATION
-    ========================================================= --}}
 
-    <div class="section-title">
+{{-- CONTRIBUTION MOVEMENT --}}
 
-        MONTHLY CONTRIBUTION RECONCILIATION AS AT&nbsp;&nbsp;
+<div class="mt-15">
 
-        {{
-            $currentPeriod
-                ->period_date
-                ->format(
-                    'd F Y'
-                )
-        }}
-
+    <div class="subheading text-center">
+        MONTHLY CONTRIBUTION MOVEMENT RECONCILIATION
     </div>
 
 
-    <table class="reconciliation">
-
-
-        <tr class="border-row">
-
-            <td class="strong">
-
-                Contributions Due as at&nbsp;&nbsp;
-
-                {{
-                    $previousPeriod
-                        ? $previousPeriod
-                            ->period_date
-                            ->format(
-                                'd F Y'
-                            )
-                        : 'Previous Period'
-                }}
-
-            </td>
-
-
-            <td class="amount strong">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'previous'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                Add Contributions for New members
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'new_members'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                Add Contributions for Reinstatements
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'reinstatements'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                Add Increase/Decrease on Contributions
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'increase_decrease'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                Add Differences on Contributions
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'differences'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr class="border-row">
-
-            <td>
-
-                Less Contributions for
-                Exits/Suspended/Nil Contributors
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'less_exits_suspended_nil'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr class="border-row">
-
-            <td class="strong">
-
-                Total Contributions Due as at&nbsp;&nbsp;
-
-                {{
-                    $currentPeriod
-                        ->period_date
-                        ->format(
-                            'd F Y'
-                        )
-                }}
-
-            </td>
-
-
-            <td class="amount strong">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'total_due'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr class="border-row">
-
-            <td>
-
-                Total Contributions as per Schedule
-                from Local Authority
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'schedule_total'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
-
-
-        <tr class="border-row">
-
-            <td>
-
-                Variance on Remitted Contributions
-
-            </td>
-
-
-            <td class="amount">
-
-                {{
-                    number_format(
-                        $contributions[
-                            'variance'
-                        ],
-                        2
-                    )
-                }}
-
-            </td>
-
-        </tr>
+    <table class="mt-10">
+
+        <thead>
+
+            <tr>
+                <th>Description</th>
+                <th class="text-right">Normal</th>
+                <th class="text-right">AVC</th>
+                <th class="text-right">Total</th>
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            <tr>
+                <td>Contributions Due as at {{ $previousPeriod?->period_date?->format('d F Y') ?? 'Previous Period' }}</td>
+                <td class="text-right">{{ number_format($contributions['previous_normal'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['previous_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['previous_total'], 2) }}</td>
+            </tr>
+
+            <tr>
+                <td>Add Contributions for New Members</td>
+                <td class="text-right">{{ number_format($contributions['new_members_normal'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['new_members_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['new_members_total'], 2) }}</td>
+            </tr>
+
+            <tr>
+                <td>Add Contributions for Reinstatements</td>
+                <td class="text-right">{{ number_format($contributions['reinstatements_normal'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['reinstatements_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['reinstatements_total'], 2) }}</td>
+            </tr>
+
+            <tr>
+                <td>Add Increase / Decrease on Contributions</td>
+                <td class="text-right">{{ number_format($contributions['increase_decrease_normal'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['increase_decrease_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['increase_decrease_total'], 2) }}</td>
+            </tr>
+
+            <tr>
+                <td>Add Differences on Contributions</td>
+                <td class="text-right">{{ number_format($contributions['differences_normal'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['differences_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['differences_total'], 2) }}</td>
+            </tr>
+
+            <tr>
+                <td>Less Contributions for Exits / Suspended / Nil Contributors</td>
+                <td class="text-right">{{ number_format($contributions['less_nil_normal'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['less_nil_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['less_nil_total'], 2) }}</td>
+            </tr>
+
+            <tr class="total">
+                <td>Total Contributions Due as at {{ $period?->period_date?->format('d F Y') }}</td>
+                <td class="text-right">{{ number_format($contributions['normal_due'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['avc_due'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['total_due'], 2) }}</td>
+            </tr>
+
+            <tr>
+                <td>Total Contributions as per Schedule from Local Authority</td>
+                <td class="text-right">{{ number_format($contributions['schedule_normal'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['schedule_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['schedule_total'], 2) }}</td>
+            </tr>
+
+            <tr class="{{ abs($contributions['variance']) > 0.01 ? 'warning' : 'success' }}">
+                <td>Movement Reconciliation Variance</td>
+                <td class="text-right">{{ number_format($contributions['normal_variance'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['avc_variance'], 2) }}</td>
+                <td class="text-right">{{ number_format($contributions['variance'], 2) }}</td>
+            </tr>
+
+        </tbody>
 
     </table>
 
+</div>
 
-    {{-- =========================================================
-         COMMENTS
-    ========================================================= --}}
 
-    <div class="comments-title">
+{{-- SYSTEM CALCULATION --}}
 
-        Comments:
+<div class="mt-15">
 
+    <div class="subheading text-center">
+        PENERP SYSTEM CALCULATION VS UPLOADED SCHEDULE
     </div>
 
 
-    <div class="comments-box"></div>
+    <table class="mt-10">
+
+        <thead>
+
+            <tr>
+                <th>Description</th>
+                <th class="text-right">System Calculated</th>
+                <th class="text-right">Uploaded Schedule</th>
+                <th class="text-right">Variance</th>
+            </tr>
+
+        </thead>
 
 
-    {{-- =========================================================
-         SIGNATURES
-    ========================================================= --}}
+        <tbody>
 
-    <table class="signature-table">
+            <tr>
+                <td>Employee Contributions</td>
+                <td class="text-right">{{ number_format($calculation['employee_contribution'], 2) }}</td>
+                <td class="text-right">{{ number_format($schedule['employee_contribution'], 2) }}</td>
+                <td class="text-right">{{ number_format($calculation['employee_variance'], 2) }}</td>
+            </tr>
 
+            <tr>
+                <td>Employer Contributions</td>
+                <td class="text-right">{{ number_format($calculation['employer_contribution'], 2) }}</td>
+                <td class="text-right">{{ number_format($schedule['employer_contribution'], 2) }}</td>
+                <td class="text-right">{{ number_format($calculation['employer_variance'], 2) }}</td>
+            </tr>
 
-        <tr>
+            <tr>
+                <td>Employee AVC</td>
+                <td class="text-right">{{ number_format($calculation['employee_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($schedule['employee_avc'], 2) }}</td>
+                <td class="text-right">0.00</td>
+            </tr>
 
-            <td class="signature-label">
+            <tr>
+                <td>Employer AVC</td>
+                <td class="text-right">{{ number_format($calculation['employer_avc'], 2) }}</td>
+                <td class="text-right">{{ number_format($schedule['employer_avc'], 2) }}</td>
+                <td class="text-right">0.00</td>
+            </tr>
 
-                DONE BY
+            <tr class="{{ abs($calculation['variance']) > 0.01 ? 'warning' : 'success' }}">
+                <td><strong>GRAND TOTAL</strong></td>
+                <td class="text-right"><strong>{{ number_format($calculation['total_expected'], 2) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($schedule['total_expected'], 2) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($calculation['variance'], 2) }}</strong></td>
+            </tr>
 
-            </td>
-
-
-            <td class="signature-name">
-
-                <div class="signature-line"></div>
-
-            </td>
-
-
-            <td class="date-label">
-
-                Date
-
-            </td>
-
-
-            <td>
-
-                <div class="signature-line"></div>
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                CHECKED BY
-
-            </td>
-
-
-            <td>
-
-                <div class="signature-line"></div>
-
-            </td>
-
-
-            <td>
-
-                Date
-
-            </td>
-
-
-            <td>
-
-                <div class="signature-line"></div>
-
-            </td>
-
-        </tr>
-
-
-        <tr>
-
-            <td>
-
-                AUTHORISED BY
-
-            </td>
-
-
-            <td>
-
-                <div class="signature-line"></div>
-
-            </td>
-
-
-            <td>
-
-                Date
-
-            </td>
-
-
-            <td>
-
-                <div class="signature-line"></div>
-
-            </td>
-
-        </tr>
+        </tbody>
 
     </table>
+
+</div>
+
+
+{{-- SIGNATURES --}}
+
+<table class="signature-table mt-15">
+
+    <tr>
+
+        <td style="width:33%;">
+            DONE BY: ___________________________
+            <br>
+            Date: __________________
+        </td>
+
+        <td style="width:33%;">
+            CHECKED BY: _________________________
+            <br>
+            Date: __________________
+        </td>
+
+        <td style="width:34%;">
+            AUTHORISED BY: ______________________
+            <br>
+            Date: __________________
+        </td>
+
+    </tr>
+
+</table>
+
+
+<div class="mt-15">
+
+    <strong>Comments:</strong>
+
+    <div style="border-bottom:1px solid #555; height:18px;"></div>
+    <div style="border-bottom:1px solid #555; height:18px;"></div>
 
 </div>
 
