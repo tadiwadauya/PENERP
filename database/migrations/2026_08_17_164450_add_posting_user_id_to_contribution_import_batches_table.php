@@ -12,22 +12,54 @@ return new class extends Migration
             'contribution_import_batches',
             function (Blueprint $table): void {
 
-                if (
-                    !Schema::hasColumn(
-                        'contribution_import_batches',
-                        'posting_user_id'
-                    )
-                ) {
-                    $table
-                        ->unsignedBigInteger(
-                            'posting_user_id'
-                        )
-                        ->nullable();
-                }
+                /*
+                |--------------------------------------------------------------------------
+                | Posting User
+                |--------------------------------------------------------------------------
+                |
+                | Identifies the user currently performing the posting operation.
+                |
+                | This is different from posted_by:
+                |
+                | posting_user_id = user who claimed/started posting
+                | posted_by       = user who successfully completed posting
+                |
+                */
+
+                $table->unsignedBigInteger(
+                    'posting_user_id'
+                )->nullable();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Foreign Key
+                |--------------------------------------------------------------------------
+                |
+                | SQL Server:
+                | Do not cascade delete users through contribution batches.
+                |
+                */
+
+                $table->foreign(
+                    'posting_user_id',
+                    'contribution_import_batches_posting_user_id_foreign'
+                )
+                    ->references('id')
+                    ->on('users');
+
+                /*
+                |--------------------------------------------------------------------------
+                | Index
+                |--------------------------------------------------------------------------
+                */
+
+                $table->index(
+                    'posting_user_id',
+                    'contribution_import_batches_posting_user_id_index'
+                );
             }
         );
     }
-
 
     public function down(): void
     {
@@ -35,16 +67,17 @@ return new class extends Migration
             'contribution_import_batches',
             function (Blueprint $table): void {
 
-                if (
-                    Schema::hasColumn(
-                        'contribution_import_batches',
-                        'posting_user_id'
-                    )
-                ) {
-                    $table->dropColumn(
-                        'posting_user_id'
-                    );
-                }
+                $table->dropForeign(
+                    'contribution_import_batches_posting_user_id_foreign'
+                );
+
+                $table->dropIndex(
+                    'contribution_import_batches_posting_user_id_index'
+                );
+
+                $table->dropColumn(
+                    'posting_user_id'
+                );
             }
         );
     }

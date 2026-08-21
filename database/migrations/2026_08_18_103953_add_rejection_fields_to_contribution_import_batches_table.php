@@ -12,6 +12,12 @@ return new class extends Migration
             'contribution_import_batches',
             function (Blueprint $table): void {
 
+                /*
+                |--------------------------------------------------------------------------
+                | Rejection Details
+                |--------------------------------------------------------------------------
+                */
+
                 $table->unsignedBigInteger(
                     'rejected_by'
                 )->nullable();
@@ -26,10 +32,14 @@ return new class extends Migration
 
                 /*
                 |--------------------------------------------------------------------------
-                | SQL Server
+                | Foreign Key
                 |--------------------------------------------------------------------------
                 |
-                | Do not use cascade delete/update here.
+                | SQL Server:
+                | No cascade delete/update is used here.
+                |
+                | Historical contribution batches must remain available even
+                | when the related user account is later deactivated.
                 |
                 */
 
@@ -39,10 +49,25 @@ return new class extends Migration
                 )
                     ->references('id')
                     ->on('users');
+
+                /*
+                |--------------------------------------------------------------------------
+                | Index
+                |--------------------------------------------------------------------------
+                */
+
+                $table->index(
+                    'rejected_by',
+                    'contribution_import_batches_rejected_by_index'
+                );
+
+                $table->index(
+                    'rejected_at',
+                    'contribution_import_batches_rejected_at_index'
+                );
             }
         );
     }
-
 
     public function down(): void
     {
@@ -52,6 +77,14 @@ return new class extends Migration
 
                 $table->dropForeign(
                     'contribution_import_batches_rejected_by_foreign'
+                );
+
+                $table->dropIndex(
+                    'contribution_import_batches_rejected_by_index'
+                );
+
+                $table->dropIndex(
+                    'contribution_import_batches_rejected_at_index'
                 );
 
                 $table->dropColumn([

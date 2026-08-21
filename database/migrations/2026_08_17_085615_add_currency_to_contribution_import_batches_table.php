@@ -17,12 +17,14 @@ return new class extends Migration
                 | Upload Currency
                 |--------------------------------------------------------------------------
                 |
-                | PENERP base currency = ZWG
+                | PENERP base currency is ZWG.
                 |
-                | Contribution schedules may currently be uploaded in:
+                | The batch currency identifies the primary currency associated
+                | with the uploaded contribution schedule.
                 |
-                | ZWG
-                | USD
+                | Contribution row amounts remain stored independently in their
+                | USD and ZWG columns. This field must therefore NOT be used to
+                | convert or discard amounts belonging to the other currency.
                 |
                 */
 
@@ -33,13 +35,15 @@ return new class extends Migration
 
                 /*
                 |--------------------------------------------------------------------------
-                | Exchange Rate
+                | Exchange Rate To Base Currency
                 |--------------------------------------------------------------------------
                 |
-                | Stored for future reconciliation / reporting requirements.
+                | Optional exchange rate from the batch currency to the PENERP
+                | base currency (ZWG).
                 |
-                | We DO NOT automatically convert expected contributions during
-                | the upload.
+                | This is retained for reporting/reconciliation requirements.
+                | Contribution imports are not automatically converted during
+                | validation or posting.
                 |
                 */
 
@@ -48,16 +52,30 @@ return new class extends Migration
                     20,
                     8
                 )->nullable();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Index
+                |--------------------------------------------------------------------------
+                */
+
+                $table->index(
+                    'currency_code',
+                    'contribution_import_batches_currency_code_index'
+                );
             }
         );
     }
-
 
     public function down(): void
     {
         Schema::table(
             'contribution_import_batches',
             function (Blueprint $table): void {
+
+                $table->dropIndex(
+                    'contribution_import_batches_currency_code_index'
+                );
 
                 $table->dropColumn([
                     'currency_code',
