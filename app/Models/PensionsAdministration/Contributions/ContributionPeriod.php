@@ -3,6 +3,7 @@
 namespace App\Models\PensionsAdministration\Contributions;
 
 use App\Models\PensionsAdministration\Updates\Employer;
+use App\Models\UserManagement\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,22 +12,16 @@ class ContributionPeriod extends Model
 {
     protected $fillable = [
         'employer_id',
-
         'period_date',
         'due_date',
-
         'period_year',
         'period_month',
-
         'scheme_code',
-
         'status',
-
         'scheduled_members',
         'existing_members',
         'new_members',
         'nil_contributors',
-
         'created_by',
         'updated_by',
     ];
@@ -62,12 +57,6 @@ class ContributionPeriod extends Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Employer
-    |--------------------------------------------------------------------------
-    */
-
     public function employer(): BelongsTo
     {
         return $this->belongsTo(
@@ -75,12 +64,6 @@ class ContributionPeriod extends Model
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Import Batches
-    |--------------------------------------------------------------------------
-    */
 
     public function importBatches(): HasMany
     {
@@ -91,35 +74,20 @@ class ContributionPeriod extends Model
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Monthly Member Statuses
-    |--------------------------------------------------------------------------
-    */
-
-    public function memberStatuses(): HasMany
+    public function createdBy(): BelongsTo
     {
-        return $this->hasMany(
-            ContributionPeriodMemberStatus::class,
-            'contribution_period_id'
+        return $this->belongsTo(
+            User::class,
+            'created_by'
         );
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | Period Label
-    |--------------------------------------------------------------------------
-    */
-
-    public function getPeriodLabelAttribute(): string
+    public function updatedBy(): BelongsTo
     {
-        if (!$this->period_date) {
-            return '-';
-        }
-
-        return $this
-            ->period_date
-            ->format('F Y');
+        return $this->belongsTo(
+            User::class,
+            'updated_by'
+        );
     }
 }

@@ -21,7 +21,6 @@ class ContributionPostingController extends Controller
     ) {
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Approve Contribution Batch
@@ -36,34 +35,27 @@ class ContributionPostingController extends Controller
             'contributions.monthly-imports.approve'
         );
 
-
-        $validated =
-            $request->validate([
-                'approval_notes' => [
-                    'nullable',
-                    'string',
-                    'max:2000',
-                ],
-            ]);
-
+        $validated = $request->validate([
+            'approval_notes' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+        ]);
 
         try {
-
             DB::transaction(
                 function () use (
                     $batch,
                     $validated
                 ): void {
-
-                    $lockedBatch =
-                        ContributionImportBatch::query()
-                            ->where(
-                                'id',
-                                $batch->id
-                            )
-                            ->lockForUpdate()
-                            ->firstOrFail();
-
+                    $lockedBatch = ContributionImportBatch::query()
+                        ->where(
+                            'id',
+                            $batch->id
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
 
                     /*
                     |--------------------------------------------------------------------------
@@ -86,19 +78,14 @@ class ContributionPostingController extends Controller
                         );
                     }
 
-
                     /*
                     |--------------------------------------------------------------------------
-                    | Only ERRORS Block Approval
+                    | Only Errors Block Approval
                     |--------------------------------------------------------------------------
-                    |
-                    | Warnings DO NOT block approval.
-                    |
                     */
 
                     if (
-                        (int)
-                        $lockedBatch->error_rows
+                        (int) $lockedBatch->error_rows
                         >
                         0
                     ) {
@@ -109,7 +96,6 @@ class ContributionPostingController extends Controller
                         );
                     }
 
-
                     /*
                     |--------------------------------------------------------------------------
                     | Maker / Checker
@@ -117,46 +103,37 @@ class ContributionPostingController extends Controller
                     */
 
                     if (
-                        (int)
-                        $lockedBatch->uploaded_by
+                        (int) $lockedBatch->uploaded_by
                         ===
-                        (int)
-                        auth()->id()
+                        (int) auth()->id()
                         &&
-                        !auth()
-                            ->user()
-                            ->is_system_administrator
+                        !auth()->user()->is_system_administrator
                     ) {
                         throw new RuntimeException(
                             'You cannot approve a contribution batch that you uploaded yourself.'
                         );
                     }
 
-
                     /*
                     |--------------------------------------------------------------------------
-                    | New Members
+                    | Validate Proposed New Members Before Approval
                     |--------------------------------------------------------------------------
                     */
 
-                    $newMemberRows =
-                        $lockedBatch
-                            ->rows()
-                            ->where(
-                                'is_new_member',
-                                true
-                            )
-                            ->get();
-
+                    $newMemberRows = $lockedBatch
+                        ->rows()
+                        ->where(
+                            'is_new_member',
+                            true
+                        )
+                        ->get();
 
                     foreach (
                         $newMemberRows
                         as $row
                     ) {
-                        $data =
-                            $row->normalized_data
+                        $data = $row->normalized_data
                             ?? [];
-
 
                         /*
                         |--------------------------------------------------------------------------
@@ -166,9 +143,7 @@ class ContributionPostingController extends Controller
 
                         if (
                             blank(
-                                $data[
-                                    'date_joined_fund'
-                                ]
+                                $data['date_joined_fund']
                                 ?? null
                             )
                         ) {
@@ -179,6 +154,24 @@ class ContributionPostingController extends Controller
                             );
                         }
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Date Joined Employer
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            blank(
+                                $data['date_joined_employer']
+                                ?? null
+                            )
+                        ) {
+                            throw new RuntimeException(
+                                'New member on Excel row '
+                                . $row->row_number
+                                . ' does not have Date Joined Employer.'
+                            );
+                        }
 
                         /*
                         |--------------------------------------------------------------------------
@@ -188,9 +181,7 @@ class ContributionPostingController extends Controller
 
                         if (
                             blank(
-                                $data[
-                                    'staff_number'
-                                ]
+                                $data['staff_number']
                                 ?? null
                             )
                         ) {
@@ -201,18 +192,15 @@ class ContributionPostingController extends Controller
                             );
                         }
 
-
                         /*
                         |--------------------------------------------------------------------------
-                        | Names
+                        | Surname
                         |--------------------------------------------------------------------------
                         */
 
                         if (
                             blank(
-                                $data[
-                                    'surname'
-                                ]
+                                $data['surname']
                                 ?? null
                             )
                         ) {
@@ -223,12 +211,15 @@ class ContributionPostingController extends Controller
                             );
                         }
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | First Names
+                        |--------------------------------------------------------------------------
+                        */
 
                         if (
                             blank(
-                                $data[
-                                    'first_names'
-                                ]
+                                $data['first_names']
                                 ?? null
                             )
                         ) {
@@ -239,23 +230,110 @@ class ContributionPostingController extends Controller
                             );
                         }
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Date Of Birth
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            blank(
+                                $data['date_of_birth']
+                                ?? null
+                            )
+                        ) {
+                            throw new RuntimeException(
+                                'New member on Excel row '
+                                . $row->row_number
+                                . ' does not have Date of Birth.'
+                            );
+                        }
 
                         /*
                         |--------------------------------------------------------------------------
-                        | IMPORTANT
+                        | Gender
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            blank(
+                                $data['gender']
+                                ?? null
+                            )
+                        ) {
+                            throw new RuntimeException(
+                                'New member on Excel row '
+                                . $row->row_number
+                                . ' does not have Gender.'
+                            );
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | National ID
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            blank(
+                                $data['national_id']
+                                ?? null
+                            )
+                        ) {
+                            throw new RuntimeException(
+                                'New member on Excel row '
+                                . $row->row_number
+                                . ' does not have National ID.'
+                            );
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Marital Status
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            blank(
+                                $data['marital_status']
+                                ?? null
+                            )
+                        ) {
+                            throw new RuntimeException(
+                                'New member on Excel row '
+                                . $row->row_number
+                                . ' does not have Marital Status.'
+                            );
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Optional Contact Details
+                        |--------------------------------------------------------------------------
+                        |
+                        | These are deliberately NOT required:
+                        |
+                        | - Cell Phone Number
+                        | - Email Address
+                        | - Home Address
+                        |
+                        */
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Member Number
                         |--------------------------------------------------------------------------
                         |
                         | PENERP/PenAd member number is NOT required here.
                         |
-                        | A truly new member receives a new number during posting.
+                        | A truly new member receives a new member number during posting.
                         |
                         */
                     }
 
-
                     /*
                     |--------------------------------------------------------------------------
-                    | Approve
+                    | Approve Batch
                     |--------------------------------------------------------------------------
                     */
 
@@ -270,24 +348,29 @@ class ContributionPostingController extends Controller
                             now(),
 
                         'approval_notes' =>
-                            $validated[
-                                'approval_notes'
-                            ]
+                            $validated['approval_notes']
                             ?? null,
 
                         'progress_percentage' =>
                             100,
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Clear Previous Posting Failure State
+                        |--------------------------------------------------------------------------
+                        */
+
+                        'failure_reason' =>
+                            null,
                     ]);
                 }
             );
 
-
             $batch->refresh();
-
 
             /*
             |--------------------------------------------------------------------------
-            | Audit
+            | Audit Approval
             |--------------------------------------------------------------------------
             */
 
@@ -310,19 +393,16 @@ class ContributionPostingController extends Controller
                     $batch,
 
                 newValues:
-                    $this
-                        ->auditService
-                        ->values(
-                            $batch
-                        ),
+                    $this->auditService->values(
+                        $batch
+                    ),
 
                 metadata: [
                     'batch_id' =>
                         $batch->id,
 
                     'currency_code' =>
-                        $batch
-                            ->currency_code,
+                        $batch->currency_code,
 
                     'approved_by' =>
                         auth()->id(),
@@ -331,7 +411,6 @@ class ContributionPostingController extends Controller
                 request:
                     $request
             );
-
 
             return redirect()
                 ->route(
@@ -344,7 +423,6 @@ class ContributionPostingController extends Controller
                 );
 
         } catch (Throwable $e) {
-
             $this->auditService->failure(
                 eventType:
                     'contribution_import',
@@ -368,7 +446,6 @@ class ContributionPostingController extends Controller
                     $request
             );
 
-
             return back()
                 ->with(
                     'error',
@@ -376,7 +453,6 @@ class ContributionPostingController extends Controller
                 );
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -392,11 +468,8 @@ class ContributionPostingController extends Controller
             'contributions.monthly-imports.post'
         );
 
-
         try {
-
             $batch->refresh();
-
 
             /*
             |--------------------------------------------------------------------------
@@ -414,7 +487,6 @@ class ContributionPostingController extends Controller
                 );
             }
 
-
             /*
             |--------------------------------------------------------------------------
             | Approval Required
@@ -431,6 +503,25 @@ class ContributionPostingController extends Controller
                 );
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Posting User
+            |--------------------------------------------------------------------------
+            |
+            | IMPORTANT:
+            |
+            | Queue workers do not have the browser authentication session.
+            | We therefore capture the user NOW and persist the ID on the batch.
+            |
+            */
+
+            $postingUserId = auth()->id();
+
+            if (!$postingUserId) {
+                throw new RuntimeException(
+                    'PENERP could not determine the user responsible for posting this contribution batch.'
+                );
+            }
 
             /*
             |--------------------------------------------------------------------------
@@ -439,78 +530,157 @@ class ContributionPostingController extends Controller
             */
 
             if (
-                (int)
-                $batch->approved_by
+                (int) $batch->approved_by
                 ===
-                (int)
-                auth()->id()
+                (int) $postingUserId
                 &&
-                !auth()
-                    ->user()
-                    ->is_system_administrator
+                !auth()->user()->is_system_administrator
             ) {
                 throw new RuntimeException(
                     'The user who approved this batch cannot also post it.'
                 );
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | Prevent Duplicate Start
+            | Prevent Duplicate Posting
             |--------------------------------------------------------------------------
             */
 
-            if (
-                $batch->posted_at
-            ) {
+            if ($batch->posted_at) {
                 throw new RuntimeException(
                     'This contribution batch has already been posted.'
                 );
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | Move Immediately To Posting
+            | Prevent Duplicate Posting Start
             |--------------------------------------------------------------------------
             */
 
-            $batch->update([
-                'status' =>
-                    'posting',
-
-                'progress_percentage' =>
-                    1,
-
-                'posted_rows' =>
-                    0,
-
-                'failure_reason' =>
-                    null,
-            ]);
-
+            if (
+                $batch->status
+                ===
+                'posting'
+            ) {
+                throw new RuntimeException(
+                    'This contribution batch is already being posted.'
+                );
+            }
 
             /*
             |--------------------------------------------------------------------------
-            | Dispatch Job
+            | Persist Posting User Before Queue Dispatch
             |--------------------------------------------------------------------------
             |
-            | IMPORTANT:
+            | This permanently fixes:
             |
-            | ProcessContributionPosting uses:
+            | posting_user_id = NULL
+            | posted_by       = NULL
             |
-            | contribution-imports
+            */
+
+            DB::transaction(
+                function () use (
+                    $batch,
+                    $postingUserId
+                ): void {
+                    $lockedBatch = ContributionImportBatch::query()
+                        ->where(
+                            'id',
+                            $batch->id
+                        )
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Re-check State Under Lock
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        $lockedBatch->status
+                        !==
+                        'approved'
+                    ) {
+                        throw new RuntimeException(
+                            'This contribution batch is no longer available for posting.'
+                        );
+                    }
+
+                    if ($lockedBatch->posted_at) {
+                        throw new RuntimeException(
+                            'This contribution batch has already been posted.'
+                        );
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Move To Posting
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $lockedBatch->update([
+                        'status' =>
+                            'posting',
+
+                        'progress_percentage' =>
+                            1,
+
+                        'posted_rows' =>
+                            0,
+
+                        'failure_reason' =>
+                            null,
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Posting User
+                        |--------------------------------------------------------------------------
+                        */
+
+                        'posting_user_id' =>
+                            $postingUserId,
+
+                        'posted_by' =>
+                            $postingUserId,
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Posting Has Not Finished Yet
+                        |--------------------------------------------------------------------------
+                        */
+
+                        'posted_at' =>
+                            null,
+                    ]);
+                }
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Refresh Batch
+            |--------------------------------------------------------------------------
+            */
+
+            $batch->refresh();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Dispatch Posting Job
+            |--------------------------------------------------------------------------
             |
-            | Therefore the SAME queue worker that validates files also posts.
+            | The user ID is also passed directly into the job as a second
+            | safeguard.
             |
             */
 
             ProcessContributionPosting::dispatch(
                 $batch->id,
-                auth()->id()
+                $postingUserId
             );
-
 
             /*
             |--------------------------------------------------------------------------
@@ -537,32 +707,34 @@ class ContributionPostingController extends Controller
                     $batch,
 
                 newValues:
-                    $this
-                        ->auditService
-                        ->values(
-                            $batch
-                        ),
+                    $this->auditService->values(
+                        $batch
+                    ),
 
                 metadata: [
                     'batch_id' =>
                         $batch->id,
 
                     'currency_code' =>
-                        $batch
-                            ->currency_code,
+                        $batch->currency_code,
 
                     'requested_by' =>
-                        auth()->id(),
+                        $postingUserId,
+
+                    'posting_user_id' =>
+                        $postingUserId,
+
+                    'approved_by' =>
+                        $batch->approved_by,
                 ],
 
                 request:
                     $request
             );
 
-
             /*
             |--------------------------------------------------------------------------
-            | Go To Posting Progress Screen
+            | Posting Progress Screen
             |--------------------------------------------------------------------------
             */
 
@@ -573,7 +745,6 @@ class ContributionPostingController extends Controller
                 );
 
         } catch (Throwable $e) {
-
             $this->auditService->failure(
                 eventType:
                     'contribution_posting',
@@ -597,7 +768,6 @@ class ContributionPostingController extends Controller
                     $request
             );
 
-
             return back()
                 ->with(
                     'error',
@@ -605,7 +775,6 @@ class ContributionPostingController extends Controller
                 );
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -620,14 +789,12 @@ class ContributionPostingController extends Controller
             'contributions.monthly-imports.view'
         );
 
-
         $batch->load([
             'employer',
             'contributionPeriod',
             'approvedBy',
             'postedBy',
         ]);
-
 
         return view(
             'pensions-administration.contributions.imports.posting',
@@ -636,7 +803,6 @@ class ContributionPostingController extends Controller
             )
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -651,19 +817,15 @@ class ContributionPostingController extends Controller
             'contributions.monthly-imports.view'
         );
 
-
         $batch->refresh();
 
-
-        $totalRows =
-            (int)
-            (
-                $batch->total_rows
-                ?: $batch
-                    ->rows()
-                    ->count()
-            );
-
+        $totalRows = (int) (
+            $batch->total_rows
+            ?:
+            $batch
+                ->rows()
+                ->count()
+        );
 
         return response()->json([
             'batch_id' =>
@@ -678,20 +840,25 @@ class ContributionPostingController extends Controller
                 ),
 
             'progress_percentage' =>
-                (float)
-                $batch
-                    ->progress_percentage,
+                (float) $batch->progress_percentage,
 
             'total_rows' =>
                 $totalRows,
 
             'posted_rows' =>
-                (int)
-                ($batch->posted_rows ?? 0),
+                (int) (
+                    $batch->posted_rows
+                    ?? 0
+                ),
 
             'failure_reason' =>
-                $batch
-                    ->failure_reason,
+                $batch->failure_reason,
+
+            'posting_user_id' =>
+                $batch->posting_user_id,
+
+            'posted_by' =>
+                $batch->posted_by,
 
             'show_url' =>
                 route(
@@ -706,7 +873,6 @@ class ContributionPostingController extends Controller
                 ),
         ]);
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -741,7 +907,6 @@ class ContributionPostingController extends Controller
         };
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Permission
@@ -751,9 +916,7 @@ class ContributionPostingController extends Controller
     private function ensurePermission(
         string $permission
     ): void {
-        $user =
-            auth()->user();
-
+        $user = auth()->user();
 
         abort_if(
             !$user,
@@ -761,14 +924,11 @@ class ContributionPostingController extends Controller
             'Unauthenticated.'
         );
 
-
         if (
-            $user
-                ->is_system_administrator
+            $user->is_system_administrator
         ) {
             return;
         }
-
 
         abort_unless(
             $user->can(

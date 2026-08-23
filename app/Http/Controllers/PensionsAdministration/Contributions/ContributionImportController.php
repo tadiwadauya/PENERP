@@ -7,11 +7,8 @@ use App\Jobs\PensionsAdministration\Contributions\ProcessContributionImport;
 use App\Models\PensionsAdministration\Contributions\ContributionImportBatch;
 use App\Models\PensionsAdministration\Contributions\ContributionImportRow;
 use App\Models\PensionsAdministration\Contributions\ContributionPeriod;
-use App\Models\PensionsAdministration\Contributions\ContributionPeriodMemberStatus;
 use App\Models\PensionsAdministration\Updates\Employer;
-use App\Services\Audit\AuditService;
 use Carbon\Carbon;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,151 +20,55 @@ use Throwable;
 
 class ContributionImportController extends Controller
 {
-    public function __construct(
-        private readonly AuditService $auditService
-    ) {
-    }
-
-
     /*
     |--------------------------------------------------------------------------
-    | Import History
+    | Import List
     |--------------------------------------------------------------------------
     */
 
-    public function index(
-    Request $request
-): View {
-    $this->ensurePermission(
-        'contributions.monthly-imports.view'
-    );
+    public function index(): View
+{
+    $employers = Employer::query()
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get();
 
-
-    $query =
-        ContributionImportBatch::query()
-            ->with([
-                'employer',
-                'contributionPeriod',
-                'uploadedBy',
-                'approvedBy',
-                'postedBy',
-            ])
-            ->orderByDesc('id');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Employer Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        $request->filled(
-            'employer_id'
-        )
-    ) {
-        $query->where(
-            'employer_id',
-            $request->input(
-                'employer_id'
-            )
-        );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Status Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        $request->filled(
-            'status'
-        )
-    ) {
-        $query->where(
-            'status',
-            $request->input(
-                'status'
-            )
-        );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Year Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        $request->filled(
-            'year'
-        )
-    ) {
-        $year =
-            (int)
-            $request->input(
-                'year'
-            );
-
-
-        $query->whereHas(
+    $batches = ContributionImportBatch::query()
+        ->with([
+            'employer',
             'contributionPeriod',
-            function ($periodQuery) use (
-                $year
-            ): void {
-
-                $periodQuery->where(
-                    'period_year',
-                    $year
+            'uploadedBy',
+        ])
+        ->when(
+            request()->filled('employer_id'),
+            function ($query) {
+                $query->where(
+                    'employer_id',
+                    request('employer_id')
                 );
             }
-        );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Results
-    |--------------------------------------------------------------------------
-    |
-    | DataTables handles:
-    |
-    | - Pagination
-    | - Quick Search
-    | - Sorting
-    | - Excel Export
-    | - CSV Export
-    | - PDF Export
-    | - Print
-    |
-    | Therefore Laravel pagination is intentionally NOT used here.
-    |
-    */
-
-    $batches =
-        $query->get();
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Employer Filter Values
-    |--------------------------------------------------------------------------
-    */
-
-    $employers =
-        Employer::query()
-            ->where(
-                'is_active',
-                true
-            )
-            ->orderBy(
-                'name'
-            )
-            ->get();
-
+        )
+        ->when(
+            request()->filled('status'),
+            function ($query) {
+                $query->where(
+                    'status',
+                    request('status')
+                );
+            }
+        )
+        ->when(
+            request()->filled('currency_code'),
+            function ($query) {
+                $query->where(
+                    'currency_code',
+                    request('currency_code')
+                );
+            }
+        )
+        ->latest('id')
+        ->paginate(25)
+        ->withQueryString();
 
     return view(
         'pensions-administration.contributions.imports.index',
@@ -187,25 +88,18 @@ class ContributionImportController extends Controller
 
     public function create(): View
     {
-        $this->ensurePermission(
-            'contributions.monthly-imports.create'
-        );
+        $employers = Employer::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
-
-        $employers =
-            Employer::query()
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->orderBy('name')
-                ->get();
-
+        $defaultPeriod = now()->startOfMonth();
 
         return view(
             'pensions-administration.contributions.imports.create',
             compact(
-                'employers'
+                'employers',
+                'defaultPeriod'
             )
         );
     }
@@ -213,758 +107,768 @@ class ContributionImportController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Store Contribution Upload
+    | Store Contribution Import
     |--------------------------------------------------------------------------
     */
 
-    public function store(
-        Request $request
-    ): RedirectResponse {
-        $this->ensurePermission(
-            'contributions.monthly-imports.create'
+    public function store(Request $request): RedirectResponse
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Request
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
+            'employer_id' => [
+                'required',
+                'integer',
+                'exists:employers,id',
+            ],
+
+            'period_month' => [
+                'required',
+                'integer',
+                'between:1,12',
+            ],
+
+            'period_year' => [
+                'required',
+                'integer',
+                'between:2000,2100',
+            ],
+
+            'due_date' => [
+                'nullable',
+                'date',
+            ],
+
+            'currency_code' => [
+                'required',
+                'string',
+                'in:ZWG,USD',
+            ],
+
+            'exchange_rate_to_base' => [
+                'nullable',
+                'numeric',
+                'gt:0',
+            ],
+
+            'scheme_code' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | IMPORTANT
+            |--------------------------------------------------------------------------
+            |
+            | The Blade uses:
+            |
+            | name="import_file"
+            |
+            | Therefore every controller reference must also use import_file.
+            |
+            */
+
+            'import_file' => [
+                'required',
+                'file',
+                'mimes:xlsx,xls',
+                'max:51200',
+            ],
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Employer
+        |--------------------------------------------------------------------------
+        */
+
+        $employer = Employer::query()
+            ->findOrFail(
+                $validated['employer_id']
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Contribution Period
+        |--------------------------------------------------------------------------
+        */
+
+        $periodYear = (int) $validated['period_year'];
+        $periodMonth = (int) $validated['period_month'];
+
+        $periodDate = Carbon::create(
+            $periodYear,
+            $periodMonth,
+            1
+        )
+            ->endOfMonth()
+            ->startOfDay();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Due Date
+        |--------------------------------------------------------------------------
+        |
+        | If no due date is entered manually, PENERP initially uses the end
+        | of the selected contribution month.
+        |
+        | The Excel validator can still validate this against the schedule.
+        |
+        */
+
+        $dueDate = !empty($validated['due_date'])
+            ? Carbon::parse(
+                $validated['due_date']
+            )->startOfDay()
+            : $periodDate->copy();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Period / Due Date Integrity
+        |--------------------------------------------------------------------------
+        |
+        | Prevent situations such as:
+        |
+        | Period: November 2004
+        | Due Date: 30 November 2025
+        |
+        */
+
+        if (
+            $dueDate->year !== $periodYear
+            ||
+            $dueDate->month !== $periodMonth
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'due_date' =>
+                        'The selected contribution period is '
+                        . $periodDate->format('F Y')
+                        . ', but the due date is '
+                        . $dueDate->format('d M Y')
+                        . '. The contribution period and due date must be in the same month and year.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Currency
+        |--------------------------------------------------------------------------
+        */
+
+        $currencyCode = strtoupper(
+            trim(
+                $validated['currency_code']
+            )
         );
 
 
         /*
         |--------------------------------------------------------------------------
-        | Validation
+        | Exchange Rate
+        |--------------------------------------------------------------------------
+        |
+        | ZWG is the base currency.
+        |
+        */
+
+        $exchangeRate = $currencyCode === 'ZWG'
+            ? 1
+            : (
+                isset($validated['exchange_rate_to_base'])
+                    ? (float) $validated['exchange_rate_to_base']
+                    : null
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | USD Exchange Rate Requirement
         |--------------------------------------------------------------------------
         */
 
-        $validated =
-            $request->validate([
-                'employer_id' => [
-                    'required',
-                    'integer',
-                    'exists:employers,id',
-                ],
+        if (
+            $currencyCode === 'USD'
+            &&
+            !$exchangeRate
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'exchange_rate_to_base' =>
+                        'An exchange rate is required when importing USD contributions.',
+                ]);
+        }
 
-                'period_month' => [
-                    'required',
-                    'integer',
-                    'between:1,12',
-                ],
 
-                'period_year' => [
-                    'required',
-                    'integer',
-                    'between:2000,2100',
-                ],
+        /*
+        |--------------------------------------------------------------------------
+        | Uploaded Excel File
+        |--------------------------------------------------------------------------
+        */
 
-                'currency_code' => [
-                    'required',
-                    'string',
-                    'in:ZWG,USD',
-                ],
+        $uploadedFile = $request->file('import_file');
 
-                'due_date' => [
-                    'nullable',
-                    'date',
-                ],
 
-                'scheme_code' => [
-                    'nullable',
-                    'string',
-                    'max:50',
-                ],
+        /*
+        |--------------------------------------------------------------------------
+        | File Integrity
+        |--------------------------------------------------------------------------
+        */
 
-                'import_file' => [
-                    'required',
-                    'file',
-                    'mimes:xlsx,xls',
-                    'max:51200',
-                ],
-            ]);
+        if (
+            !$uploadedFile
+            ||
+            !$uploadedFile->isValid()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'import_file' =>
+                        'The contribution Excel file could not be received correctly. Please select the file again and retry.',
+                ]);
+        }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Import UUID
+        |--------------------------------------------------------------------------
+        */
+
+        $importUuid = (string) Str::uuid();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | File Information
+        |--------------------------------------------------------------------------
+        */
+
+        $extension = strtolower(
+            $uploadedFile->getClientOriginalExtension()
+        );
+
+        $storedFilename = strtolower(
+            $importUuid
+        )
+            . '.'
+            . $extension;
+
+        $directory = 'contribution-imports';
+
+        $filePath = $directory
+            . '/'
+            . $storedFilename;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | File Hash
+        |--------------------------------------------------------------------------
+        */
+
+        $realPath = $uploadedFile->getRealPath();
+
+        if (!$realPath) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'import_file' =>
+                        'PENERP could not access the uploaded Excel file temporarily. Please select the file again.',
+                ]);
+        }
+
+        $fileHash = hash_file(
+            'sha256',
+            $realPath
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prevent Duplicate Active Upload
+        |--------------------------------------------------------------------------
+        |
+        | Cancelled, rejected and failed batches may be uploaded again.
+        |
+        */
+
+        $existingFile = ContributionImportBatch::query()
+            ->where(
+                'file_hash',
+                $fileHash
+            )
+            ->where(
+                'employer_id',
+                $employer->id
+            )
+            ->whereNotIn(
+                'status',
+                [
+                    'cancelled',
+                    'rejected',
+                    'failed',
+                    'posting_failed',
+                ]
+            )
+            ->first();
+
+
+        if ($existingFile) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'import_file' =>
+                        'This contribution file has already been uploaded for this employer and is currently in the system.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Store Uploaded File
+        |--------------------------------------------------------------------------
+        */
+
+        $stored = Storage::disk('local')
+            ->putFileAs(
+                $directory,
+                $uploadedFile,
+                $storedFilename
+            );
+
+
+        if (!$stored) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'import_file' =>
+                        'PENERP could not save the uploaded contribution Excel file.',
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Database Transaction
+        |--------------------------------------------------------------------------
+        */
+
+        DB::beginTransaction();
 
         try {
 
-            $batch =
-                DB::transaction(
-                    function () use (
-                        $request,
-                        $validated
-                    ): ContributionImportBatch {
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Employer
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $employer =
-                            Employer::query()
-                                ->where(
-                                    'id',
-                                    $validated[
-                                        'employer_id'
-                                    ]
-                                )
-                                ->where(
-                                    'is_active',
-                                    true
-                                )
-                                ->firstOrFail();
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Contribution Period
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $periodDate =
-                            Carbon::create(
-                                (int) $validated[
-                                    'period_year'
-                                ],
-                                (int) $validated[
-                                    'period_month'
-                                ],
-                                1
-                            )
-                                ->endOfMonth()
-                                ->startOfDay();
-
-
-                        $period =
-                            ContributionPeriod::firstOrCreate(
-                                [
-                                    'employer_id' =>
-                                        $employer->id,
-
-                                    'period_year' =>
-                                        $periodDate->year,
-
-                                    'period_month' =>
-                                        $periodDate->month,
-                                ],
-                                [
-                                    'period_date' =>
-                                        $periodDate
-                                            ->toDateString(),
-
-                                    'due_date' =>
-                                        $validated[
-                                            'due_date'
-                                        ]
-                                        ?? null,
-
-                                    'scheme_code' =>
-                                        $validated[
-                                            'scheme_code'
-                                        ]
-                                        ?? null,
-
-                                    'status' =>
-                                        'open',
-
-                                    'scheduled_members' =>
-                                        0,
-
-                                    'existing_members' =>
-                                        0,
-
-                                    'new_members' =>
-                                        0,
-
-                                    'nil_contributors' =>
-                                        0,
-
-                                    'created_by' =>
-                                        auth()->id(),
-
-                                    'updated_by' =>
-                                        auth()->id(),
-                                ]
-                            );
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Existing Active / Completed Import
-                        |--------------------------------------------------------------------------
-                        |
-                        | IMPORTANT:
-                        |
-                        | We block another schedule ONLY when an existing batch
-                        | is still active in the workflow or has already been
-                        | successfully posted.
-                        |
-                        | Failure statuses DO NOT block another upload.
-                        |
-                        | Therefore:
-                        |
-                        | BLOCK:
-                        | uploaded
-                        | processing
-                        | awaiting_review
-                        | approved
-                        | posting
-                        | posted
-                        |
-                        | ALLOW REPLACEMENT:
-                        | failed
-                        | validation_failed
-                        | posting_failed
-                        | cancelled
-                        |
-                        */
-
-                        $blockingBatch =
-                            ContributionImportBatch::query()
-                                ->where(
-                                    'contribution_period_id',
-                                    $period->id
-                                )
-                                ->whereIn(
-                                    'status',
-                                    [
-                                        'uploaded',
-                                        'processing',
-                                        'awaiting_review',
-                                        'approved',
-                                        'posting',
-                                        'posted',
-                                    ]
-                                )
-                                ->orderByDesc('id')
-                                ->first();
-
-
-                        if ($blockingBatch) {
-
-                            $statusLabel =
-                                $blockingBatch
-                                    ->status_label;
-
-
-                            throw new RuntimeException(
-                                'A contribution schedule already exists for '
-                                . $employer->name
-                                . ' for '
-                                . $periodDate->format(
-                                    'F Y'
-                                )
-                                . '. Existing batch: #'
-                                . $blockingBatch->id
-                                . ' ('
-                                . $statusLabel
-                                . ').'
-                            );
-                        }
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Uploaded File
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $file =
-                            $request->file(
-                                'import_file'
-                            );
-
-
-                        if (!$file) {
-                            throw new RuntimeException(
-                                'No contribution Excel file was received.'
-                            );
-                        }
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | File Hash
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $fileHash =
-                            hash_file(
-                                'sha256',
-                                $file->getRealPath()
-                            );
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Duplicate File Check
-                        |--------------------------------------------------------------------------
-                        |
-                        | The exact same file should only be blocked when it is
-                        | currently active or was already successfully posted.
-                        |
-                        | A failed upload may legitimately be submitted again
-                        | after the underlying problem has been corrected.
-                        |
-                        */
-
-                        $duplicateActiveFile =
-                            ContributionImportBatch::query()
-                                ->where(
-                                    'file_hash',
-                                    $fileHash
-                                )
-                                ->whereIn(
-                                    'status',
-                                    [
-                                        'uploaded',
-                                        'processing',
-                                        'awaiting_review',
-                                        'approved',
-                                        'posting',
-                                        'posted',
-                                    ]
-                                )
-                                ->orderByDesc('id')
-                                ->first();
-
-
-                        if ($duplicateActiveFile) {
-
-                            throw new RuntimeException(
-                                'This Excel file is already associated with active or posted contribution batch #'
-                                . $duplicateActiveFile->id
-                                . '.'
-                            );
-                        }
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | UUID / Filename
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $uuid =
-                            (string)
-                            Str::uuid();
-
-
-                        $extension =
-                            strtolower(
-                                $file
-                                    ->getClientOriginalExtension()
-                            );
-
-
-                        $storedFilename =
-                            $uuid
-                            . '.'
-                            . $extension;
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Store On Local Disk
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $path =
-                            $file->storeAs(
-                                'contribution-imports',
-                                $storedFilename,
-                                'local'
-                            );
-
-
-                        if (!$path) {
-                            throw new RuntimeException(
-                                'The contribution Excel file could not be stored.'
-                            );
-                        }
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Verify Stored File
-                        |--------------------------------------------------------------------------
-                        */
-
-                        if (
-                            !Storage::disk(
-                                'local'
-                            )->exists(
-                                $path
-                            )
-                        ) {
-                            throw new RuntimeException(
-                                'The contribution file was uploaded but could not be verified in storage.'
-                            );
-                        }
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Create Batch
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $batch =
-                            ContributionImportBatch::create([
-                                'import_uuid' =>
-                                    $uuid,
-
-                                'contribution_period_id' =>
-                                    $period->id,
-
-                                'employer_id' =>
-                                    $employer->id,
-
-                                'original_filename' =>
-                                    $file
-                                        ->getClientOriginalName(),
-
-                                'stored_filename' =>
-                                    $storedFilename,
-
-                                'file_path' =>
-                                    $path,
-
-                                'file_extension' =>
-                                    $extension,
-
-                                'file_size' =>
-                                    $file->getSize(),
-
-                                'file_hash' =>
-                                    $fileHash,
-
-                                'source_system' =>
-                                    'monthly_excel',
-
-                                /*
-                                |--------------------------------------------------------------------------
-                                | Currency
-                                |--------------------------------------------------------------------------
-                                */
-
-                                'currency_code' =>
-                                    strtoupper(
-                                        $validated[
-                                            'currency_code'
-                                        ]
-                                    ),
-
-                                'exchange_rate_to_base' =>
-                                    null,
-
-                                'scheme_code' =>
-                                    $validated[
-                                        'scheme_code'
-                                    ]
-                                    ?? null,
-
-                                'due_date' =>
-                                    $validated[
-                                        'due_date'
-                                    ]
-                                    ?? null,
-
-                                /*
-                                |--------------------------------------------------------------------------
-                                | Processing
-                                |--------------------------------------------------------------------------
-                                */
-
-                                'status' =>
-                                    'uploaded',
-
-                                'progress_percentage' =>
-                                    0,
-
-                                'total_rows' =>
-                                    0,
-
-                                'processed_rows' =>
-                                    0,
-
-                                'valid_rows' =>
-                                    0,
-
-                                'warning_rows' =>
-                                    0,
-
-                                'error_rows' =>
-                                    0,
-
-                                'existing_member_rows' =>
-                                    0,
-
-                                'new_member_rows' =>
-                                    0,
-
-                                'nil_contributor_rows' =>
-                                    0,
-
-                                'uploaded_by' =>
-                                    auth()->id(),
-                            ]);
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Reopen / Reset Contribution Period
-                        |--------------------------------------------------------------------------
-                        |
-                        | A previous failed batch may have left the period with
-                        | a failed/processing status. A replacement upload starts
-                        | a fresh validation cycle for the same period.
-                        |
-                        */
-
-                        $period->update([
-                            'period_date' =>
-                                $periodDate
-                                    ->toDateString(),
-
-                            'due_date' =>
-                                $validated[
-                                    'due_date'
-                                ]
-                                ??
-                                $period->due_date,
-
-                            'scheme_code' =>
-                                $validated[
-                                    'scheme_code'
-                                ]
-                                ??
-                                $period->scheme_code,
-
-                            'status' =>
-                                'uploading',
-
-                            'scheduled_members' =>
-                                0,
-
-                            'existing_members' =>
-                                0,
-
-                            'new_members' =>
-                                0,
-
-                            'nil_contributors' =>
-                                0,
-
-                            'updated_by' =>
-                                auth()->id(),
-                        ]);
-
-
-                        return $batch;
-                    }
-                );
-
-
             /*
             |--------------------------------------------------------------------------
-            | Audit Successful Upload
+            | Find Existing Contribution Period
             |--------------------------------------------------------------------------
+            |
+            | There must only be one contribution period for:
+            |
+            | Employer + Year + Month
+            |
             */
 
-            $this->auditService->log(
-                eventType:
-                    'contribution_import',
-
-                module:
-                    'Pensions Administration - Contributions',
-
-                action:
-                    'UPLOAD_MONTHLY_CONTRIBUTIONS',
-
-                description:
-                    'Monthly contribution schedule '
-                    . $batch->original_filename
-                    . ' was uploaded.',
-
-                auditable:
-                    $batch,
-
-                newValues:
-                    $this
-                        ->auditService
-                        ->values(
-                            $batch
-                        ),
-
-                metadata: [
-                    'batch_id' =>
-                        $batch->id,
-
-                    'employer_id' =>
-                        $batch->employer_id,
-
-                    'contribution_period_id' =>
-                        $batch
-                            ->contribution_period_id,
-
-                    'currency_code' =>
-                        $batch
-                            ->currency_code,
-
-                    'file_hash' =>
-                        $batch
-                            ->file_hash,
-
-                    'replacement_upload' =>
-                        true,
-                ],
-
-                request:
-                    $request
-            );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Start Validation Queue
-            |--------------------------------------------------------------------------
-            */
-
-            ProcessContributionImport::dispatch(
-                $batch->id
-            )->onQueue(
-                'contribution-imports'
-            );
-
-
-            return redirect()
-                ->route(
-                    'pensions-administration.contributions.imports.show',
-                    $batch
+            $period = ContributionPeriod::query()
+                ->where(
+                    'employer_id',
+                    $employer->id
                 )
-                ->with(
-                    'success',
-                    'Monthly contribution schedule uploaded successfully. Validation has started.'
+                ->where(
+                    'period_year',
+                    $periodYear
+                )
+                ->where(
+                    'period_month',
+                    $periodMonth
+                )
+                ->lockForUpdate()
+                ->first();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create New Period
+            |--------------------------------------------------------------------------
+            */
+
+            if (!$period) {
+                $period = ContributionPeriod::create([
+                    'employer_id' =>
+                        $employer->id,
+
+                    'period_date' =>
+                        $periodDate->toDateString(),
+
+                    'due_date' =>
+                        $dueDate->toDateString(),
+
+                    'period_year' =>
+                        $periodYear,
+
+                    'period_month' =>
+                        $periodMonth,
+
+                    'scheme_code' =>
+                        $validated['scheme_code']
+                        ?? null,
+
+                    'status' =>
+                        'open',
+
+                    'scheduled_members' =>
+                        0,
+
+                    'existing_members' =>
+                        0,
+
+                    'new_members' =>
+                        0,
+
+                    'nil_contributors' =>
+                        0,
+
+                    'created_by' =>
+                        auth()->id(),
+
+                    'updated_by' =>
+                        auth()->id(),
+                ]);
+
+            } else {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Existing Period Integrity Check
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    (int) $period->period_year !== $periodYear
+                    ||
+                    (int) $period->period_month !== $periodMonth
+                ) {
+                    throw new RuntimeException(
+                        'The existing contribution period is internally inconsistent.'
+                    );
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Repair Derived Period Date
+                |--------------------------------------------------------------------------
+                |
+                | period_date is derived from year/month and should therefore always
+                | agree with them.
+                |
+                */
+
+                $period->period_date =
+                    $periodDate->toDateString();
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Update Due Date
+                |--------------------------------------------------------------------------
+                */
+
+                $period->due_date =
+                    $dueDate->toDateString();
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Scheme Code
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    !empty(
+                        $validated['scheme_code']
+                    )
+                ) {
+                    $period->scheme_code =
+                        $validated['scheme_code'];
+                }
+
+
+                $period->updated_by =
+                    auth()->id();
+
+
+                $period->save();
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Final Period Integrity Check
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                (int) $period->period_year !== $periodYear
+                ||
+                (int) $period->period_month !== $periodMonth
+                ||
+                Carbon::parse($period->period_date)->year !== $periodYear
+                ||
+                Carbon::parse($period->period_date)->month !== $periodMonth
+            ) {
+                throw new RuntimeException(
+                    'The contribution period could not be validated after creation.'
                 );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create Import Batch
+            |--------------------------------------------------------------------------
+            */
+
+            $batch = ContributionImportBatch::create([
+                'import_uuid' =>
+                    $importUuid,
+
+                'contribution_period_id' =>
+                    $period->id,
+
+                'employer_id' =>
+                    $employer->id,
+
+                'original_filename' =>
+                    $uploadedFile->getClientOriginalName(),
+
+                'stored_filename' =>
+                    $storedFilename,
+
+                'file_path' =>
+                    $filePath,
+
+                'file_extension' =>
+                    $extension,
+
+                'file_size' =>
+                    $uploadedFile->getSize(),
+
+                'file_hash' =>
+                    $fileHash,
+
+                'source_system' =>
+                    'monthly_excel',
+
+                'scheme_code' =>
+                    $validated['scheme_code']
+                    ?? null,
+
+                'due_date' =>
+                    $dueDate->toDateString(),
+
+                'currency_code' =>
+                    $currencyCode,
+
+                'exchange_rate_to_base' =>
+                    $exchangeRate,
+
+                'status' =>
+                    'uploaded',
+
+                'progress_percentage' =>
+                    0,
+
+                'total_rows' =>
+                    0,
+
+                'processed_rows' =>
+                    0,
+
+                'valid_rows' =>
+                    0,
+
+                'warning_rows' =>
+                    0,
+
+                'error_rows' =>
+                    0,
+
+                'existing_member_rows' =>
+                    0,
+
+                'new_member_rows' =>
+                    0,
+
+                'nil_contributor_rows' =>
+                    0,
+
+                'usd_basic_pay_total' =>
+                    0,
+
+                'usd_employee_contribution_total' =>
+                    0,
+
+                'usd_employer_contribution_total' =>
+                    0,
+
+                'usd_employee_avc_total' =>
+                    0,
+
+                'usd_employer_avc_total' =>
+                    0,
+
+                'zwg_basic_pay_total' =>
+                    0,
+
+                'zwg_employee_contribution_total' =>
+                    0,
+
+                'zwg_employer_contribution_total' =>
+                    0,
+
+                'zwg_employee_avc_total' =>
+                    0,
+
+                'zwg_employer_avc_total' =>
+                    0,
+
+                'posted_rows' =>
+                    0,
+
+                'failure_reason' =>
+                    null,
+
+                'uploaded_by' =>
+                    auth()->id(),
+            ]);
+
+
+            DB::commit();
 
         } catch (Throwable $e) {
 
+            DB::rollBack();
+
+
             /*
             |--------------------------------------------------------------------------
-            | Audit Failed Upload
+            | Remove File When Database Work Fails
             |--------------------------------------------------------------------------
             */
 
-            $this->auditService->failure(
-                eventType:
-                    'contribution_import',
+            if (
+                Storage::disk('local')
+                    ->exists($filePath)
+            ) {
+                Storage::disk('local')
+                    ->delete($filePath);
+            }
 
-                module:
-                    'Pensions Administration - Contributions',
 
-                action:
-                    'UPLOAD_MONTHLY_CONTRIBUTIONS',
-
-                description:
-                    'Monthly contribution schedule upload failed.',
-
-                failureReason:
-                    $e->getMessage(),
-
-                metadata: [
-                    'employer_id' =>
-                        $validated[
-                            'employer_id'
-                        ]
-                        ?? null,
-
-                    'period_year' =>
-                        $validated[
-                            'period_year'
-                        ]
-                        ?? null,
-
-                    'period_month' =>
-                        $validated[
-                            'period_month'
-                        ]
-                        ?? null,
-
-                    'currency_code' =>
-                        $validated[
-                            'currency_code'
-                        ]
-                        ?? null,
-                ],
-
-                request:
-                    $request
-            );
+            report($e);
 
 
             return back()
                 ->withInput()
-                ->with(
-                    'error',
-                    $e->getMessage()
-                );
+                ->withErrors([
+                    'import_file' =>
+                        'The contribution import could not be created: '
+                        . $e->getMessage(),
+                ]);
         }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dispatch Validation
+        |--------------------------------------------------------------------------
+        */
+
+        ProcessContributionImport::dispatch(
+            $batch->id
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Redirect To Import
+        |--------------------------------------------------------------------------
+        */
+
+        return redirect()
+            ->route(
+                'pensions-administration.contributions.imports.show',
+                $batch
+            )
+            ->with(
+                'success',
+                'Contribution file uploaded successfully. PENERP is validating the schedule.'
+            );
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Batch Details
+    | Show Import
     |--------------------------------------------------------------------------
     */
 
     public function show(
         ContributionImportBatch $batch
     ): View {
-        $this->ensurePermission(
-            'contributions.monthly-imports.view'
-        );
-
-
         $batch->load([
             'employer',
             'contributionPeriod',
             'uploadedBy',
-            'approvedBy',
-            'postedBy',
         ]);
 
 
-        $recentRows =
-            $batch
-                ->rows()
-                ->with([
-                    'matchedMember',
-                ])
-                ->orderBy(
-                    'row_number'
-                )
-                ->limit(10)
-                ->get();
+        $counts = [
+            'total' =>
+                $batch->total_rows,
 
+            'processed' =>
+                $batch->processed_rows,
 
-        $nilContributors =
-            $batch
-                ->contributionPeriod
-                ->memberStatuses()
-                ->with([
-                    'member',
-                ])
-                ->where(
-                    'contribution_status',
-                    'nil_contributor'
-                )
-                ->orderBy(
-                    'member_id'
-                )
-                ->limit(10)
-                ->get();
+            'valid' =>
+                $batch->valid_rows,
+
+            'warnings' =>
+                $batch->warning_rows,
+
+            'errors' =>
+                $batch->error_rows,
+
+            'existing_members' =>
+                $batch->existing_member_rows,
+
+            'new_members' =>
+                $batch->new_member_rows,
+
+            'nil_contributors' =>
+                $batch->nil_contributor_rows,
+        ];
 
 
         return view(
             'pensions-administration.contributions.imports.show',
             compact(
                 'batch',
-                'recentRows',
-                'nilContributors'
+                'counts'
             )
         );
     }
@@ -972,109 +876,65 @@ class ContributionImportController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Processing Status
+    | Import Status
     |--------------------------------------------------------------------------
     */
 
     public function status(
         ContributionImportBatch $batch
-    ): JsonResponse {
-        $this->ensurePermission(
-            'contributions.monthly-imports.view'
-        );
-
-
-        $batch->refresh();
-
-
+    ) {
         return response()->json([
+            'id' =>
+                $batch->id,
+
             'status' =>
                 $batch->status,
 
-            'status_label' =>
-                $batch
-                    ->status_label,
-
-            'currency_code' =>
-                $batch
-                    ->currency_code,
-
             'progress_percentage' =>
-                (float)
-                $batch
-                    ->progress_percentage,
+                (float) $batch->progress_percentage,
 
             'total_rows' =>
-                (int)
-                $batch
-                    ->total_rows,
+                $batch->total_rows,
 
             'processed_rows' =>
-                (int)
-                $batch
-                    ->processed_rows,
+                $batch->processed_rows,
 
             'valid_rows' =>
-                (int)
-                $batch
-                    ->valid_rows,
+                $batch->valid_rows,
 
             'warning_rows' =>
-                (int)
-                $batch
-                    ->warning_rows,
+                $batch->warning_rows,
 
             'error_rows' =>
-                (int)
-                $batch
-                    ->error_rows,
+                $batch->error_rows,
 
             'existing_member_rows' =>
-                (int)
-                $batch
-                    ->existing_member_rows,
+                $batch->existing_member_rows,
 
             'new_member_rows' =>
-                (int)
-                $batch
-                    ->new_member_rows,
+                $batch->new_member_rows,
 
             'nil_contributor_rows' =>
-                (int)
-                $batch
-                    ->nil_contributor_rows,
+                $batch->nil_contributor_rows,
 
             'failure_reason' =>
-                $batch
-                    ->failure_reason,
-
-            'review_url' =>
-                route(
-                    'pensions-administration.contributions.imports.review',
-                    $batch
-                ),
+                $batch->failure_reason,
         ]);
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Cancel Contribution Import
+    | Cancel Import
     |--------------------------------------------------------------------------
     */
 
     public function destroy(
-        Request $request,
         ContributionImportBatch $batch
     ): RedirectResponse {
-        $this->ensurePermission(
-            'contributions.monthly-imports.delete'
-        );
-
-
         /*
         |--------------------------------------------------------------------------
-        | Posted Transactions Cannot Be Cancelled
+        | Do Not Cancel Posted / Posting Batches
         |--------------------------------------------------------------------------
         */
 
@@ -1082,9 +942,8 @@ class ContributionImportController extends Controller
             in_array(
                 $batch->status,
                 [
-                    'approved',
-                    'posting',
                     'posted',
+                    'posting',
                 ],
                 true
             )
@@ -1092,163 +951,41 @@ class ContributionImportController extends Controller
             return back()
                 ->with(
                     'error',
-                    'This contribution import cannot be cancelled at its current stage.'
+                    'A posted or currently posting contribution batch cannot be cancelled.'
                 );
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Processing Batch
+        | Remove Staging Rows
         |--------------------------------------------------------------------------
         */
 
-        if (
-            $batch->status
-            ===
-            'processing'
-        ) {
-            return back()
-                ->with(
-                    'error',
-                    'This contribution import is currently being validated. Wait for validation to finish before cancelling it.'
-                );
-        }
-
-
-        $oldValues =
-            $this
-                ->auditService
-                ->values(
-                    $batch
-                );
-
-
-        DB::transaction(
-            function () use (
-                $batch
-            ): void {
-
-                /*
-                |--------------------------------------------------------------------------
-                | Delete Staging Monthly Statuses
-                |--------------------------------------------------------------------------
-                */
-
-                ContributionPeriodMemberStatus::query()
-                    ->where(
-                        'import_batch_id',
-                        $batch->id
-                    )
-                    ->delete();
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Delete Staging Rows
-                |--------------------------------------------------------------------------
-                */
-
-                ContributionImportRow::query()
-                    ->where(
-                        'import_batch_id',
-                        $batch->id
-                    )
-                    ->delete();
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Cancel Batch
-                |--------------------------------------------------------------------------
-                */
-
-                $batch->update([
-                    'status' =>
-                        'cancelled',
-
-                    'progress_percentage' =>
-                        0,
-                ]);
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Reopen Contribution Period
-                |--------------------------------------------------------------------------
-                */
-
-                $batch
-                    ->contributionPeriod
-                    ->update([
-                        'status' =>
-                            'open',
-
-                        'scheduled_members' =>
-                            0,
-
-                        'existing_members' =>
-                            0,
-
-                        'new_members' =>
-                            0,
-
-                        'nil_contributors' =>
-                            0,
-
-                        'updated_by' =>
-                            auth()->id(),
-                    ]);
-            }
-        );
+        ContributionImportRow::query()
+            ->where(
+                'import_batch_id',
+                $batch->id
+            )
+            ->delete();
 
 
         /*
         |--------------------------------------------------------------------------
-        | Audit
+        | Cancel Batch
         |--------------------------------------------------------------------------
         */
 
-        $this->auditService->log(
-            eventType:
-                'contribution_import',
+        $batch->update([
+            'status' =>
+                'cancelled',
 
-            module:
-                'Pensions Administration - Contributions',
+            'failure_reason' =>
+                null,
 
-            action:
-                'CANCEL_MONTHLY_CONTRIBUTIONS',
-
-            description:
-                'Contribution import '
-                . $batch->import_uuid
-                . ' was cancelled.',
-
-            auditable:
-                $batch,
-
-            oldValues:
-                $oldValues,
-
-            newValues:
-                $this
-                    ->auditService
-                    ->values(
-                        $batch
-                    ),
-
-            metadata: [
-                'batch_id' =>
-                    $batch->id,
-
-                'contribution_period_id' =>
-                    $batch
-                        ->contribution_period_id,
-            ],
-
-            request:
-                $request
-        );
+            'completed_at' =>
+                now(),
+        ]);
 
 
         return redirect()
@@ -1257,45 +994,7 @@ class ContributionImportController extends Controller
             )
             ->with(
                 'success',
-                'Monthly contribution import cancelled successfully. A replacement schedule may now be uploaded.'
+                'Contribution import cancelled successfully.'
             );
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Permission Enforcement
-    |--------------------------------------------------------------------------
-    */
-
-    private function ensurePermission(
-        string $permission
-    ): void {
-        $user =
-            auth()->user();
-
-
-        abort_if(
-            !$user,
-            401,
-            'Unauthenticated.'
-        );
-
-
-        if (
-            $user
-                ->is_system_administrator
-        ) {
-            return;
-        }
-
-
-        abort_unless(
-            $user->can(
-                $permission
-            ),
-            403,
-            'You do not have permission to perform this action.'
-        );
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services\PensionsAdministration\Contributions;
 
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use RuntimeException;
 use Throwable;
@@ -581,293 +582,343 @@ class ContributionExcelReader
 
     /*
     |--------------------------------------------------------------------------
-    | Read Excel File
+    | Chunk Size
     |--------------------------------------------------------------------------
+    |
+    | Contribution workbooks can be large. PhpSpreadsheet creates a sizeable
+    | in-memory object for every loaded cell, therefore PENERP must never load
+    | the complete workbook during contribution validation.
+    |
+    | 250 rows is deliberately conservative because contribution schedules
+    | contain considerably more columns than the static membership template.
+    |
     */
 
-    public function read(
+    private const CHUNK_SIZE = 250;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inspect Excel File
+    |--------------------------------------------------------------------------
+    |
+    | Reads workbook metadata and the heading row only. No contribution data
+    | rows are retained in memory here.
+    |
+    */
+
+    public function inspect(
         string $path
     ): array {
-        if (
-            !file_exists(
-                $path
-            )
-        ) {
+        if (!file_exists($path)) {
             throw new RuntimeException(
                 'The contribution Excel file could not be found.'
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Load Spreadsheet
-        |--------------------------------------------------------------------------
-        */
-
         try {
-            $spreadsheet =
-                IOFactory::load(
-                    $path
+            $reader = IOFactory::createReaderForFile($path);
+            $reader->setReadDataOnly(true);
+
+            if (method_exists($reader, 'setReadEmptyCells')) {
+                $reader->setReadEmptyCells(false);
+            }
+
+            $worksheetInfo = $reader->listWorksheetInfo($path);
+
+            if (empty($worksheetInfo)) {
+                throw new RuntimeException(
+                    'The contribution workbook does not contain any worksheets.'
                 );
+            }
 
-        } catch (Throwable $e) {
+            $info = $worksheetInfo[0];
 
-            throw new RuntimeException(
-                'The contribution Excel file could not be opened: '
-                . $e->getMessage(),
-                previous: $e
+            $sheetName = $info['worksheetName'] ?? null;
+            $highestRow = (int) ($info['totalRows'] ?? 0);
+            $highestColumn = $info['lastColumnLetter'] ?? null;
+
+            if (!$sheetName) {
+                throw new RuntimeException(
+                    'The contribution worksheet name could not be determined.'
+                );
+            }
+
+            if (!$highestColumn || $highestRow < 2) {
+                throw new RuntimeException(
+                    'The contribution Excel file does not contain any contribution rows.'
+                );
+            }
+
+            /*
+            |------------------------------------------------------------------
+            | Load Header Row Only
+            |------------------------------------------------------------------
+            */
+
+            $headerReader = IOFactory::createReaderForFile($path);
+            $headerReader->setReadDataOnly(true);
+            $headerReader->setLoadSheetsOnly([$sheetName]);
+
+            if (method_exists($headerReader, 'setReadEmptyCells')) {
+                $headerReader->setReadEmptyCells(false);
+            }
+
+            $headerReader->setReadFilter(
+                $this->makeChunkReadFilter(1, 1)
             );
-        }
 
+            $spreadsheet = $headerReader->load($path);
+            $sheet = $spreadsheet->getSheetByName($sheetName);
 
-        $sheet =
-            $spreadsheet
-                ->getActiveSheet();
+            if (!$sheet) {
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet, $headerReader, $reader);
+                gc_collect_cycles();
 
+                throw new RuntimeException(
+                    'The contribution worksheet could not be opened.'
+                );
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Spreadsheet Dimensions
-        |--------------------------------------------------------------------------
-        */
-
-        $highestRow =
-            $sheet
-                ->getHighestDataRow();
-
-
-        $highestColumn =
-            $sheet
-                ->getHighestDataColumn();
-
-
-        if (
-            $highestRow < 2
-        ) {
-            throw new RuntimeException(
-                'The contribution Excel file does not contain any contribution rows.'
-            );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Header Row
-        |--------------------------------------------------------------------------
-        */
-
-        $headerRow =
-            $sheet->rangeToArray(
-                'A1:'
-                . $highestColumn
-                . '1',
+            $headerRow = $sheet->rangeToArray(
+                'A1:' . $highestColumn . '1',
                 null,
                 true,
                 false
             )[0];
 
+            $columnMap = $this->buildColumnMap($headerRow);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Build Column Map
-        |--------------------------------------------------------------------------
-        */
+            $this->validateRequiredColumns($columnMap);
 
-        $columnMap =
-            $this->buildColumnMap(
-                $headerRow
+            $spreadsheet->disconnectWorksheets();
+
+            unset(
+                $sheet,
+                $spreadsheet,
+                $headerReader,
+                $reader,
+                $worksheetInfo
             );
 
+            gc_collect_cycles();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Validate Template
-        |--------------------------------------------------------------------------
-        */
+            return [
+                'sheet_name' => $sheetName,
+                'highest_row' => $highestRow,
+                'highest_column' => $highestColumn,
+                'headers' => $headerRow,
+                'column_map' => $columnMap,
+                'estimated_rows' => max(0, $highestRow - 1),
+            ];
 
-        $this->validateRequiredColumns(
-            $columnMap
-        );
+        } catch (Throwable $e) {
+            if ($e instanceof RuntimeException) {
+                throw $e;
+            }
+
+            throw new RuntimeException(
+                'The contribution Excel file could not be inspected: '
+                . $e->getMessage(),
+                previous: $e
+            );
+        }
+    }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Read Contribution Rows
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Stream Contribution Rows
+    |--------------------------------------------------------------------------
+    |
+    | Yields one normalized row at a time while the workbook is loaded in small
+    | chunks. The caller therefore never receives one giant array containing
+    | the complete contribution schedule.
+    |
+    */
 
-        $rows =
-            [];
+    public function rows(
+        string $path,
+        array $metadata
+    ): \Generator {
+        if (!file_exists($path)) {
+            throw new RuntimeException(
+                'The contribution Excel file could not be found.'
+            );
+        }
 
+        $sheetName = (string) ($metadata['sheet_name'] ?? '');
+        $highestRow = (int) ($metadata['highest_row'] ?? 0);
+        $highestColumn = (string) ($metadata['highest_column'] ?? '');
+        $headerRow = $metadata['headers'] ?? [];
+        $columnMap = $metadata['column_map'] ?? [];
+
+        if (
+            $sheetName === ''
+            || $highestRow < 2
+            || $highestColumn === ''
+            || empty($headerRow)
+            || empty($columnMap)
+        ) {
+            throw new RuntimeException(
+                'Contribution workbook metadata is incomplete. The file must be inspected before its rows are read.'
+            );
+        }
 
         for (
-            $rowNumber = 2;
-            $rowNumber <= $highestRow;
-            $rowNumber++
+            $startRow = 2;
+            $startRow <= $highestRow;
+            $startRow += self::CHUNK_SIZE
         ) {
-            $values =
-                $sheet->rangeToArray(
-                    'A'
-                    . $rowNumber
-                    . ':'
-                    . $highestColumn
-                    . $rowNumber,
+            $endRow = min(
+                $highestRow,
+                $startRow + self::CHUNK_SIZE - 1
+            );
+
+            $reader = null;
+            $spreadsheet = null;
+            $sheet = null;
+            $chunkRows = null;
+
+            try {
+                $reader = IOFactory::createReaderForFile($path);
+                $reader->setReadDataOnly(true);
+                $reader->setLoadSheetsOnly([$sheetName]);
+
+                if (method_exists($reader, 'setReadEmptyCells')) {
+                    $reader->setReadEmptyCells(false);
+                }
+
+                $reader->setReadFilter(
+                    $this->makeChunkReadFilter(
+                        $startRow,
+                        $endRow
+                    )
+                );
+
+                $spreadsheet = $reader->load($path);
+                $sheet = $spreadsheet->getSheetByName($sheetName);
+
+                if (!$sheet) {
+                    throw new RuntimeException(
+                        'The contribution worksheet could not be opened while reading rows.'
+                    );
+                }
+
+                $chunkRows = $sheet->rangeToArray(
+                    'A' . $startRow . ':' . $highestColumn . $endRow,
                     null,
                     true,
                     false
-                )[0];
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Ignore Blank Rows
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                $this->isEmptyRow(
-                    $values
-                )
-            ) {
-                continue;
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Ignore Total Rows
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                $this->looksLikeTotalRow(
-                    $values
-                )
-            ) {
-                continue;
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Raw Excel Values
-            |--------------------------------------------------------------------------
-            */
-
-            $rawData =
-                [];
-
-
-            foreach (
-                $headerRow
-                as $columnIndex => $heading
-            ) {
-                $heading =
-                    trim(
-                        (string)
-                        $heading
-                    );
-
-
-                if (
-                    $heading === ''
-                ) {
-                    continue;
-                }
-
-
-                $rawData[
-                    $heading
-                ] =
-                    $values[
-                        $columnIndex
-                    ]
-                    ??
-                    null;
-            }
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Normalized Values
-            |--------------------------------------------------------------------------
-            */
-
-            $normalizedData =
-                $this->normalizeRow(
-                    $values,
-                    $columnMap
                 );
 
+                foreach ($chunkRows as $offset => $values) {
+                    $rowNumber = $startRow + $offset;
 
-            /*
-            |--------------------------------------------------------------------------
-            | Add Row
-            |--------------------------------------------------------------------------
-            */
+                    if ($this->isEmptyRow($values)) {
+                        continue;
+                    }
 
-            $rows[] = [
-                'row_number' =>
-                    $rowNumber,
+                    if ($this->looksLikeTotalRow($values)) {
+                        continue;
+                    }
 
-                'raw_data' =>
-                    $rawData,
+                    $rawData = [];
 
-                'normalized_data' =>
-                    $normalizedData,
-            ];
+                    foreach ($headerRow as $columnIndex => $heading) {
+                        $heading = trim((string) $heading);
+
+                        if ($heading === '') {
+                            continue;
+                        }
+
+                        $rawData[$heading] = $values[$columnIndex] ?? null;
+                    }
+
+                    $normalizedData = $this->normalizeRow(
+                        $values,
+                        $columnMap
+                    );
+
+                    yield [
+                        'row_number' => $rowNumber,
+                        'raw_data' => $rawData,
+                        'normalized_data' => $normalizedData,
+                    ];
+
+                    unset($rawData, $normalizedData, $values);
+                }
+
+            } catch (Throwable $e) {
+                if ($e instanceof RuntimeException) {
+                    throw $e;
+                }
+
+                throw new RuntimeException(
+                    'The contribution Excel file could not be read around rows '
+                    . $startRow
+                    . ' to '
+                    . $endRow
+                    . ': '
+                    . $e->getMessage(),
+                    previous: $e
+                );
+
+            } finally {
+                if ($spreadsheet) {
+                    $spreadsheet->disconnectWorksheets();
+                }
+
+                unset(
+                    $chunkRows,
+                    $sheet,
+                    $spreadsheet,
+                    $reader
+                );
+
+                gc_collect_cycles();
+            }
         }
+    }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Release Spreadsheet Memory
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Chunk Read Filter
+    |--------------------------------------------------------------------------
+    |
+    | Kept inside this class so no additional service file is required.
+    |
+    */
 
-        $spreadsheet->disconnectWorksheets();
+    private function makeChunkReadFilter(
+        int $startRow,
+        int $endRow
+    ): IReadFilter {
+        return new class(
+            $startRow,
+            $endRow
+        ) implements IReadFilter {
+            public function __construct(
+                private readonly int $startRow,
+                private readonly int $endRow
+            ) {
+            }
 
+            public function readCell(
+                string $columnAddress,
+                int $row,
+                string $worksheetName = ''
+            ): bool {
+                if ($row === 1) {
+                    return true;
+                }
 
-        /*
-        |--------------------------------------------------------------------------
-        | No Contribution Rows
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            count(
-                $rows
-            )
-            === 0
-        ) {
-            throw new RuntimeException(
-                'The contribution Excel file does not contain any usable contribution rows.'
-            );
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Return Parsed Excel
-        |--------------------------------------------------------------------------
-        */
-
-        return [
-            'rows' =>
-                $rows,
-
-            'row_count' =>
-                count(
-                    $rows
-                ),
-
-            'headers' =>
-                $headerRow,
-
-            'column_map' =>
-                $columnMap,
-        ];
+                return $row >= $this->startRow
+                    && $row <= $this->endRow;
+            }
+        };
     }
 
 

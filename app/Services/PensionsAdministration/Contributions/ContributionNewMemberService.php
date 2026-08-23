@@ -18,7 +18,6 @@ class ContributionNewMemberService
     ) {
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Create New Member From Contribution Schedule
@@ -28,21 +27,12 @@ class ContributionNewMemberService
     public function create(
         ContributionImportRow $row
     ): Member {
-        /*
-        |--------------------------------------------------------------------------
-        | Load Required Relationships
-        |--------------------------------------------------------------------------
-        */
-
         $row->load([
             'batch.employer',
             'batch.contributionPeriod',
         ]);
 
-
-        $batch =
-            $row->batch;
-
+        $batch = $row->batch;
 
         /*
         |--------------------------------------------------------------------------
@@ -56,32 +46,17 @@ class ContributionNewMemberService
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validate Employer
-        |--------------------------------------------------------------------------
-        */
-
         if (!$batch->employer) {
             throw new RuntimeException(
                 'The contribution batch does not have a valid employer.'
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validate Contribution Period
-        |--------------------------------------------------------------------------
-        */
-
         if (!$batch->contributionPeriod) {
             throw new RuntimeException(
                 'The contribution batch does not have a valid contribution period.'
             );
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -96,7 +71,6 @@ class ContributionNewMemberService
                 . ' is not classified as a proposed new member.'
             );
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -115,12 +89,10 @@ class ContributionNewMemberService
                         $row->created_member_id
                     );
 
-
             if ($existingCreatedMember) {
                 return $existingCreatedMember;
             }
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -130,13 +102,11 @@ class ContributionNewMemberService
 
         $data =
             $row->normalized_data
-            ??
-            [];
-
+            ?? [];
 
         /*
         |--------------------------------------------------------------------------
-        | Surname
+        | Required Core Member Fields
         |--------------------------------------------------------------------------
         */
 
@@ -148,13 +118,6 @@ class ContributionNewMemberService
                 $row
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | First Names
-        |--------------------------------------------------------------------------
-        */
-
         $firstNames =
             $this->requiredString(
                 $data,
@@ -162,13 +125,6 @@ class ContributionNewMemberService
                 'First Names',
                 $row
             );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Staff Number
-        |--------------------------------------------------------------------------
-        */
 
         $staffNumber =
             $this->requiredString(
@@ -178,16 +134,6 @@ class ContributionNewMemberService
                 $row
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | National ID
-        |--------------------------------------------------------------------------
-        |
-        | National ID is mandatory for a new member.
-        |
-        */
-
         $nationalId =
             $this->requiredString(
                 $data,
@@ -196,12 +142,10 @@ class ContributionNewMemberService
                 $row
             );
 
-
         $normalizedNationalId =
             Member::normalizeNationalId(
                 $nationalId
             );
-
 
         if (!$normalizedNationalId) {
             throw new RuntimeException(
@@ -211,13 +155,6 @@ class ContributionNewMemberService
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Date Of Birth
-        |--------------------------------------------------------------------------
-        */
-
         $dateOfBirth =
             $this->requiredDate(
                 $data,
@@ -225,13 +162,6 @@ class ContributionNewMemberService
                 'Date of Birth',
                 $row
             );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Date Joined Fund
-        |--------------------------------------------------------------------------
-        */
 
         $dateJoinedFund =
             $this->requiredDate(
@@ -241,16 +171,6 @@ class ContributionNewMemberService
                 $row
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Date Joined Employer
-        |--------------------------------------------------------------------------
-        |
-        | This is now explicitly required for new members.
-        |
-        */
-
         $dateJoinedEmployer =
             $this->requiredDate(
                 $data,
@@ -258,13 +178,6 @@ class ContributionNewMemberService
                 'Date Joined Employer',
                 $row
             );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Gender
-        |--------------------------------------------------------------------------
-        */
 
         $gender =
             $this->requiredString(
@@ -274,13 +187,6 @@ class ContributionNewMemberService
                 $row
             );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Marital Status
-        |--------------------------------------------------------------------------
-        */
-
         $maritalStatus =
             $this->requiredString(
                 $data,
@@ -289,38 +195,42 @@ class ContributionNewMemberService
                 $row
             );
 
-
         /*
         |--------------------------------------------------------------------------
-        | Cell Phone Number
+        | Optional Contact Details
         |--------------------------------------------------------------------------
+        |
+        | Cell phone, email and home address are optional.
+        |
         */
 
         $cellphoneNumber =
-            $this->requiredString(
-                $data,
-                'cellphone_number',
-                'Cell Phone Number',
-                $row
+            $this->nullableString(
+                $data['cellphone_number']
+                ?? null
             );
 
+        $emailAddress =
+            $this->nullableString(
+                $data['email_address']
+                ?? null
+            );
+
+        $homeAddress =
+            $this->nullableString(
+                $data['home_address']
+                ?? null
+            );
 
         /*
         |--------------------------------------------------------------------------
-        | Email Address
+        | Validate Email Only When Supplied
         |--------------------------------------------------------------------------
         */
 
-        $emailAddress =
-            $this->requiredString(
-                $data,
-                'email_address',
-                'Email Address',
-                $row
-            );
-
-
         if (
+            $emailAddress
+            &&
             !filter_var(
                 $emailAddress,
                 FILTER_VALIDATE_EMAIL
@@ -335,34 +245,10 @@ class ContributionNewMemberService
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Home Address
-        |--------------------------------------------------------------------------
-        */
-
-        $homeAddress =
-            $this->requiredString(
-                $data,
-                'home_address',
-                'Home Address',
-                $row
-            );
-
-
         /*
         |--------------------------------------------------------------------------
         | Age Validation
         |--------------------------------------------------------------------------
-        |
-        | Business Rule:
-        |
-        | A genuinely new member aged 60 years or above cannot be admitted
-        | through the monthly contribution process.
-        |
-        | Age is measured at the contribution due date where available.
-        |
         */
 
         $ageReferenceDate =
@@ -372,13 +258,11 @@ class ContributionNewMemberService
                 $batch->contributionPeriod->period_date
             );
 
-
         $age =
             $dateOfBirth
                 ->diffInYears(
                     $ageReferenceDate
                 );
-
 
         if ($age >= 60) {
             throw new RuntimeException(
@@ -391,7 +275,6 @@ class ContributionNewMemberService
                 . '. A new member aged 60 years or above cannot be created or contribute through the monthly contribution upload.'
             );
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -411,7 +294,6 @@ class ContributionNewMemberService
             );
         }
 
-
         if (
             $dateJoinedEmployer->lt(
                 $dateOfBirth
@@ -423,7 +305,6 @@ class ContributionNewMemberService
                 . ': Date Joined Employer cannot be before Date of Birth.'
             );
         }
-
 
         if (
             $dateJoinedFund->gt(
@@ -437,14 +318,10 @@ class ContributionNewMemberService
             );
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | Staff Number Duplicate Check
         |--------------------------------------------------------------------------
-        |
-        | Staff number is unique only within an employer.
-        |
         */
 
         $staffExists =
@@ -463,7 +340,6 @@ class ContributionNewMemberService
                 )
                 ->exists();
 
-
         if ($staffExists) {
             throw new RuntimeException(
                 'Excel row '
@@ -475,7 +351,6 @@ class ContributionNewMemberService
                 . '.'
             );
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -491,7 +366,6 @@ class ContributionNewMemberService
                 )
                 ->exists();
 
-
         if ($nationalIdExists) {
             throw new RuntimeException(
                 'Excel row '
@@ -502,33 +376,30 @@ class ContributionNewMemberService
             );
         }
 
+       /*
+|--------------------------------------------------------------------------
+| Posting User
+|--------------------------------------------------------------------------
+|
+| Queue jobs do not have an authenticated browser session.
+| The posting user must therefore come from the batch/job.
+|
+*/
 
-        /*
-        |--------------------------------------------------------------------------
-        | Posting User
-        |--------------------------------------------------------------------------
-        |
-        | Do NOT rely only on auth()->id().
-        |
-        | Contribution posting may execute through a queued job where no web
-        | authentication session exists.
-        |
-        */
+$postingUserId =
+    $batch->posting_user_id
+    ??
+    $batch->posted_by
+    ??
+    $batch->approved_by
+    ??
+    $batch->uploaded_by;
 
-        $postingUserId =
-            $batch->posting_user_id
-            ??
-            $batch->posted_by
-            ??
-            auth()->id();
-
-
-        if (!$postingUserId) {
-            throw new RuntimeException(
-                'Unable to determine the user responsible for creating the new member.'
-            );
-        }
-
+if (!$postingUserId) {
+    throw new RuntimeException(
+        'Unable to determine the user responsible for creating the new member.'
+    );
+}
 
         /*
         |--------------------------------------------------------------------------
@@ -559,11 +430,8 @@ class ContributionNewMemberService
 
                 /*
                 |--------------------------------------------------------------------------
-                | Lock Row
+                | Lock Contribution Row
                 |--------------------------------------------------------------------------
-                |
-                | Protect against the same row being processed twice concurrently.
-                |
                 */
 
                 $lockedRow =
@@ -573,7 +441,6 @@ class ContributionNewMemberService
                         )
                         ->lockForUpdate()
                         ->firstOrFail();
-
 
                 /*
                 |--------------------------------------------------------------------------
@@ -592,16 +459,14 @@ class ContributionNewMemberService
                                 $lockedRow->created_member_id
                             );
 
-
                     if ($existingMember) {
                         return $existingMember;
                     }
                 }
 
-
                 /*
                 |--------------------------------------------------------------------------
-                | Re-check Staff Number Inside Transaction
+                | Re-check Staff Number
                 |--------------------------------------------------------------------------
                 */
 
@@ -622,7 +487,6 @@ class ContributionNewMemberService
                         ->lockForUpdate()
                         ->exists();
 
-
                 if ($staffExists) {
                     throw new RuntimeException(
                         'Excel row '
@@ -633,10 +497,9 @@ class ContributionNewMemberService
                     );
                 }
 
-
                 /*
                 |--------------------------------------------------------------------------
-                | Re-check National ID Inside Transaction
+                | Re-check National ID
                 |--------------------------------------------------------------------------
                 */
 
@@ -649,7 +512,6 @@ class ContributionNewMemberService
                         ->lockForUpdate()
                         ->exists();
 
-
                 if ($nationalIdExists) {
                     throw new RuntimeException(
                         'Excel row '
@@ -660,10 +522,9 @@ class ContributionNewMemberService
                     );
                 }
 
-
                 /*
                 |--------------------------------------------------------------------------
-                | Allocate New Member Number
+                | Generate New Member Number
                 |--------------------------------------------------------------------------
                 */
 
@@ -671,7 +532,6 @@ class ContributionNewMemberService
                     $this
                         ->memberNumberGenerator
                         ->next();
-
 
                 /*
                 |--------------------------------------------------------------------------
@@ -682,18 +542,11 @@ class ContributionNewMemberService
                 $member =
                     new Member();
 
-
                 $member->forceFill([
-
                     /*
                     |--------------------------------------------------------------------------
                     | Member Numbers
                     |--------------------------------------------------------------------------
-                    |
-                    | New PENERP member:
-                    |
-                    | PENERP number = PenAd number
-                    |
                     */
 
                     'member_number' =>
@@ -704,17 +557,13 @@ class ContributionNewMemberService
 
                     'fundworx_member_number' =>
                         $this->nullableString(
-                            $data[
-                                'fundworx_member_number'
-                            ]
-                            ??
-                            null
+                            $data['fundworx_member_number']
+                            ?? null
                         ),
-
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Name
+                    | Names
                     |--------------------------------------------------------------------------
                     */
 
@@ -726,13 +575,9 @@ class ContributionNewMemberService
 
                     'other_names' =>
                         $this->nullableString(
-                            $data[
-                                'other_names'
-                            ]
-                            ??
-                            null
+                            $data['other_names']
+                            ?? null
                         ),
-
 
                     /*
                     |--------------------------------------------------------------------------
@@ -750,33 +595,43 @@ class ContributionNewMemberService
                         $gender,
 
                     'date_of_birth' =>
-                        $dateOfBirth->toDateString(),
-
+                        $dateOfBirth
+                            ->toDateString(),
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Contact / Personal Information
+                    | Personal / Contact Details
                     |--------------------------------------------------------------------------
                     */
 
                     'marital_status' =>
                         $maritalStatus,
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | IMPORTANT
+                    |--------------------------------------------------------------------------
+                    |
+                    | These may be NULL.
+                    |
+                    */
+
                     'cellphone_number' =>
                         $cellphoneNumber,
 
                     'email_address' =>
-                        strtolower(
-                            $emailAddress
-                        ),
+                        $emailAddress
+                            ? strtolower(
+                                $emailAddress
+                            )
+                            : null,
 
                     'home_address' =>
                         $homeAddress,
 
-
                     /*
                     |--------------------------------------------------------------------------
-                    | Fund Membership
+                    | Membership
                     |--------------------------------------------------------------------------
                     */
 
@@ -790,7 +645,6 @@ class ContributionNewMemberService
                     'is_active' =>
                         true,
 
-
                     /*
                     |--------------------------------------------------------------------------
                     | Audit
@@ -804,77 +658,44 @@ class ContributionNewMemberService
                         $postingUserId,
                 ]);
 
-
                 $member->save();
-
 
                 /*
                 |--------------------------------------------------------------------------
-                | Create Member Employment
+                | Create Employment
                 |--------------------------------------------------------------------------
                 */
 
                 $employment =
                     new MemberEmployment();
 
-
                 $employment->forceFill([
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Relationships
-                    |--------------------------------------------------------------------------
-                    */
-
                     'member_id' =>
                         $member->id,
 
                     'employer_id' =>
                         $batch->employer_id,
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Employment Reference
-                    |--------------------------------------------------------------------------
-                    */
-
                     'staff_number' =>
                         $staffNumber,
 
                     'vote_number' =>
                         $this->nullableString(
-                            $data[
-                                'vote_number'
-                            ]
-                            ??
-                            null
+                            $data['vote_number']
+                            ?? null
                         ),
 
                     'branch' =>
                         $this->nullableString(
-                            $data[
-                                'branch'
-                            ]
-                            ??
-                            null
+                            $data['branch']
+                            ?? null
                         ),
 
                     'department' =>
                         $this->nullableString(
-                            $data[
-                                'department'
-                            ]
-                            ??
-                            null
+                            $data['department']
+                            ?? null
                         ),
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Employment Dates
-                    |--------------------------------------------------------------------------
-                    */
 
                     'date_joined_employer' =>
                         $dateJoinedEmployer
@@ -887,25 +708,11 @@ class ContributionNewMemberService
                     'effective_to' =>
                         null,
 
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Employment Status
-                    |--------------------------------------------------------------------------
-                    */
-
                     'employment_status' =>
                         'active',
 
                     'is_current' =>
                         true,
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Audit
-                    |--------------------------------------------------------------------------
-                    */
 
                     'created_by' =>
                         $postingUserId,
@@ -914,77 +721,48 @@ class ContributionNewMemberService
                         $postingUserId,
                 ]);
 
-
                 $employment->save();
-
 
                 /*
                 |--------------------------------------------------------------------------
-                | Update Contribution Staging Row
+                | Update Staging Row
                 |--------------------------------------------------------------------------
                 */
 
                 $normalizedData =
                     $lockedRow->normalized_data
-                    ??
-                    [];
+                    ?? [];
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Store Generated Numbers
-                |--------------------------------------------------------------------------
-                */
-
-                $normalizedData[
-                    'penerp_member_number'
-                ] =
+                $normalizedData['penerp_member_number'] =
                     $memberNumber;
 
-
-                $normalizedData[
-                    'penad_member_number'
-                ] =
+                $normalizedData['penad_member_number'] =
                     $memberNumber;
 
-
-                $normalizedData[
-                    'pension_reference_number'
-                ] =
+                $normalizedData['pension_reference_number'] =
                     $memberNumber;
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Preserve Permanent Member Details
-                |--------------------------------------------------------------------------
-                */
-
-                $normalizedData[
-                    'marital_status'
-                ] =
+                $normalizedData['marital_status'] =
                     $maritalStatus;
 
+                /*
+                |--------------------------------------------------------------------------
+                | Optional Details
+                |--------------------------------------------------------------------------
+                */
 
-                $normalizedData[
-                    'cellphone_number'
-                ] =
+                $normalizedData['cellphone_number'] =
                     $cellphoneNumber;
 
+                $normalizedData['email_address'] =
+                    $emailAddress
+                        ? strtolower(
+                            $emailAddress
+                        )
+                        : null;
 
-                $normalizedData[
-                    'email_address'
-                ] =
-                    strtolower(
-                        $emailAddress
-                    );
-
-
-                $normalizedData[
-                    'home_address'
-                ] =
+                $normalizedData['home_address'] =
                     $homeAddress;
-
 
                 /*
                 |--------------------------------------------------------------------------
@@ -1009,21 +787,12 @@ class ContributionNewMemberService
                         $normalizedData,
                 ]);
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | Refresh Original Row Object
-                |--------------------------------------------------------------------------
-                */
-
                 $row->refresh();
-
 
                 return $member;
             }
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -1040,14 +809,10 @@ class ContributionNewMemberService
         $value =
             trim(
                 (string) (
-                    $data[
-                        $field
-                    ]
-                    ??
-                    ''
+                    $data[$field]
+                    ?? ''
                 )
             );
-
 
         if ($value === '') {
             throw new RuntimeException(
@@ -1059,10 +824,8 @@ class ContributionNewMemberService
             );
         }
 
-
         return $value;
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -1077,12 +840,8 @@ class ContributionNewMemberService
         ContributionImportRow $row
     ): Carbon {
         $value =
-            $data[
-                $field
-            ]
-            ??
-            null;
-
+            $data[$field]
+            ?? null;
 
         if (blank($value)) {
             throw new RuntimeException(
@@ -1094,14 +853,12 @@ class ContributionNewMemberService
             );
         }
 
-
         try {
             return Carbon::parse(
                 $value
             )->startOfDay();
 
         } catch (Throwable) {
-
             throw new RuntimeException(
                 'Excel row '
                 . $row->row_number
@@ -1111,7 +868,6 @@ class ContributionNewMemberService
             );
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -1126,20 +882,15 @@ class ContributionNewMemberService
             return null;
         }
 
-
         $value =
             trim(
-                (string)
-                $value
+                (string) $value
             );
 
-
-        return
-            $value !== ''
-                ? $value
-                : null;
+        return $value !== ''
+            ? $value
+            : null;
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -1160,25 +911,19 @@ class ContributionNewMemberService
 
         if (
             filled(
-                $data[
-                    'due_date'
-                ]
-                ??
-                null
+                $data['due_date']
+                ?? null
             )
         ) {
             try {
                 return Carbon::parse(
-                    $data[
-                        'due_date'
-                    ]
+                    $data['due_date']
                 )->startOfDay();
 
             } catch (Throwable) {
-                // Continue to batch due date.
+                // Continue.
             }
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -1186,33 +931,24 @@ class ContributionNewMemberService
         |--------------------------------------------------------------------------
         */
 
-        if (
-            filled(
-                $batchDueDate
-            )
-        ) {
+        if (filled($batchDueDate)) {
             try {
                 return Carbon::parse(
                     $batchDueDate
                 )->startOfDay();
 
             } catch (Throwable) {
-                // Continue to contribution period date.
+                // Continue.
             }
         }
 
-
         /*
         |--------------------------------------------------------------------------
-        | Contribution Period Date
+        | Period Date
         |--------------------------------------------------------------------------
         */
 
-        if (
-            filled(
-                $periodDate
-            )
-        ) {
+        if (filled($periodDate)) {
             try {
                 return Carbon::parse(
                     $periodDate
@@ -1222,7 +958,6 @@ class ContributionNewMemberService
                 // Final failure below.
             }
         }
-
 
         throw new RuntimeException(
             'Unable to determine the contribution period date for new member age validation.'

@@ -90,6 +90,8 @@ class DatabaseSeeder extends Seeder
 
             SystemAdministratorSeeder::class,
 
+            EmployerGroupSeeder::class,
+
         ]);
     }
 }
