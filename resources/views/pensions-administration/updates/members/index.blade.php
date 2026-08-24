@@ -679,6 +679,11 @@
                                     <i class="mdi mdi-eye-outline"></i>
 
                                 </a>
+                                <a href="{{ route('pensions-administration.contributions.members.expected-contributions', $member) }}"
+                                class="btn btn-sm btn-outline-primary"
+                                title="Expected Contribution History">
+                                    <i class="mdi mdi-history"></i>
+                                </a>
 
 
                                 <a href="{{ route('pensions-administration.updates.members.edit', $member) }}"
