@@ -503,6 +503,12 @@ class ModulePermissionSeeder extends Seeder
 
                 'permissions' => [
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Monthly Expected Contributions
+                    |--------------------------------------------------------------------------
+                    */
+
                     [
                         'name' => 'contributions.monthly-imports.view',
                         'display_name' => 'View Monthly Contribution Imports',
@@ -544,6 +550,57 @@ class ModulePermissionSeeder extends Seeder
                         'display_name' => 'Post Monthly Contributions',
                         'action' => 'post',
                     ],
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Employer Contribution Receipts
+                    |--------------------------------------------------------------------------
+                    */
+
+                    [
+                        'name' => 'contributions.receipts.view',
+                        'display_name' => 'View Contribution Receipts',
+                        'action' => 'view',
+                    ],
+
+                    [
+                        'name' => 'contributions.receipts.create',
+                        'display_name' => 'Upload Contribution Receipts',
+                        'action' => 'create',
+                    ],
+
+                    [
+                        'name' => 'contributions.receipts.post',
+                        'display_name' => 'Post Contribution Receipts',
+                        'action' => 'post',
+                    ],
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Receipt Exchange Rates
+                    |--------------------------------------------------------------------------
+                    */
+
+                    [
+                        'name' => 'contributions.exchange-rates.view',
+                        'display_name' => 'View Contribution Exchange Rates',
+                        'action' => 'view',
+                    ],
+
+                    [
+                        'name' => 'contributions.exchange-rates.manage',
+                        'display_name' => 'Manage Contribution Exchange Rates',
+                        'action' => 'manage',
+                    ],
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Contribution Reports
+                    |--------------------------------------------------------------------------
+                    */
 
                     [
                         'name' => 'contributions.reports.view',
@@ -677,6 +734,7 @@ class ModulePermissionSeeder extends Seeder
                 'approve',
                 'reject',
                 'post',
+                'manage',
                 'terminate',
                 'reset-password',
                 'assign-permissions',

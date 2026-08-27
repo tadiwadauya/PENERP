@@ -53,6 +53,15 @@ class RolePermissionSeeder extends Seeder
             );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | System Administrator Permissions
+        |--------------------------------------------------------------------------
+        |
+        | All active contribution permissions are included automatically.
+        |--------------------------------------------------------------------------
+        */
+
         $adminPermissions =
             Permission::query()
                 ->where(
@@ -89,27 +98,8 @@ class RolePermissionSeeder extends Seeder
 
                             ->orWhere(
                                 'name',
-                                'contributions.monthly-imports.view'
-                            )
-
-                            ->orWhere(
-                                'name',
-                                'contributions.monthly-imports.approve'
-                            )
-
-                            ->orWhere(
-                                'name',
-                                'contributions.monthly-imports.reject'
-                            )
-
-                            ->orWhere(
-                                'name',
-                                'contributions.monthly-imports.post'
-                            )
-
-                            ->orWhere(
-                                'name',
-                                'contributions.reports.view'
+                                'like',
+                                'contributions.%'
                             );
                     }
                 )
@@ -287,6 +277,10 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS OFFICER
         |--------------------------------------------------------------------------
+        |
+        | Can upload and review expected contributions and actual receipts.
+        | Cannot post receipts.
+        |--------------------------------------------------------------------------
         */
 
         $contributionsOfficer =
@@ -303,7 +297,7 @@ class RolePermissionSeeder extends Seeder
                         'Contributions Officer',
 
                     'description' =>
-                        'Uploads, validates and reviews monthly expected contribution schedules.',
+                        'Uploads, validates and reviews monthly expected contribution schedules and employer receipt files.',
 
                     'is_system_role' =>
                         false,
@@ -317,12 +311,52 @@ class RolePermissionSeeder extends Seeder
         $contributionsOfficerPermissions = [
             'dashboard.pensions.view',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Expected Contributions
+            |--------------------------------------------------------------------------
+            */
+
             'contributions.monthly-imports.view',
             'contributions.monthly-imports.create',
             'contributions.monthly-imports.update',
             'contributions.monthly-imports.delete',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Employer Receipts
+            |--------------------------------------------------------------------------
+            */
+
+            'contributions.receipts.view',
+            'contributions.receipts.create',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Exchange Rates
+            |--------------------------------------------------------------------------
+            */
+
+            'contributions.exchange-rates.view',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reports
+            |--------------------------------------------------------------------------
+            */
+
             'contributions.reports.view',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Supporting Updates Information
+            |--------------------------------------------------------------------------
+            */
 
             'updates.dashboard.view',
             'updates.employers.view',
@@ -344,6 +378,9 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS SUPERVISOR
         |--------------------------------------------------------------------------
+        |
+        | Full day-to-day receipt access including posting and exchange rates.
+        |--------------------------------------------------------------------------
         */
 
         $contributionsSupervisor =
@@ -360,7 +397,7 @@ class RolePermissionSeeder extends Seeder
                         'Contributions Supervisor',
 
                     'description' =>
-                        'Supervises monthly contribution processing and review.',
+                        'Supervises monthly contribution processing, employer receipts and exchange rates.',
 
                     'is_system_role' =>
                         false,
@@ -374,12 +411,54 @@ class RolePermissionSeeder extends Seeder
         $contributionsSupervisorPermissions = [
             'dashboard.pensions.view',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Expected Contributions
+            |--------------------------------------------------------------------------
+            */
+
             'contributions.monthly-imports.view',
             'contributions.monthly-imports.create',
             'contributions.monthly-imports.update',
             'contributions.monthly-imports.delete',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Employer Receipts
+            |--------------------------------------------------------------------------
+            */
+
+            'contributions.receipts.view',
+            'contributions.receipts.create',
+            'contributions.receipts.post',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Exchange Rates
+            |--------------------------------------------------------------------------
+            */
+
+            'contributions.exchange-rates.view',
+            'contributions.exchange-rates.manage',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reports
+            |--------------------------------------------------------------------------
+            */
+
             'contributions.reports.view',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Supporting Updates Information
+            |--------------------------------------------------------------------------
+            */
 
             'updates.dashboard.view',
             'updates.employers.view',
@@ -403,11 +482,10 @@ class RolePermissionSeeder extends Seeder
         | CONTRIBUTIONS APPROVER
         |--------------------------------------------------------------------------
         |
-        | Assign this role from User Management to the people currently
-        | authorised to approve/reject contribution batches.
+        | This role remains specifically for EXPECTED monthly contributions.
         |
-        | This avoids hard-coding job titles into controllers.
-        |
+        | Receipts do not require approval.
+        |--------------------------------------------------------------------------
         */
 
         $contributionsApprover =
@@ -463,6 +541,9 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS POSTER
         |--------------------------------------------------------------------------
+        |
+        | Can permanently post expected contributions and actual receipts.
+        |--------------------------------------------------------------------------
         */
 
         $contributionsPoster =
@@ -479,7 +560,7 @@ class RolePermissionSeeder extends Seeder
                         'Contributions Poster',
 
                     'description' =>
-                        'Authorised to permanently post approved monthly expected contributions.',
+                        'Authorised to permanently post expected contributions and validated employer contribution receipts.',
 
                     'is_system_role' =>
                         false,
@@ -493,10 +574,50 @@ class RolePermissionSeeder extends Seeder
         $contributionsPosterPermissions = [
             'dashboard.pensions.view',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Expected Contributions
+            |--------------------------------------------------------------------------
+            */
+
             'contributions.monthly-imports.view',
             'contributions.monthly-imports.post',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Employer Receipts
+            |--------------------------------------------------------------------------
+            */
+
+            'contributions.receipts.view',
+            'contributions.receipts.post',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Exchange Rates
+            |--------------------------------------------------------------------------
+            */
+
+            'contributions.exchange-rates.view',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reports
+            |--------------------------------------------------------------------------
+            */
+
             'contributions.reports.view',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Supporting Information
+            |--------------------------------------------------------------------------
+            */
 
             'updates.employers.view',
             'updates.members.view',
