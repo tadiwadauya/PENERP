@@ -475,15 +475,24 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'update',
                     ],
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Legacy Updates Report Permissions
+                    |--------------------------------------------------------------------------
+                    |
+                    | Retained temporarily for backwards compatibility.
+                    |
+                    */
+
                     [
                         'name' => 'updates.reports.membership.view',
-                        'display_name' => 'View Membership Reports',
+                        'display_name' => 'View Membership Reports - Legacy',
                         'action' => 'view',
                     ],
 
                     [
                         'name' => 'updates.reports.membership.export',
-                        'display_name' => 'Export Membership Reports',
+                        'display_name' => 'Export Membership Reports - Legacy',
                         'action' => 'export',
                     ],
                 ],
@@ -550,6 +559,64 @@ class ModulePermissionSeeder extends Seeder
                         'display_name' => 'View Contribution Reports',
                         'action' => 'view',
                     ],
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Historical Contribution Migration
+                    |--------------------------------------------------------------------------
+                    |
+                    | Assigned only to System Administrator.
+                    |
+                    */
+
+                    [
+                        'name' => 'contributions.historical-imports.manage',
+                        'display_name' => 'Manage Historical Contribution Migration',
+                        'action' => 'manage',
+                    ],
+                ],
+            ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Pensions Administration - Shared Reports
+            |--------------------------------------------------------------------------
+            |
+            | These reports are shared across Updates, Benefits and Payroll.
+            |
+            */
+
+            [
+                'code' => 'pensions-reports',
+                'name' => 'Pensions Administration - Reports',
+                'display_order' => 6,
+
+                'permissions' => [
+
+                    [
+                        'name' => 'pensions.reports.membership.view',
+                        'display_name' => 'View Membership Reports',
+                        'action' => 'view',
+                    ],
+
+                    [
+                        'name' => 'pensions.reports.membership.export',
+                        'display_name' => 'Export Membership Reports',
+                        'action' => 'export',
+                    ],
+
+                    [
+                        'name' => 'pensions.reports.employer-membership.view',
+                        'display_name' => 'View Employer Membership Reports',
+                        'action' => 'view',
+                    ],
+
+                    [
+                        'name' => 'pensions.reports.employer-membership.export',
+                        'display_name' => 'Export Employer Membership Reports',
+                        'action' => 'export',
+                    ],
                 ],
             ],
         ];
@@ -570,13 +637,11 @@ class ModulePermissionSeeder extends Seeder
                     'permissions'
                 ];
 
-
             unset(
                 $moduleData[
                     'permissions'
                 ]
             );
-
 
             $module =
                 SystemModule::updateOrCreate(
@@ -604,7 +669,6 @@ class ModulePermissionSeeder extends Seeder
                             true,
                     ]
                 );
-
 
             foreach (
                 $permissions
@@ -680,6 +744,7 @@ class ModulePermissionSeeder extends Seeder
                 'terminate',
                 'reset-password',
                 'assign-permissions',
+                'manage',
             ],
             true
         );

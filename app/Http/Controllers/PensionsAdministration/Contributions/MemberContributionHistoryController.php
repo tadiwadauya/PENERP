@@ -37,72 +37,188 @@ class MemberContributionHistoryController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Permanent Expected Contributions
+        | Expected Contributions
         |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | Historical contribution migration stores its actual values in:
+        |
+        | basic_pay
+        | employee_rate
+        | employer_rate
+        | employee_contribution
+        | employer_contribution
+        | employee_avc
+        | employer_avc
+        |
+        | Normal monthly imports continue to use the ZWG/USD fields.
+        |
         */
 
-        $contributions = DB::table('member_contributions')
-            ->leftJoin(
-                'employers',
-                'employers.id',
-                '=',
-                'member_contributions.employer_id'
+        $contributions =
+            DB::table(
+                'member_contributions'
             )
-            ->where(
-                'member_contributions.member_id',
-                $member->id
-            )
-            ->where(
-                'member_contributions.transaction_type',
-                'expected'
-            )
-            ->select([
-                'member_contributions.*',
-                'employers.name as employer_name',
-                'employers.employer_number',
-                'employers.penad_employer_number',
-                'employers.fundworx_employer_number',
-            ])
-            ->orderBy(
-                'member_contributions.period_year'
-            )
-            ->orderBy(
-                'member_contributions.period_month'
-            )
-            ->get();
+                ->leftJoin(
+                    'employers',
+                    'employers.id',
+                    '=',
+                    'member_contributions.employer_id'
+                )
+                ->where(
+                    'member_contributions.member_id',
+                    $member->id
+                )
+                ->where(
+                    'member_contributions.transaction_type',
+                    'expected'
+                )
+                ->select([
+                    'member_contributions.*',
+
+                    'employers.name as employer_name',
+                    'employers.employer_number',
+                    'employers.penad_employer_number',
+                    'employers.fundworx_employer_number',
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Display Basic Pay
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DB::raw("
+                        CASE
+                            WHEN member_contributions.source_system = 'historical_migration'
+                                THEN COALESCE(member_contributions.basic_pay, 0)
+                            ELSE COALESCE(member_contributions.zwg_basic_pay, 0)
+                        END AS display_basic_pay
+                    "),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Display Employee Rate
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DB::raw("
+                        CASE
+                            WHEN member_contributions.source_system = 'historical_migration'
+                                THEN COALESCE(member_contributions.employee_rate, 0)
+                            ELSE COALESCE(member_contributions.zwg_employee_rate, 0)
+                        END AS display_employee_rate
+                    "),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Display Employer Rate
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DB::raw("
+                        CASE
+                            WHEN member_contributions.source_system = 'historical_migration'
+                                THEN COALESCE(member_contributions.employer_rate, 0)
+                            ELSE COALESCE(member_contributions.zwg_employer_rate, 0)
+                        END AS display_employer_rate
+                    "),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Display Employee Contribution
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DB::raw("
+                        CASE
+                            WHEN member_contributions.source_system = 'historical_migration'
+                                THEN COALESCE(member_contributions.employee_contribution, 0)
+                            ELSE COALESCE(member_contributions.zwg_employee_contribution, 0)
+                        END AS display_employee_contribution
+                    "),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Display Employer Contribution
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DB::raw("
+                        CASE
+                            WHEN member_contributions.source_system = 'historical_migration'
+                                THEN COALESCE(member_contributions.employer_contribution, 0)
+                            ELSE COALESCE(member_contributions.zwg_employer_contribution, 0)
+                        END AS display_employer_contribution
+                    "),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Display Employee AVC
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DB::raw("
+                        CASE
+                            WHEN member_contributions.source_system = 'historical_migration'
+                                THEN COALESCE(member_contributions.employee_avc, 0)
+                            ELSE COALESCE(member_contributions.zwg_employee_avc, 0)
+                        END AS display_employee_avc
+                    "),
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Display Employer AVC
+                    |--------------------------------------------------------------------------
+                    */
+
+                    DB::raw("
+                        CASE
+                            WHEN member_contributions.source_system = 'historical_migration'
+                                THEN COALESCE(member_contributions.employer_avc, 0)
+                            ELSE COALESCE(member_contributions.zwg_employer_avc, 0)
+                        END AS display_employer_avc
+                    "),
+                ])
+                ->orderBy(
+                    'member_contributions.period_year'
+                )
+                ->orderBy(
+                    'member_contributions.period_month'
+                )
+                ->get();
 
         /*
         |--------------------------------------------------------------------------
         | Employment History
         |--------------------------------------------------------------------------
-        |
-        | We need all employment records, not only current employment, because
-        | this is what allows us to identify genuine service breaks.
-        |
         */
 
-        $employments = DB::table('member_employments')
-            ->leftJoin(
-                'employers',
-                'employers.id',
-                '=',
-                'member_employments.employer_id'
+        $employments =
+            DB::table(
+                'member_employments'
             )
-            ->where(
-                'member_employments.member_id',
-                $member->id
-            )
-            ->select([
-                'member_employments.*',
-                'employers.name as employer_name',
-                'employers.employer_number',
-                'employers.penad_employer_number',
-                'employers.fundworx_employer_number',
-            ])
-            ->orderBy(
-                'member_employments.effective_from'
-            )
-            ->get();
+                ->leftJoin(
+                    'employers',
+                    'employers.id',
+                    '=',
+                    'member_employments.employer_id'
+                )
+                ->where(
+                    'member_employments.member_id',
+                    $member->id
+                )
+                ->select([
+                    'member_employments.*',
+                    'employers.name as employer_name',
+                    'employers.employer_number',
+                    'employers.penad_employer_number',
+                    'employers.fundworx_employer_number',
+                ])
+                ->orderBy(
+                    'member_employments.effective_from'
+                )
+                ->get();
 
         /*
         |--------------------------------------------------------------------------
@@ -110,85 +226,139 @@ class MemberContributionHistoryController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $periodStatuses = DB::table(
-            'contribution_period_member_statuses'
-        )
-            ->join(
-                'contribution_periods',
-                'contribution_periods.id',
-                '=',
-                'contribution_period_member_statuses.contribution_period_id'
+        $periodStatuses =
+            DB::table(
+                'contribution_period_member_statuses'
             )
-            ->where(
-                'contribution_period_member_statuses.member_id',
-                $member->id
+                ->join(
+                    'contribution_periods',
+                    'contribution_periods.id',
+                    '=',
+                    'contribution_period_member_statuses.contribution_period_id'
+                )
+                ->where(
+                    'contribution_period_member_statuses.member_id',
+                    $member->id
+                )
+                ->select([
+                    'contribution_period_member_statuses.contribution_status',
+                    'contribution_period_member_statuses.reason',
+                    'contribution_period_member_statuses.employer_id',
+                    'contribution_periods.period_year',
+                    'contribution_periods.period_month',
+                    'contribution_periods.period_date',
+                ])
+                ->get()
+                ->keyBy(
+                    fn ($status) =>
+                        sprintf(
+                            '%04d-%02d',
+                            $status->period_year,
+                            $status->period_month
+                        )
+                );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Historical Break In Service Periods
+        |--------------------------------------------------------------------------
+        */
+
+        $historicalServicePeriods =
+            DB::table(
+                'historical_member_service_periods'
             )
-            ->select([
-                'contribution_period_member_statuses.contribution_status',
-                'contribution_period_member_statuses.reason',
-                'contribution_period_member_statuses.employer_id',
-                'contribution_periods.period_year',
-                'contribution_periods.period_month',
-                'contribution_periods.period_date',
-            ])
-            ->get()
-            ->keyBy(
-                fn ($status) =>
-                    sprintf(
-                        '%04d-%02d',
-                        $status->period_year,
-                        $status->period_month
-                    )
+                ->where(
+                    'member_id',
+                    $member->id
+                )
+                ->where(
+                    'service_status',
+                    'break_in_service'
+                )
+                ->get()
+                ->keyBy(
+                    fn ($status) =>
+                        sprintf(
+                            '%04d-%02d',
+                            $status->period_year,
+                            $status->period_month
+                        )
+                );
+
+        /*
+        |--------------------------------------------------------------------------
+        | History Range
+        |--------------------------------------------------------------------------
+        */
+
+        $startDate =
+            $this->resolveStartDate(
+                $member,
+                $contributions,
+                $employments
+            );
+
+        $endDate =
+            $this->resolveEndDate(
+                $contributions,
+                $employments,
+                $historicalServicePeriods
             );
 
         /*
         |--------------------------------------------------------------------------
-        | Determine History Range
-        |--------------------------------------------------------------------------
-        |
-        | Start with the earliest relevant employment or expected contribution.
-        |
-        */
-
-        $startDate = $this->resolveStartDate(
-            $member,
-            $contributions,
-            $employments
-        );
-
-        $endDate = $this->resolveEndDate(
-            $contributions,
-            $employments
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Monthly History
+        | Build Monthly History
         |--------------------------------------------------------------------------
         */
 
-        $history = collect();
+        $history =
+            collect();
 
         if (
             $startDate
             &&
             $endDate
             &&
-            $startDate->lte($endDate)
+            $startDate->lte(
+                $endDate
+            )
         ) {
-            $period = CarbonPeriod::create(
-                $startDate->copy()->startOfMonth(),
-                '1 month',
-                $endDate->copy()->startOfMonth()
-            );
+            $period =
+                CarbonPeriod::create(
+                    $startDate
+                        ->copy()
+                        ->startOfMonth(),
 
-            foreach ($period as $month) {
+                    '1 month',
+
+                    $endDate
+                        ->copy()
+                        ->startOfMonth()
+                );
+
+            foreach (
+                $period
+                as $month
+            ) {
                 $history->push(
                     $this->buildMonth(
-                        month: Carbon::instance($month),
-                        contributions: $contributions,
-                        employments: $employments,
-                        periodStatuses: $periodStatuses
+                        month:
+                            Carbon::instance(
+                                $month
+                            ),
+
+                        contributions:
+                            $contributions,
+
+                        employments:
+                            $employments,
+
+                        periodStatuses:
+                            $periodStatuses,
+
+                        historicalServicePeriods:
+                            $historicalServicePeriods
                     )
                 );
             }
@@ -196,13 +366,16 @@ class MemberContributionHistoryController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Latest Month First
+        | Latest First
         |--------------------------------------------------------------------------
         */
 
-        $history = $history
-            ->sortByDesc('period_sort')
-            ->values();
+        $history =
+            $history
+                ->sortByDesc(
+                    'period_sort'
+                )
+                ->values();
 
         /*
         |--------------------------------------------------------------------------
@@ -246,54 +419,77 @@ class MemberContributionHistoryController extends Controller
                     )
                     ->count(),
 
+            /*
+            |--------------------------------------------------------------------------
+            | Display / Generic Historical Totals
+            |--------------------------------------------------------------------------
+            */
+
+            'zwg_basic_pay_total' =>
+                $history->sum(
+                    'zwg_basic_pay'
+                ),
+
             'zwg_employee_total' =>
-                $history
-                    ->sum(
-                        'zwg_employee_contribution'
-                    ),
+                $history->sum(
+                    'zwg_employee_contribution'
+                ),
 
             'zwg_employer_total' =>
-                $history
-                    ->sum(
-                        'zwg_employer_contribution'
-                    ),
+                $history->sum(
+                    'zwg_employer_contribution'
+                ),
 
             'zwg_employee_avc_total' =>
-                $history
-                    ->sum(
-                        'zwg_employee_avc'
-                    ),
+                $history->sum(
+                    'zwg_employee_avc'
+                ),
 
             'zwg_employer_avc_total' =>
-                $history
-                    ->sum(
-                        'zwg_employer_avc'
-                    ),
+                $history->sum(
+                    'zwg_employer_avc'
+                ),
+
+            /*
+            |--------------------------------------------------------------------------
+            | USD
+            |--------------------------------------------------------------------------
+            */
+
+            'usd_basic_pay_total' =>
+                $history->sum(
+                    'usd_basic_pay'
+                ),
 
             'usd_employee_total' =>
-                $history
-                    ->sum(
-                        'usd_employee_contribution'
-                    ),
+                $history->sum(
+                    'usd_employee_contribution'
+                ),
 
             'usd_employer_total' =>
-                $history
-                    ->sum(
-                        'usd_employer_contribution'
-                    ),
+                $history->sum(
+                    'usd_employer_contribution'
+                ),
 
             'usd_employee_avc_total' =>
-                $history
-                    ->sum(
-                        'usd_employee_avc'
-                    ),
+                $history->sum(
+                    'usd_employee_avc'
+                ),
 
             'usd_employer_avc_total' =>
-                $history
-                    ->sum(
-                        'usd_employer_avc'
-                    ),
+                $history->sum(
+                    'usd_employer_avc'
+                ),
         ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Blade
+        |--------------------------------------------------------------------------
+        |
+        | resources/views/pensions-administration/contributions/members/history.blade.php
+        |
+        */
 
         return view(
             'pensions-administration.contributions.members.history',
@@ -316,7 +512,8 @@ class MemberContributionHistoryController extends Controller
         Carbon $month,
         Collection $contributions,
         Collection $employments,
-        Collection $periodStatuses
+        Collection $periodStatuses,
+        Collection $historicalServicePeriods
     ): array {
         $year =
             (int) $month->year;
@@ -332,11 +529,13 @@ class MemberContributionHistoryController extends Controller
             );
 
         $monthStart =
-            $month->copy()
+            $month
+                ->copy()
                 ->startOfMonth();
 
         $monthEnd =
-            $month->copy()
+            $month
+                ->copy()
                 ->endOfMonth();
 
         /*
@@ -345,67 +544,72 @@ class MemberContributionHistoryController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $monthContributions = $contributions
-            ->filter(
-                fn ($contribution) =>
-                    (int) $contribution->period_year === $year
-                    &&
-                    (int) $contribution->period_month === $monthNumber
-            );
+        $monthContributions =
+            $contributions
+                ->filter(
+                    fn ($contribution) =>
+                        (int) $contribution->period_year === $year
+                        &&
+                        (int) $contribution->period_month === $monthNumber
+                );
 
         /*
         |--------------------------------------------------------------------------
-        | Employment Covering This Month
+        | Employment Covering Month
         |--------------------------------------------------------------------------
         */
 
-        $employment = $employments
-            ->first(
-                function ($employment) use (
-                    $monthStart,
-                    $monthEnd
-                ) {
-                    $effectiveFrom =
-                        $employment->effective_from
-                            ? Carbon::parse(
-                                $employment->effective_from
-                            )
-                            : (
-                                $employment->date_joined_employer
-                                    ? Carbon::parse(
-                                        $employment->date_joined_employer
-                                    )
-                                    : null
-                            );
-
-                    if (!$effectiveFrom) {
-                        return false;
-                    }
-
-                    $effectiveTo =
-                        $employment->effective_to
-                            ? Carbon::parse(
-                                $employment->effective_to
-                            )
-                            : null;
-
-                    return $effectiveFrom->lte(
+        $employment =
+            $employments
+                ->first(
+                    function (
+                        $employment
+                    ) use (
+                        $monthStart,
                         $monthEnd
-                    )
-                    &&
-                    (
-                        !$effectiveTo
-                        ||
-                        $effectiveTo->gte(
-                            $monthStart
-                        )
-                    );
-                }
-            );
+                    ) {
+                        $effectiveFrom =
+                            $employment->effective_from
+                                ? Carbon::parse(
+                                    $employment->effective_from
+                                )
+                                : (
+                                    $employment->date_joined_employer
+                                        ? Carbon::parse(
+                                            $employment->date_joined_employer
+                                        )
+                                        : null
+                                );
+
+                        if (!$effectiveFrom) {
+                            return false;
+                        }
+
+                        $effectiveTo =
+                            $employment->effective_to
+                                ? Carbon::parse(
+                                    $employment->effective_to
+                                )
+                                : null;
+
+                        return
+                            $effectiveFrom->lte(
+                                $monthEnd
+                            )
+                            &&
+                            (
+                                !$effectiveTo
+                                ||
+                                $effectiveTo->gte(
+                                    $monthStart
+                                )
+                            );
+                    }
+                );
 
         /*
         |--------------------------------------------------------------------------
-        | Period Status
+        | Status Records
         |--------------------------------------------------------------------------
         */
 
@@ -414,13 +618,25 @@ class MemberContributionHistoryController extends Controller
                 $monthKey
             );
 
+        $historicalBreak =
+            $historicalServicePeriods->get(
+                $monthKey
+            );
+
         /*
         |--------------------------------------------------------------------------
-        | Determine Status
+        | Determine Whether Month Actually Has Contribution Activity
         |--------------------------------------------------------------------------
+        |
+        | An explicit zero historical contribution is still a contribution
+        | record. Therefore if the row exists, the month is contributed /
+        | recorded, not missing.
+        |
         */
 
-        if ($monthContributions->isNotEmpty()) {
+        if (
+            $monthContributions->isNotEmpty()
+        ) {
             $status =
                 'contributed';
 
@@ -428,9 +644,25 @@ class MemberContributionHistoryController extends Controller
                 'Contributed';
 
             $statusReason =
-                'Expected contribution posted for this month.';
+                'Expected contribution record exists for this month.';
 
-        } elseif (!$employment) {
+        } elseif (
+            $historicalBreak
+        ) {
+            $status =
+                'break_in_service';
+
+            $statusLabel =
+                'Break in Service';
+
+            $statusReason =
+                $historicalBreak->reason
+                ??
+                'Historical contribution data records this month as a break in service.';
+
+        } elseif (
+            !$employment
+        ) {
             $status =
                 'break_in_service';
 
@@ -443,9 +675,7 @@ class MemberContributionHistoryController extends Controller
         } elseif (
             $periodStatus
             &&
-            $periodStatus->contribution_status
-            ===
-            'nil_contributor'
+            $periodStatus->contribution_status === 'nil_contributor'
         ) {
             $status =
                 'nil_contributor';
@@ -497,56 +727,150 @@ class MemberContributionHistoryController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Rates
+        | Display Values
+        |--------------------------------------------------------------------------
+        |
+        | display_* was prepared in SQL using:
+        |
+        | historical_migration -> generic historical columns
+        | everything else      -> ZWG columns
+        |
+        */
+
+        $displayBasicPay =
+            $monthContributions->sum(
+                fn ($row) =>
+                    (float) (
+                        $row->display_basic_pay
+                        ??
+                        0
+                    )
+            );
+
+        $displayEmployeeContribution =
+            $monthContributions->sum(
+                fn ($row) =>
+                    (float) (
+                        $row->display_employee_contribution
+                        ??
+                        0
+                    )
+            );
+
+        $displayEmployerContribution =
+            $monthContributions->sum(
+                fn ($row) =>
+                    (float) (
+                        $row->display_employer_contribution
+                        ??
+                        0
+                    )
+            );
+
+        $displayEmployeeAvc =
+            $monthContributions->sum(
+                fn ($row) =>
+                    (float) (
+                        $row->display_employee_avc
+                        ??
+                        0
+                    )
+            );
+
+        $displayEmployerAvc =
+            $monthContributions->sum(
+                fn ($row) =>
+                    (float) (
+                        $row->display_employer_avc
+                        ??
+                        0
+                    )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Display Rates
         |--------------------------------------------------------------------------
         */
 
-        $zwgEmployeeRate =
-            $monthContributions
-                ->max(
-                    fn ($row) =>
-                        (float) (
-                            $row->zwg_employee_rate
-                            ?? 0
-                        )
-                );
+        $displayEmployeeRate =
+            $monthContributions->max(
+                fn ($row) =>
+                    (float) (
+                        $row->display_employee_rate
+                        ??
+                        0
+                    )
+            );
 
-        $zwgEmployerRate =
-            $monthContributions
-                ->max(
-                    fn ($row) =>
-                        (float) (
-                            $row->zwg_employer_rate
-                            ?? 0
-                        )
-                );
+        $displayEmployerRate =
+            $monthContributions->max(
+                fn ($row) =>
+                    (float) (
+                        $row->display_employer_rate
+                        ??
+                        0
+                    )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | USD Values
+        |--------------------------------------------------------------------------
+        */
 
         $usdEmployeeRate =
-            $monthContributions
-                ->max(
-                    fn ($row) =>
-                        (float) (
-                            $row->usd_employee_rate
-                            ?? 0
-                        )
-                );
+            $monthContributions->max(
+                fn ($row) =>
+                    (float) (
+                        $row->usd_employee_rate
+                        ??
+                        0
+                    )
+            );
 
         $usdEmployerRate =
+            $monthContributions->max(
+                fn ($row) =>
+                    (float) (
+                        $row->usd_employer_rate
+                        ??
+                        0
+                    )
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Source
+        |--------------------------------------------------------------------------
+        */
+
+        $sourceSystem =
             $monthContributions
-                ->max(
+                ->first()
+                ?->source_system
+            ??
+            null;
+
+        $isHistorical =
+            $monthContributions
+                ->contains(
                     fn ($row) =>
-                        (float) (
-                            $row->usd_employer_rate
-                            ?? 0
-                        )
+                        $row->source_system
+                        ===
+                        'historical_migration'
                 );
 
         return [
             'period_sort' =>
-                $month->format('Y-m'),
+                $month->format(
+                    'Y-m'
+                ),
 
             'period' =>
-                $month->format('F Y'),
+                $month->format(
+                    'F Y'
+                ),
 
             'period_year' =>
                 $year,
@@ -572,62 +896,70 @@ class MemberContributionHistoryController extends Controller
             'employer_number' =>
                 $employerNumber,
 
+            'source_system' =>
+                $sourceSystem,
+
+            'is_historical' =>
+                $isHistorical,
+
             /*
             |--------------------------------------------------------------------------
-            | ZWG
+            | Display Values
             |--------------------------------------------------------------------------
+            |
+            | Keep the existing zwg_* keys so your current Blade does not break.
+            |
+            | For historical rows these contain the generic historical values.
+            |
             */
 
             'zwg_basic_pay' =>
-                $monthContributions->sum(
-                    fn ($row) =>
-                        (float) (
-                            $row->zwg_basic_pay
-                            ?? 0
-                        )
-                ),
+                $displayBasicPay,
 
             'zwg_employee_rate' =>
-                $zwgEmployeeRate,
+                $displayEmployeeRate,
 
             'zwg_employer_rate' =>
-                $zwgEmployerRate,
+                $displayEmployerRate,
 
             'zwg_employee_contribution' =>
-                $monthContributions->sum(
-                    fn ($row) =>
-                        (float) (
-                            $row->zwg_employee_contribution
-                            ?? 0
-                        )
-                ),
+                $displayEmployeeContribution,
 
             'zwg_employer_contribution' =>
-                $monthContributions->sum(
-                    fn ($row) =>
-                        (float) (
-                            $row->zwg_employer_contribution
-                            ?? 0
-                        )
-                ),
+                $displayEmployerContribution,
 
             'zwg_employee_avc' =>
-                $monthContributions->sum(
-                    fn ($row) =>
-                        (float) (
-                            $row->zwg_employee_avc
-                            ?? 0
-                        )
-                ),
+                $displayEmployeeAvc,
 
             'zwg_employer_avc' =>
-                $monthContributions->sum(
-                    fn ($row) =>
-                        (float) (
-                            $row->zwg_employer_avc
-                            ?? 0
-                        )
-                ),
+                $displayEmployerAvc,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Also Expose Proper Display Keys
+            |--------------------------------------------------------------------------
+            */
+
+            'display_basic_pay' =>
+                $displayBasicPay,
+
+            'display_employee_rate' =>
+                $displayEmployeeRate,
+
+            'display_employer_rate' =>
+                $displayEmployerRate,
+
+            'display_employee_contribution' =>
+                $displayEmployeeContribution,
+
+            'display_employer_contribution' =>
+                $displayEmployerContribution,
+
+            'display_employee_avc' =>
+                $displayEmployeeAvc,
+
+            'display_employer_avc' =>
+                $displayEmployerAvc,
 
             /*
             |--------------------------------------------------------------------------
@@ -640,7 +972,8 @@ class MemberContributionHistoryController extends Controller
                     fn ($row) =>
                         (float) (
                             $row->usd_basic_pay
-                            ?? 0
+                            ??
+                            0
                         )
                 ),
 
@@ -655,7 +988,8 @@ class MemberContributionHistoryController extends Controller
                     fn ($row) =>
                         (float) (
                             $row->usd_employee_contribution
-                            ?? 0
+                            ??
+                            0
                         )
                 ),
 
@@ -664,7 +998,8 @@ class MemberContributionHistoryController extends Controller
                     fn ($row) =>
                         (float) (
                             $row->usd_employer_contribution
-                            ?? 0
+                            ??
+                            0
                         )
                 ),
 
@@ -673,7 +1008,8 @@ class MemberContributionHistoryController extends Controller
                     fn ($row) =>
                         (float) (
                             $row->usd_employee_avc
-                            ?? 0
+                            ??
+                            0
                         )
                 ),
 
@@ -682,7 +1018,8 @@ class MemberContributionHistoryController extends Controller
                     fn ($row) =>
                         (float) (
                             $row->usd_employer_avc
-                            ?? 0
+                            ??
+                            0
                         )
                 ),
         ];
@@ -702,7 +1039,9 @@ class MemberContributionHistoryController extends Controller
         $dates =
             collect();
 
-        if ($member->date_joined_fund) {
+        if (
+            $member->date_joined_fund
+        ) {
             $dates->push(
                 Carbon::parse(
                     $member->date_joined_fund
@@ -714,7 +1053,9 @@ class MemberContributionHistoryController extends Controller
             $contributions
             as $contribution
         ) {
-            if ($contribution->period_date) {
+            if (
+                $contribution->period_date
+            ) {
                 $dates->push(
                     Carbon::parse(
                         $contribution->period_date
@@ -743,7 +1084,9 @@ class MemberContributionHistoryController extends Controller
             }
         }
 
-        if ($dates->isEmpty()) {
+        if (
+            $dates->isEmpty()
+        ) {
             return null;
         }
 
@@ -762,7 +1105,8 @@ class MemberContributionHistoryController extends Controller
 
     private function resolveEndDate(
         Collection $contributions,
-        Collection $employments
+        Collection $employments,
+        Collection $historicalServicePeriods
     ): ?Carbon {
         $dates =
             collect();
@@ -771,7 +1115,9 @@ class MemberContributionHistoryController extends Controller
             $contributions
             as $contribution
         ) {
-            if ($contribution->period_date) {
+            if (
+                $contribution->period_date
+            ) {
                 $dates->push(
                     Carbon::parse(
                         $contribution->period_date
@@ -784,7 +1130,9 @@ class MemberContributionHistoryController extends Controller
             $employments
             as $employment
         ) {
-            if ($employment->effective_to) {
+            if (
+                $employment->effective_to
+            ) {
                 $dates->push(
                     Carbon::parse(
                         $employment->effective_to
@@ -793,18 +1141,24 @@ class MemberContributionHistoryController extends Controller
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Current Employment
-        |--------------------------------------------------------------------------
-        |
-        | If the member is still currently employed, history can run up to the
-        | latest available contribution month. We do not automatically generate
-        | future months.
-        |
-        */
+        foreach (
+            $historicalServicePeriods
+            as $servicePeriod
+        ) {
+            if (
+                $servicePeriod->period_date
+            ) {
+                $dates->push(
+                    Carbon::parse(
+                        $servicePeriod->period_date
+                    )
+                );
+            }
+        }
 
-        if ($dates->isEmpty()) {
+        if (
+            $dates->isEmpty()
+        ) {
             return null;
         }
 

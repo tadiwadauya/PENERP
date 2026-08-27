@@ -63,7 +63,6 @@ class RolePermissionSeeder extends Seeder
                     function (
                         $query
                     ): void {
-
                         $query
                             ->where(
                                 'name',
@@ -110,6 +109,43 @@ class RolePermissionSeeder extends Seeder
                             ->orWhere(
                                 'name',
                                 'contributions.reports.view'
+                            )
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Historical Migration - System Administrator Only
+                            |--------------------------------------------------------------------------
+                            */
+
+                            ->orWhere(
+                                'name',
+                                'contributions.historical-imports.manage'
+                            )
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | Shared Pensions Reports
+                            |--------------------------------------------------------------------------
+                            */
+
+                            ->orWhere(
+                                'name',
+                                'pensions.reports.membership.view'
+                            )
+
+                            ->orWhere(
+                                'name',
+                                'pensions.reports.membership.export'
+                            )
+
+                            ->orWhere(
+                                'name',
+                                'pensions.reports.employer-membership.view'
+                            )
+
+                            ->orWhere(
+                                'name',
+                                'pensions.reports.employer-membership.export'
                             );
                     }
                 )
@@ -181,8 +217,16 @@ class RolePermissionSeeder extends Seeder
             'updates.member-movements.create',
             'updates.member-movements.update',
 
-            'updates.reports.membership.view',
-            'updates.reports.membership.export',
+            /*
+            |--------------------------------------------------------------------------
+            | Shared Pensions Reports
+            |--------------------------------------------------------------------------
+            */
+
+            'pensions.reports.membership.view',
+            'pensions.reports.membership.export',
+            'pensions.reports.employer-membership.view',
+            'pensions.reports.employer-membership.export',
         ];
 
 
@@ -265,8 +309,22 @@ class RolePermissionSeeder extends Seeder
             'updates.member-movements.create',
             'updates.member-movements.update',
 
-            'updates.reports.membership.view',
-            'updates.reports.membership.export',
+            /*
+            |--------------------------------------------------------------------------
+            | Shared Pensions Reports
+            |--------------------------------------------------------------------------
+            */
+
+            'pensions.reports.membership.view',
+            'pensions.reports.membership.export',
+            'pensions.reports.employer-membership.view',
+            'pensions.reports.employer-membership.export',
+
+            /*
+            |--------------------------------------------------------------------------
+            | Contributions Read Access
+            |--------------------------------------------------------------------------
+            */
 
             'contributions.monthly-imports.view',
             'contributions.reports.view',
@@ -384,7 +442,6 @@ class RolePermissionSeeder extends Seeder
             'updates.dashboard.view',
             'updates.employers.view',
             'updates.members.view',
-            'updates.reports.membership.view',
         ];
 
 
@@ -402,12 +459,6 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS APPROVER
         |--------------------------------------------------------------------------
-        |
-        | Assign this role from User Management to the people currently
-        | authorised to approve/reject contribution batches.
-        |
-        | This avoids hard-coding job titles into controllers.
-        |
         */
 
         $contributionsApprover =
@@ -511,6 +562,21 @@ class RolePermissionSeeder extends Seeder
                 )
                 ->get()
         );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FUTURE BENEFITS / PAYROLL ROLES
+        |--------------------------------------------------------------------------
+        |
+        | When Benefits and Payroll roles are added, grant:
+        |
+        | pensions.reports.membership.view
+        | pensions.reports.employer-membership.view
+        |
+        | No changes to report controllers/routes will then be necessary.
+        |
+        */
 
 
         /*

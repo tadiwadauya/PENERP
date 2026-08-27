@@ -8,9 +8,7 @@
 Monthly expected contributions and service continuity
 @endsection
 
-
 @push('styles')
-
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 
@@ -23,10 +21,17 @@ Monthly expected contributions and service continuity
 
     .history-table th {
         white-space: nowrap;
+        vertical-align: middle;
     }
 
     .history-table td {
         vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .history-table td.remarks-column {
+        white-space: normal;
+        min-width: 260px;
     }
 
     .service-break-row {
@@ -50,37 +55,39 @@ Monthly expected contributions and service continuity
     .dt-buttons .btn {
         margin: 0 !important;
     }
+
+    .history-source {
+        font-size: 11px;
+    }
+
+    .history-section-heading {
+        background: #f8f9fa;
+        text-align: center;
+    }
 </style>
-
 @endpush
-
 
 @section('content')
 
 @include('pensions-administration.partials.navigation')
 
-
 {{-- =========================================================
      MEMBER
 ========================================================= --}}
 
-<div class="card">
-
+<div class="card mb-3">
     <div class="card-body">
-
         <div class="row align-items-center">
 
             <div class="col-lg-8">
-
                 <h4 class="mb-1">
                     {{ $member->surname }},
                     {{ $member->first_names }}
                 </h4>
 
                 <div class="text-muted">
-
                     <strong>PENERP:</strong>
-                    {{ $member->member_number }}
+                    {{ $member->member_number ?? '-' }}
 
                     <span class="mx-2">|</span>
 
@@ -91,11 +98,9 @@ Monthly expected contributions and service continuity
 
                     <strong>Fundworx:</strong>
                     {{ $member->fundworx_member_number ?? '-' }}
-
                 </div>
 
                 <div class="text-muted mt-1">
-
                     <strong>National ID:</strong>
                     {{ $member->national_id ?? '-' }}
 
@@ -103,162 +108,170 @@ Monthly expected contributions and service continuity
 
                     <strong>Current Employer:</strong>
                     {{ $member->currentEmployment?->employer?->name ?? '-' }}
-
                 </div>
-
             </div>
 
             <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-
                 <span class="badge bg-primary font-size-14">
-                    {{ number_format($summary['contributed_months']) }}
+                    {{ number_format($summary['contributed_months'] ?? 0) }}
                     Contribution Months
                 </span>
-
             </div>
 
         </div>
-
     </div>
-
 </div>
 
-
 {{-- =========================================================
-     SUMMARY
+     SERVICE SUMMARY
 ========================================================= --}}
 
 <div class="row g-3 mb-3">
 
     <div class="col-xl-2 col-md-4 col-6">
-
         <div class="card history-stat-card">
-
             <div class="card-body">
-
-                <p class="text-muted mb-1">
-                    History Months
-                </p>
+                <p class="text-muted mb-1">History Months</p>
 
                 <h3 class="mb-0">
-                    {{ number_format($summary['total_months']) }}
+                    {{ number_format($summary['total_months'] ?? 0) }}
                 </h3>
-
             </div>
-
         </div>
-
     </div>
 
-
     <div class="col-xl-2 col-md-4 col-6">
-
         <div class="card history-stat-card">
-
             <div class="card-body">
-
-                <p class="text-muted mb-1">
-                    Contributed
-                </p>
+                <p class="text-muted mb-1">Contributed</p>
 
                 <h3 class="text-success mb-0">
-                    {{ number_format($summary['contributed_months']) }}
+                    {{ number_format($summary['contributed_months'] ?? 0) }}
                 </h3>
-
             </div>
-
         </div>
-
     </div>
 
-
     <div class="col-xl-2 col-md-4 col-6">
-
         <div class="card history-stat-card">
-
             <div class="card-body">
-
-                <p class="text-muted mb-1">
-                    Nil Contributor
-                </p>
+                <p class="text-muted mb-1">Nil Contributor</p>
 
                 <h3 class="text-warning mb-0">
-                    {{ number_format($summary['nil_contributor_months']) }}
+                    {{ number_format($summary['nil_contributor_months'] ?? 0) }}
                 </h3>
-
             </div>
-
         </div>
-
     </div>
 
-
     <div class="col-xl-2 col-md-4 col-6">
-
         <div class="card history-stat-card">
-
             <div class="card-body">
-
-                <p class="text-muted mb-1">
-                    Missing Expected
-                </p>
+                <p class="text-muted mb-1">Missing Expected</p>
 
                 <h3 class="text-primary mb-0">
-                    {{ number_format($summary['missing_expected_months']) }}
+                    {{ number_format($summary['missing_expected_months'] ?? 0) }}
                 </h3>
-
             </div>
-
         </div>
-
     </div>
 
-
     <div class="col-xl-2 col-md-4 col-6">
-
         <div class="card history-stat-card">
-
             <div class="card-body">
-
-                <p class="text-muted mb-1">
-                    Break Months
-                </p>
+                <p class="text-muted mb-1">Break Months</p>
 
                 <h3 class="text-danger mb-0">
-                    {{ number_format($summary['break_months']) }}
+                    {{ number_format($summary['break_months'] ?? 0) }}
                 </h3>
-
             </div>
-
         </div>
-
     </div>
 
 </div>
 
+{{-- =========================================================
+     CONTRIBUTION TOTALS
+========================================================= --}}
+
+<div class="row g-3 mb-3">
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card history-stat-card">
+            <div class="card-body">
+                <p class="text-muted mb-1">
+                    Total Employee Contributions
+                </p>
+
+                <h4 class="mb-0">
+                    {{ number_format($summary['zwg_employee_total'] ?? 0, 4) }}
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card history-stat-card">
+            <div class="card-body">
+                <p class="text-muted mb-1">
+                    Total Employer Contributions
+                </p>
+
+                <h4 class="mb-0">
+                    {{ number_format($summary['zwg_employer_total'] ?? 0, 4) }}
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card history-stat-card">
+            <div class="card-body">
+                <p class="text-muted mb-1">
+                    Total Employee AVC
+                </p>
+
+                <h4 class="mb-0">
+                    {{ number_format($summary['zwg_employee_avc_total'] ?? 0, 4) }}
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card history-stat-card">
+            <div class="card-body">
+                <p class="text-muted mb-1">
+                    Total Employer AVC
+                </p>
+
+                <h4 class="mb-0">
+                    {{ number_format($summary['zwg_employer_avc_total'] ?? 0, 4) }}
+                </h4>
+            </div>
+        </div>
+    </div>
+
+</div>
 
 {{-- =========================================================
-     HISTORY
+     HISTORY TABLE
 ========================================================= --}}
 
 <div class="card">
-
     <div class="card-body">
 
         <div class="mb-3">
-
             <h4 class="header-title mb-1">
                 Expected Contribution History
             </h4>
 
             <p class="text-muted mb-0">
-                Month-by-month expected contribution history. Months without
-                expected contributions are retained so that nil contributions,
-                missing schedules and service breaks remain visible.
+                Month-by-month expected contribution history showing salary,
+                contribution rates, employee and employer contributions, AVCs,
+                missing contribution periods and breaks in service.
             </p>
-
         </div>
-
 
         <div class="table-responsive">
 
@@ -268,172 +281,300 @@ Monthly expected contributions and service continuity
                 <thead>
 
                     <tr>
+                        <th rowspan="2">Period</th>
+                        <th rowspan="2">Status</th>
+                        <th rowspan="2">Source</th>
+                        <th rowspan="2">Employer</th>
 
-                        <th>Period</th>
-                        <th>Status</th>
+                        <th colspan="7" class="history-section-heading">
+                            Expected Contribution
+                        </th>
+
+                        <th colspan="7" class="history-section-heading">
+                            USD Contribution
+                        </th>
+
+                        <th rowspan="2">Remarks</th>
+                    </tr>
+
+                    <tr>
+                        <th>Basic Pay</th>
+                        <th>EE Rate</th>
+                        <th>Employee</th>
+                        <th>ER Rate</th>
                         <th>Employer</th>
+                        <th>EE AVC</th>
+                        <th>ER AVC</th>
 
-                        <th>ZWG Basic Pay</th>
-                        <th>ZWG EE Rate</th>
-                        <th>ZWG Employee</th>
-                        <th>ZWG ER Rate</th>
-                        <th>ZWG Employer</th>
-                        <th>ZWG EE AVC</th>
-                        <th>ZWG ER AVC</th>
-
-                        <th>USD Basic Pay</th>
-                        <th>USD EE Rate</th>
-                        <th>USD Employee</th>
-                        <th>USD ER Rate</th>
-                        <th>USD Employer</th>
-                        <th>USD EE AVC</th>
-                        <th>USD ER AVC</th>
-
-                        <th>Remarks</th>
-
+                        <th>Basic Pay</th>
+                        <th>EE Rate</th>
+                        <th>Employee</th>
+                        <th>ER Rate</th>
+                        <th>Employer</th>
+                        <th>EE AVC</th>
+                        <th>ER AVC</th>
                     </tr>
 
                 </thead>
-
 
                 <tbody>
 
                     @foreach($history as $row)
 
                         @php
-                            $rowClass = match($row['status']) {
-                                'break_in_service' =>
-                                    'service-break-row',
+                            $status = $row['status'] ?? '';
 
-                                'nil_contributor' =>
-                                    'nil-contributor-row',
-
-                                'missing_expected' =>
-                                    'missing-contribution-row',
-
-                                default =>
-                                    '',
+                            $rowClass = match($status) {
+                                'break_in_service' => 'service-break-row',
+                                'nil_contributor' => 'nil-contributor-row',
+                                'missing_expected' => 'missing-contribution-row',
+                                default => '',
                             };
 
-                            $badgeClass = match($row['status']) {
-                                'contributed' =>
-                                    'bg-success',
-
-                                'nil_contributor' =>
-                                    'bg-warning text-dark',
-
-                                'break_in_service' =>
-                                    'bg-danger',
-
-                                'missing_expected' =>
-                                    'bg-primary',
-
-                                default =>
-                                    'bg-secondary',
+                            $badgeClass = match($status) {
+                                'contributed' => 'bg-success',
+                                'nil_contributor' => 'bg-warning text-dark',
+                                'break_in_service' => 'bg-danger',
+                                'missing_expected' => 'bg-primary',
+                                default => 'bg-secondary',
                             };
+
+                            $sourceSystem =
+                                $row['source_system']
+                                ?? null;
+
+                            $isHistorical =
+                                $row['is_historical']
+                                ?? ($sourceSystem === 'historical_migration');
+
+                            $sourceLabel =
+                                $isHistorical
+                                    ? 'Historical'
+                                    : 'Monthly';
+
+                            $sourceBadge =
+                                $isHistorical
+                                    ? 'bg-secondary'
+                                    : 'bg-info text-dark';
+
+                            $hasContributionRecord =
+                                $status === 'contributed';
                         @endphp
 
                         <tr class="{{ $rowClass }}">
 
-                            <td data-order="{{ $row['period_sort'] }}">
+                            {{-- Period --}}
 
+                            <td data-order="{{ $row['period_sort'] ?? '' }}">
                                 <strong>
-                                    {{ $row['period'] }}
+                                    {{ $row['period'] ?? '-' }}
                                 </strong>
-
                             </td>
 
+                            {{-- Status --}}
 
                             <td>
-
                                 <span class="badge {{ $badgeClass }}">
-                                    {{ $row['status_label'] }}
+                                    {{ $row['status_label'] ?? '-' }}
                                 </span>
-
                             </td>
 
+                            {{-- Source --}}
 
                             <td>
+                                @if($hasContributionRecord)
+                                    <span class="badge {{ $sourceBadge }} history-source">
+                                        {{ $sourceLabel }}
+                                    </span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
 
-                                {{ $row['employer_name'] }}
+                            {{-- Employer --}}
 
-                                @if($row['employer_number'])
+                            <td>
+                                {{ $row['employer_name'] ?? '-' }}
 
+                                @if(!empty($row['employer_number']))
                                     <br>
 
                                     <small class="text-muted">
                                         {{ $row['employer_number'] }}
                                     </small>
+                                @endif
+                            </td>
 
+                            {{-- =====================================================
+                                 EXPECTED CONTRIBUTION / HISTORICAL VALUES
+                            ====================================================== --}}
+
+                            <td class="text-end"
+                                data-order="{{ $row['display_basic_pay'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['display_basic_pay'] ?? 0, 4) }}
+                                @else
+                                    -
                                 @endif
 
                             </td>
 
+                            <td class="text-end"
+                                data-order="{{ $row['display_employee_rate'] ?? 0 }}">
 
-                            {{-- ZWG --}}
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['display_employee_rate'] ?? 0, 4) }}%
+                                @else
+                                    -
+                                @endif
 
-                            <td class="text-end">
-                                {{ number_format($row['zwg_basic_pay'], 2) }}
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['zwg_employee_rate'], 2) }}%
+                            <td class="text-end"
+                                data-order="{{ $row['display_employee_contribution'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    <strong>
+                                        {{ number_format($row['display_employee_contribution'] ?? 0, 4) }}
+                                    </strong>
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['zwg_employee_contribution'], 2) }}
+                            <td class="text-end"
+                                data-order="{{ $row['display_employer_rate'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['display_employer_rate'] ?? 0, 4) }}%
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['zwg_employer_rate'], 2) }}%
+                            <td class="text-end"
+                                data-order="{{ $row['display_employer_contribution'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    <strong>
+                                        {{ number_format($row['display_employer_contribution'] ?? 0, 4) }}
+                                    </strong>
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['zwg_employer_contribution'], 2) }}
+                            <td class="text-end"
+                                data-order="{{ $row['display_employee_avc'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['display_employee_avc'] ?? 0, 4) }}
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['zwg_employee_avc'], 2) }}
+                            <td class="text-end"
+                                data-order="{{ $row['display_employer_avc'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['display_employer_avc'] ?? 0, 4) }}
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['zwg_employer_avc'], 2) }}
+                            {{-- =====================================================
+                                 USD
+                            ====================================================== --}}
+
+                            <td class="text-end"
+                                data-order="{{ $row['usd_basic_pay'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['usd_basic_pay'] ?? 0, 4) }}
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
+                            <td class="text-end"
+                                data-order="{{ $row['usd_employee_rate'] ?? 0 }}">
 
-                            {{-- USD --}}
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['usd_employee_rate'] ?? 0, 4) }}%
+                                @else
+                                    -
+                                @endif
 
-                            <td class="text-end">
-                                {{ number_format($row['usd_basic_pay'], 2) }}
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['usd_employee_rate'], 2) }}%
+                            <td class="text-end"
+                                data-order="{{ $row['usd_employee_contribution'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['usd_employee_contribution'] ?? 0, 4) }}
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['usd_employee_contribution'], 2) }}
+                            <td class="text-end"
+                                data-order="{{ $row['usd_employer_rate'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['usd_employer_rate'] ?? 0, 4) }}%
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['usd_employer_rate'], 2) }}%
+                            <td class="text-end"
+                                data-order="{{ $row['usd_employer_contribution'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['usd_employer_contribution'] ?? 0, 4) }}
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['usd_employer_contribution'], 2) }}
+                            <td class="text-end"
+                                data-order="{{ $row['usd_employee_avc'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['usd_employee_avc'] ?? 0, 4) }}
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['usd_employee_avc'], 2) }}
+                            <td class="text-end"
+                                data-order="{{ $row['usd_employer_avc'] ?? 0 }}">
+
+                                @if($hasContributionRecord)
+                                    {{ number_format($row['usd_employer_avc'] ?? 0, 4) }}
+                                @else
+                                    -
+                                @endif
+
                             </td>
 
-                            <td class="text-end">
-                                {{ number_format($row['usd_employer_avc'], 2) }}
-                            </td>
+                            {{-- Remarks --}}
 
-
-                            <td>
-                                {{ $row['status_reason'] }}
+                            <td class="remarks-column">
+                                {{ $row['status_reason'] ?? '-' }}
                             </td>
 
                         </tr>
@@ -447,11 +588,9 @@ Monthly expected contributions and service continuity
         </div>
 
     </div>
-
 </div>
 
 @endsection
-
 
 @push('scripts')
 
@@ -468,11 +607,10 @@ Monthly expected contributions and service continuity
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
-
 <script>
 $(document).ready(function () {
 
-    $('#member-contribution-history-table').DataTable({
+    const table = $('#member-contribution-history-table').DataTable({
         pageLength: 25,
 
         lengthMenu: [
@@ -485,6 +623,8 @@ $(document).ready(function () {
         ],
 
         autoWidth: false,
+
+        scrollX: true,
 
         dom:
             "<'row align-items-center mb-3'"
@@ -543,6 +683,10 @@ $(document).ready(function () {
             }
         ]
     });
+
+    setTimeout(function () {
+        table.columns.adjust();
+    }, 100);
 
 });
 </script>

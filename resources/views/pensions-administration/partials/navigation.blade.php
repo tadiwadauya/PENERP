@@ -56,6 +56,27 @@
 
     /*
     |--------------------------------------------------------------------------
+    | Historical Contribution Migration
+    |--------------------------------------------------------------------------
+    |
+    | System Administrator ONLY.
+    |
+    */
+
+    $canManageHistoricalContributions =
+        $pensionsNavUser
+        &&
+        $pensionsNavUser->hasRole(
+            'system-administrator'
+        )
+        &&
+        $pensionsNavUser->can(
+            'contributions.historical-imports.manage'
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Contribution Access
     |--------------------------------------------------------------------------
     */
@@ -95,6 +116,8 @@
             $pensionsNavUser->can(
                 'contributions.reports.view'
             )
+            ||
+            $canManageHistoricalContributions
         );
 
 
@@ -166,15 +189,34 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Membership Reports
+    | Shared Membership Reports
     |--------------------------------------------------------------------------
+    |
+    | These reports are not Updates-only.
+    |
+    | Benefits and Payroll users can later receive the same permissions.
+    |
     */
 
     $canSeeMembershipReports =
         $pensionsNavUser
         &&
         $pensionsNavUser->can(
-            'updates.reports.membership.view'
+            'pensions.reports.membership.view'
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employer Membership Reports
+    |--------------------------------------------------------------------------
+    */
+
+    $canSeeEmployerMembershipReports =
+        $pensionsNavUser
+        &&
+        $pensionsNavUser->can(
+            'pensions.reports.employer-membership.view'
         );
 
 
@@ -201,6 +243,8 @@
     $canSeeReports =
         $canSeeMembershipReports
         ||
+        $canSeeEmployerMembershipReports
+        ||
         $canSeeContributionReports;
 
 @endphp
@@ -218,10 +262,6 @@
                 topnav-menu
             "
         >
-
-            {{-- =================================================
-                 MOBILE TOGGLE
-            ================================================== --}}
 
             <button
                 class="navbar-toggler"
@@ -250,9 +290,7 @@
                          PENSIONS HOME
                     ================================================== --}}
 
-                    @can(
-                        'dashboard.pensions.view'
-                    )
+                    @can('dashboard.pensions.view')
 
                         <li class="nav-item">
 
@@ -329,14 +367,7 @@
                                 aria-labelledby="pensions-updates-menu"
                             >
 
-
-                                {{-- =====================================
-                                     UPDATES DASHBOARD
-                                ====================================== --}}
-
-                                @can(
-                                    'updates.dashboard.view'
-                                )
+                                @can('updates.dashboard.view')
 
                                     <a
                                         href="{{
@@ -356,13 +387,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-view-dashboard-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-view-dashboard-outline me-2"></i>
 
                                         Updates Dashboard
 
@@ -370,10 +395,6 @@
 
                                 @endcan
 
-
-                                {{-- =====================================
-                                     MASTER DATA
-                                ====================================== --}}
 
                                 @if(
                                     $pensionsNavUser->can(
@@ -398,11 +419,7 @@
                                 @endif
 
 
-                                {{-- Members --}}
-
-                                @can(
-                                    'updates.members.view'
-                                )
+                                @can('updates.members.view')
 
                                     <a
                                         href="{{
@@ -422,13 +439,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-account-group-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-account-group-outline me-2"></i>
 
                                         Members
 
@@ -437,11 +448,7 @@
                                 @endcan
 
 
-                                {{-- Employers --}}
-
-                                @can(
-                                    'updates.employers.view'
-                                )
+                                @can('updates.employers.view')
 
                                     <a
                                         href="{{
@@ -461,13 +468,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-office-building-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-office-building-outline me-2"></i>
 
                                         Employers
 
@@ -476,11 +477,7 @@
                                 @endcan
 
 
-                                {{-- Employer Groups --}}
-
-                                @can(
-                                    'updates.employer-groups.view'
-                                )
+                                @can('updates.employer-groups.view')
 
                                     <a
                                         href="{{
@@ -500,13 +497,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-folder-multiple-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-folder-multiple-outline me-2"></i>
 
                                         Employer Groups
 
@@ -515,16 +506,9 @@
                                 @endcan
 
 
-                                {{-- =====================================
-                                     MEMBER MOVEMENTS
-                                ====================================== --}}
-
-                                @can(
-                                    'updates.member-movements.view'
-                                )
+                                @can('updates.member-movements.view')
 
                                     <div class="dropdown-divider"></div>
-
 
                                     <span
                                         class="
@@ -534,13 +518,7 @@
                                         style="cursor:default;"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-swap-horizontal
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-swap-horizontal me-2"></i>
 
                                         Member Movements
 
@@ -552,10 +530,6 @@
 
                                 @endcan
 
-
-                                {{-- =====================================
-                                     IMPORTS
-                                ====================================== --}}
 
                                 @if(
                                     $pensionsNavUser->can(
@@ -569,21 +543,14 @@
 
                                     <div class="dropdown-divider"></div>
 
-
                                     <h6 class="dropdown-header">
-
                                         Excel Imports
-
                                     </h6>
 
                                 @endif
 
 
-                                {{-- Member Imports --}}
-
-                                @can(
-                                    'updates.membership-imports.view'
-                                )
+                                @can('updates.membership-imports.view')
 
                                     <a
                                         href="{{
@@ -603,13 +570,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-account-arrow-up-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-account-arrow-up-outline me-2"></i>
 
                                         Member Imports
 
@@ -618,11 +579,7 @@
                                 @endcan
 
 
-                                {{-- Employer Imports --}}
-
-                                @can(
-                                    'updates.employer-imports.view'
-                                )
+                                @can('updates.employer-imports.view')
 
                                     <a
                                         href="{{
@@ -642,13 +599,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-office-building-cog-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-office-building-cog-outline me-2"></i>
 
                                         Employer Imports
 
@@ -680,6 +631,10 @@
                                         request()->routeIs(
                                             'pensions-administration.contributions.*'
                                         )
+                                        ||
+                                        request()->routeIs(
+                                            'pensions-administration.historical-contributions.*'
+                                        )
                                             ? 'active'
                                             : ''
                                     }}
@@ -689,13 +644,7 @@
                                 role="button"
                             >
 
-                                <i
-                                    class="
-                                        mdi
-                                        mdi-cash-multiple
-                                        me-2
-                                    "
-                                ></i>
+                                <i class="mdi mdi-cash-multiple me-2"></i>
 
                                 Contributions
 
@@ -710,13 +659,7 @@
                             >
 
 
-                                {{-- =====================================
-                                     CONTRIBUTION REGISTER
-                                ====================================== --}}
-
-                                @can(
-                                    'contributions.monthly-imports.view'
-                                )
+                                @can('contributions.monthly-imports.view')
 
                                     <a
                                         href="{{
@@ -736,13 +679,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-format-list-bulleted
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-format-list-bulleted me-2"></i>
 
                                         Monthly Contribution Batches
 
@@ -751,13 +688,7 @@
                                 @endcan
 
 
-                                {{-- =====================================
-                                     UPLOAD CONTRIBUTIONS
-                                ====================================== --}}
-
-                                @can(
-                                    'contributions.monthly-imports.create'
-                                )
+                                @can('contributions.monthly-imports.create')
 
                                     <a
                                         href="{{
@@ -777,13 +708,7 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-upload
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-upload me-2"></i>
 
                                         Upload Monthly Contributions
 
@@ -793,24 +718,93 @@
 
 
                                 {{-- =====================================
-                                     PROCESSING
+                                     HISTORICAL CONTRIBUTIONS
+                                     SYSTEM ADMINISTRATOR ONLY
                                 ====================================== --}}
+
+                                @if($canManageHistoricalContributions)
+
+                                    <div class="dropdown-divider"></div>
+
+                                    <h6 class="dropdown-header">
+                                        Historical Migration
+                                    </h6>
+
+
+                                    <a
+                                        href="{{
+                                            route(
+                                                'pensions-administration.historical-contributions.imports.index'
+                                            )
+                                        }}"
+                                        class="
+                                            dropdown-item
+                                            {{
+                                                request()->routeIs(
+                                                    'pensions-administration.historical-contributions.imports.index'
+                                                )
+                                                ||
+                                                request()->routeIs(
+                                                    'pensions-administration.historical-contributions.imports.show'
+                                                )
+                                                ||
+                                                request()->routeIs(
+                                                    'pensions-administration.historical-contributions.review.*'
+                                                )
+                                                ||
+                                                request()->routeIs(
+                                                    'pensions-administration.historical-contributions.posting.*'
+                                                )
+                                                    ? 'active'
+                                                    : ''
+                                            }}
+                                        "
+                                    >
+
+                                        <i class="mdi mdi-database-clock-outline me-2"></i>
+
+                                        Historical Contributions
+
+                                    </a>
+
+
+                                    <a
+                                        href="{{
+                                            route(
+                                                'pensions-administration.historical-contributions.imports.create'
+                                            )
+                                        }}"
+                                        class="
+                                            dropdown-item
+                                            {{
+                                                request()->routeIs(
+                                                    'pensions-administration.historical-contributions.imports.create'
+                                                )
+                                                    ? 'active'
+                                                    : ''
+                                            }}
+                                        "
+                                    >
+
+                                        <i class="mdi mdi-database-import-outline me-2"></i>
+
+                                        Upload Historical Contributions
+
+                                    </a>
+
+                                @endif
+
 
                                 @if($canProcessContributions)
 
                                     <div class="dropdown-divider"></div>
 
-
                                     <h6 class="dropdown-header">
-
                                         Processing
-
                                     </h6>
 
 
-                                    @can(
-                                        'contributions.monthly-imports.view'
-                                    )
+                                    @can('contributions.monthly-imports.view')
 
                                         <a
                                             href="{{
@@ -825,13 +819,7 @@
                                             class="dropdown-item"
                                         >
 
-                                            <i
-                                                class="
-                                                    mdi
-                                                    mdi-file-search-outline
-                                                    me-2
-                                                "
-                                            ></i>
+                                            <i class="mdi mdi-file-search-outline me-2"></i>
 
                                             Batches Awaiting Review
 
@@ -842,10 +830,6 @@
                                 @endif
 
 
-                                {{-- =====================================
-                                     APPROVAL / REJECTION
-                                ====================================== --}}
-
                                 @if(
                                     $canApproveContributions
                                     ||
@@ -854,46 +838,29 @@
 
                                     <div class="dropdown-divider"></div>
 
-
                                     <h6 class="dropdown-header">
-
                                         Approval
-
                                     </h6>
 
 
-                                    @if(
-                                        $canApproveContributions
-                                        ||
-                                        $canRejectContributions
-                                    )
+                                    <a
+                                        href="{{
+                                            route(
+                                                'pensions-administration.contributions.imports.index',
+                                                [
+                                                    'status' =>
+                                                        'awaiting_review',
+                                                ]
+                                            )
+                                        }}"
+                                        class="dropdown-item"
+                                    >
 
-                                        <a
-                                            href="{{
-                                                route(
-                                                    'pensions-administration.contributions.imports.index',
-                                                    [
-                                                        'status' =>
-                                                            'awaiting_review',
-                                                    ]
-                                                )
-                                            }}"
-                                            class="dropdown-item"
-                                        >
+                                        <i class="mdi mdi-clipboard-check-outline me-2"></i>
 
-                                            <i
-                                                class="
-                                                    mdi
-                                                    mdi-clipboard-check-outline
-                                                    me-2
-                                                "
-                                            ></i>
+                                        Contribution Approval Queue
 
-                                            Contribution Approval Queue
-
-                                        </a>
-
-                                    @endif
+                                    </a>
 
 
                                     @if($canApproveContributions)
@@ -905,14 +872,7 @@
                                             "
                                         >
 
-                                            <i
-                                                class="
-                                                    mdi
-                                                    mdi-check-decagram-outline
-                                                    me-2
-                                                    text-success
-                                                "
-                                            ></i>
+                                            <i class="mdi mdi-check-decagram-outline me-2 text-success"></i>
 
                                             You Can Approve
 
@@ -930,14 +890,7 @@
                                             "
                                         >
 
-                                            <i
-                                                class="
-                                                    mdi
-                                                    mdi-close-circle-outline
-                                                    me-2
-                                                    text-danger
-                                                "
-                                            ></i>
+                                            <i class="mdi mdi-close-circle-outline me-2 text-danger"></i>
 
                                             You Can Reject
 
@@ -948,19 +901,12 @@
                                 @endif
 
 
-                                {{-- =====================================
-                                     POSTING
-                                ====================================== --}}
-
                                 @if($canPostContributions)
 
                                     <div class="dropdown-divider"></div>
 
-
                                     <h6 class="dropdown-header">
-
                                         Posting
-
                                     </h6>
 
 
@@ -977,13 +923,7 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-database-arrow-up-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-database-arrow-up-outline me-2"></i>
 
                                         Approved Batches to Post
 
@@ -991,10 +931,6 @@
 
                                 @endif
 
-
-                                {{-- =====================================
-                                     REJECTED BATCHES
-                                ====================================== --}}
 
                                 @if(
                                     $canApproveContributions
@@ -1020,13 +956,7 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-file-cancel-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-file-cancel-outline me-2"></i>
 
                                         Rejected Batches
 
@@ -1035,19 +965,12 @@
                                 @endif
 
 
-                                {{-- =====================================
-                                     CONTRIBUTION REPORTS
-                                ====================================== --}}
-
                                 @if($canSeeContributionReports)
 
                                     <div class="dropdown-divider"></div>
 
-
                                     <h6 class="dropdown-header">
-
                                         Contribution Reports
-
                                     </h6>
 
 
@@ -1064,13 +987,7 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-file-chart-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-file-chart-outline me-2"></i>
 
                                         Posted Contributions
 
@@ -1084,20 +1001,12 @@
                                         "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-scale-balance
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-scale-balance me-2"></i>
 
                                         Reconciliation Reports
 
                                         <small class="ms-1 text-muted">
-
                                             Open a batch
-
                                         </small>
 
                                     </span>
@@ -1157,19 +1066,23 @@
 
 
                                 {{-- =====================================
-                                     MEMBERSHIP REPORTS
+                                     SHARED MEMBERSHIP REPORTS
                                 ====================================== --}}
 
-                                @can(
-                                    'updates.reports.membership.view'
+                                @if(
+                                    $canSeeMembershipReports
+                                    ||
+                                    $canSeeEmployerMembershipReports
                                 )
 
                                     <h6 class="dropdown-header">
-
                                         Membership Reports
-
                                     </h6>
 
+                                @endif
+
+
+                                @if($canSeeMembershipReports)
 
                                     <a
                                         href="{{
@@ -1177,16 +1090,19 @@
                                                 'pensions-administration.updates.reports.membership.index'
                                             )
                                         }}"
-                                        class="dropdown-item"
+                                        class="
+                                            dropdown-item
+                                            {{
+                                                request()->routeIs(
+                                                    'pensions-administration.updates.reports.membership.*'
+                                                )
+                                                    ? 'active'
+                                                    : ''
+                                            }}
+                                        "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-chart-box-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-chart-box-outline me-2"></i>
 
                                         Membership Reports Centre
 
@@ -1202,40 +1118,45 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-account-group-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-account-group-outline me-2"></i>
 
                                         Membership Register
 
                                     </a>
 
+                                @endif
+
+
+                                @if($canSeeEmployerMembershipReports)
 
                                     <a
                                         href="{{
                                             route(
-                                                'pensions-administration.updates.reports.membership.index'
+                                                'pensions-administration.updates.reports.employer-membership.index'
                                             )
-                                        }}#employer-summary"
-                                        class="dropdown-item"
+                                        }}"
+                                        class="
+                                            dropdown-item
+                                            {{
+                                                request()->routeIs(
+                                                    'pensions-administration.updates.reports.employer-membership.*'
+                                                )
+                                                    ? 'active'
+                                                    : ''
+                                            }}
+                                        "
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-office-building-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-office-building-outline me-2"></i>
 
-                                        Employer Membership
+                                        Employer Membership Report
 
                                     </a>
 
+                                @endif
+
+
+                                @if($canSeeMembershipReports)
 
                                     <a
                                         href="{{
@@ -1246,13 +1167,7 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-calendar-account-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-calendar-account-outline me-2"></i>
 
                                         Age Profile
 
@@ -1268,13 +1183,7 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-link-variant
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-link-variant me-2"></i>
 
                                         Legacy Number Mapping
 
@@ -1290,19 +1199,13 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-database-alert-outline
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-database-alert-outline me-2"></i>
 
                                         Data Quality
 
                                     </a>
 
-                                @endcan
+                                @endif
 
 
                                 {{-- =====================================
@@ -1310,7 +1213,11 @@
                                 ====================================== --}}
 
                                 @if(
-                                    $canSeeMembershipReports
+                                    (
+                                        $canSeeMembershipReports
+                                        ||
+                                        $canSeeEmployerMembershipReports
+                                    )
                                     &&
                                     $canSeeContributionReports
                                 )
@@ -1320,14 +1227,10 @@
                                 @endif
 
 
-                                @can(
-                                    'contributions.reports.view'
-                                )
+                                @if($canSeeContributionReports)
 
                                     <h6 class="dropdown-header">
-
                                         Contribution Reports
-
                                     </h6>
 
 
@@ -1344,13 +1247,7 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-cash-check
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-cash-check me-2"></i>
 
                                         Posted Monthly Contributions
 
@@ -1366,19 +1263,13 @@
                                         class="dropdown-item"
                                     >
 
-                                        <i
-                                            class="
-                                                mdi
-                                                mdi-scale-balance
-                                                me-2
-                                            "
-                                        ></i>
+                                        <i class="mdi mdi-scale-balance me-2"></i>
 
                                         Contribution Reconciliations
 
                                     </a>
 
-                                @endcan
+                                @endif
 
                             </div>
 
@@ -1402,13 +1293,7 @@
                             }}"
                         >
 
-                            <i
-                                class="
-                                    mdi
-                                    mdi-arrow-left-circle-outline
-                                    me-2
-                                "
-                            ></i>
+                            <i class="mdi mdi-arrow-left-circle-outline me-2"></i>
 
                             Main ERP
 
@@ -1432,12 +1317,6 @@
     @push('styles')
 
         <style>
-
-            /*
-            |--------------------------------------------------------------------------
-            | Pensions Context Navigation
-            |--------------------------------------------------------------------------
-            */
 
             .pensions-topnav {
                 position: relative;
@@ -1469,26 +1348,11 @@
             }
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Permission Information
-            |--------------------------------------------------------------------------
-            |
-            | These are information-only items and are not clickable actions.
-            |
-            */
-
             .pensions-topnav .contribution-permission-hint {
                 cursor: default;
                 font-size: 12px;
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Dark Mode
-            |--------------------------------------------------------------------------
-            */
 
             body.lapf-dark-mode .pensions-topnav {
                 border-bottom:

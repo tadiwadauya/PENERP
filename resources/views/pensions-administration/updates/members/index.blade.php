@@ -4,39 +4,23 @@
 
 @section('page-heading', 'Membership')
 
+
 @section('page-actions')
 
-    <a href="{{ route('pensions-administration.updates.members.create') }}"
-       class="btn btn-success">
-
-        <i class="mdi mdi-account-plus-outline me-1"></i>
-        Add Member
-
-    </a>
+<a href="{{ route('pensions-administration.updates.members.create') }}" class="btn btn-success">
+    <i class="mdi mdi-account-plus-outline me-1"></i>
+    Add Member
+</a>
 
 @endsection
 
 
 @push('styles')
 
-<link rel="stylesheet"
-      href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
-
-<link rel="stylesheet"
-      href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 
 <style>
-
-    /*
-    |--------------------------------------------------------------------------
-    | Membership Table Only
-    |--------------------------------------------------------------------------
-    |
-    | Keep DataTables styling scoped to this table so that it does not affect
-    | the PENERP sidebar or other layout components.
-    |
-    */
-
     #membership-table {
         width: 100% !important;
     }
@@ -72,6 +56,21 @@
         min-width: 75px;
     }
 
+    #membership-table_wrapper .dataTables_processing {
+        position: absolute;
+        top: 80px;
+        left: 50%;
+        width: auto;
+        min-width: 220px;
+        margin-left: -110px;
+        padding: 14px 20px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, .10);
+        z-index: 100;
+    }
+
     .membership-filter-card {
         border-left: 4px solid #0d6efd;
     }
@@ -85,7 +84,6 @@
     }
 
     @media(max-width: 768px) {
-
         #membership-table_wrapper .dataTables_filter {
             text-align: left;
             margin-top: 10px;
@@ -94,9 +92,7 @@
         #membership-table_wrapper .dataTables_filter input {
             min-width: 160px;
         }
-
     }
-
 </style>
 
 @endpush
@@ -109,26 +105,26 @@
 
 @if(session('success'))
 
-    <div class="alert alert-success">
-        <i class="mdi mdi-check-circle-outline me-1"></i>
-        {{ session('success') }}
-    </div>
+<div class="alert alert-success">
+    <i class="mdi mdi-check-circle-outline me-1"></i>
+    {{ session('success') }}
+</div>
 
 @endif
 
 
 @if(session('error'))
 
-    <div class="alert alert-danger">
-        <i class="mdi mdi-alert-circle-outline me-1"></i>
-        {{ session('error') }}
-    </div>
+<div class="alert alert-danger">
+    <i class="mdi mdi-alert-circle-outline me-1"></i>
+    {{ session('error') }}
+</div>
 
 @endif
 
 
 {{-- =========================================================
-     ADVANCED FILTERS
+     FILTERS
 ========================================================= --}}
 
 <div class="card membership-filter-card">
@@ -142,15 +138,13 @@
             </h4>
 
             <p class="text-muted mb-0">
-                Filter the membership register using specific member references,
-                employer or membership status.
+                Apply filters without loading the full membership register.
             </p>
 
         </div>
 
 
-        <form method="GET"
-              action="{{ route('pensions-administration.updates.members.index') }}">
+        <form id="membership-filter-form">
 
             <div class="row">
 
@@ -164,10 +158,9 @@
                             General Search
                         </label>
 
-                        <input type="text"
-                               name="search"
+                        <input id="filter-search"
+                               type="text"
                                class="form-control"
-                               value="{{ request('search') }}"
                                placeholder="Name, National ID, member number...">
 
                     </div>
@@ -184,10 +177,9 @@
                             PENERP Number
                         </label>
 
-                        <input type="text"
-                               name="penerp_member_number"
+                        <input id="filter-penerp-number"
+                               type="text"
                                class="form-control"
-                               value="{{ request('penerp_member_number') }}"
                                placeholder="PENERP member no.">
 
                     </div>
@@ -204,10 +196,9 @@
                             PenAd Number
                         </label>
 
-                        <input type="text"
-                               name="penad_member_number"
+                        <input id="filter-penad-number"
+                               type="text"
                                class="form-control"
-                               value="{{ request('penad_member_number') }}"
                                placeholder="PenAd member no.">
 
                     </div>
@@ -224,10 +215,9 @@
                             Fundworx Number
                         </label>
 
-                        <input type="text"
-                               name="fundworx_member_number"
+                        <input id="filter-fundworx-number"
+                               type="text"
                                class="form-control"
-                               value="{{ request('fundworx_member_number') }}"
                                placeholder="Fundworx member no.">
 
                     </div>
@@ -244,30 +234,26 @@
                             Status
                         </label>
 
-                        <select name="status"
+                        <select id="filter-status"
                                 class="form-select">
 
                             <option value="">
                                 All Statuses
                             </option>
 
-                            <option value="active"
-                                @selected(request('status') === 'active')>
+                            <option value="active">
                                 Active
                             </option>
 
-                            <option value="dormant"
-                                @selected(request('status') === 'dormant')>
+                            <option value="dormant">
                                 Dormant
                             </option>
 
-                            <option value="inactive"
-                                @selected(request('status') === 'inactive')>
+                            <option value="inactive">
                                 Inactive
                             </option>
 
-                            <option value="suspended"
-                                @selected(request('status') === 'suspended')>
+                            <option value="suspended">
                                 Suspended
                             </option>
 
@@ -287,7 +273,7 @@
                             Employer
                         </label>
 
-                        <select name="employer_id"
+                        <select id="filter-employer"
                                 class="form-select">
 
                             <option value="">
@@ -296,15 +282,10 @@
 
                             @foreach($employers as $employer)
 
-                                <option value="{{ $employer->id }}"
-                                    @selected(
-                                        request('employer_id') == $employer->id
-                                    )>
-
+                                <option value="{{ $employer->id }}">
                                     {{ $employer->employer_number }}
                                     -
                                     {{ $employer->name }}
-
                                 </option>
 
                             @endforeach
@@ -316,7 +297,7 @@
                 </div>
 
 
-                {{-- FILTER BUTTONS --}}
+                {{-- BUTTONS --}}
                 <div class="col-xl-6 col-lg-6 col-md-6">
 
                     <div class="mb-3">
@@ -336,13 +317,14 @@
                             </button>
 
 
-                            <a href="{{ route('pensions-administration.updates.members.index') }}"
-                               class="btn btn-light">
+                            <button id="clear-membership-filters"
+                                    type="button"
+                                    class="btn btn-light">
 
                                 <i class="mdi mdi-filter-remove-outline me-1"></i>
                                 Clear Filters
 
-                            </a>
+                            </button>
 
                         </div>
 
@@ -360,112 +342,6 @@
 
 
 {{-- =========================================================
-     ACTIVE FILTERS
-========================================================= --}}
-
-@if(
-    request()->filled('search')
-    || request()->filled('penerp_member_number')
-    || request()->filled('penad_member_number')
-    || request()->filled('fundworx_member_number')
-    || request()->filled('employer_id')
-    || request()->filled('status')
-)
-
-    <div class="alert alert-info">
-
-        <div class="d-flex align-items-start">
-
-            <i class="mdi mdi-filter-check-outline font-size-20 me-2"></i>
-
-            <div>
-
-                <strong>
-                    Filters Applied
-                </strong>
-
-                <div class="mt-1">
-
-
-                    @if(request()->filled('search'))
-
-                        <span class="badge bg-primary me-1 mb-1">
-                            Search: {{ request('search') }}
-                        </span>
-
-                    @endif
-
-
-                    @if(request()->filled('penerp_member_number'))
-
-                        <span class="badge bg-primary me-1 mb-1">
-                            PENERP: {{ request('penerp_member_number') }}
-                        </span>
-
-                    @endif
-
-
-                    @if(request()->filled('penad_member_number'))
-
-                        <span class="badge bg-primary me-1 mb-1">
-                            PenAd: {{ request('penad_member_number') }}
-                        </span>
-
-                    @endif
-
-
-                    @if(request()->filled('fundworx_member_number'))
-
-                        <span class="badge bg-primary me-1 mb-1">
-                            Fundworx: {{ request('fundworx_member_number') }}
-                        </span>
-
-                    @endif
-
-
-                    @if(request()->filled('status'))
-
-                        <span class="badge bg-primary me-1 mb-1">
-                            Status: {{ ucfirst(request('status')) }}
-                        </span>
-
-                    @endif
-
-
-                    @if(request()->filled('employer_id'))
-
-                        @php
-
-                            $selectedEmployer = $employers->firstWhere(
-                                'id',
-                                (int) request('employer_id')
-                            );
-
-                        @endphp
-
-
-                        @if($selectedEmployer)
-
-                            <span class="badge bg-primary me-1 mb-1">
-                                Employer: {{ $selectedEmployer->name }}
-                            </span>
-
-                        @endif
-
-                    @endif
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-@endif
-
-
-{{-- =========================================================
      MEMBERSHIP REGISTER
 ========================================================= --}}
 
@@ -480,8 +356,7 @@
             </h4>
 
             <p class="text-muted mb-0">
-                Use Quick Search to search within the records returned
-                by the filters above.
+                Members are loaded directly from SQL Server in small pages for faster performance.
             </p>
 
         </div>
@@ -490,28 +365,21 @@
         <div class="table-responsive">
 
             <table id="membership-table"
-                   class="table table-bordered table-striped table-hover align-middle">
+                   class="table table-bordered table-striped table-hover align-middle nowrap"
+                   style="width:100%">
 
                 <thead>
 
                     <tr>
 
                         <th>PENERP No.</th>
-
                         <th>PenAd No.</th>
-
                         <th>Fundworx No.</th>
-
                         <th>Member</th>
-
                         <th>National ID</th>
-
                         <th>Employer</th>
-
                         <th>Staff No.</th>
-
                         <th>Vote No.</th>
-
                         <th>Status</th>
 
                         <th class="text-center">
@@ -522,199 +390,7 @@
 
                 </thead>
 
-
-                <tbody>
-
-                    @forelse($members as $member)
-
-                        <tr>
-
-
-                            {{-- PENERP NUMBER --}}
-                            <td>
-
-                                <strong>
-                                    {{ $member->member_number }}
-                                </strong>
-
-                            </td>
-
-
-                            {{-- PENAD NUMBER --}}
-                            <td>
-                                {{ $member->penad_member_number ?? '-' }}
-                            </td>
-
-
-                            {{-- FUNDWORX NUMBER --}}
-                            <td>
-                                {{ $member->fundworx_member_number ?? '-' }}
-                            </td>
-
-
-                            {{-- MEMBER --}}
-                            <td>
-
-                                <strong>
-                                    {{ $member->surname }},
-                                    {{ $member->first_names }}
-                                </strong>
-
-
-                                @if($member->other_names)
-
-                                    <br>
-
-                                    <small>
-                                        Other:
-                                        {{ $member->other_names }}
-                                    </small>
-
-                                @endif
-
-
-                                @if($member->maiden_name)
-
-                                    <br>
-
-                                    <small class="text-muted">
-                                        Maiden:
-                                        {{ $member->maiden_name }}
-                                    </small>
-
-                                @endif
-
-
-                                @if($member->date_of_birth)
-
-                                    <br>
-
-                                    <small class="text-muted">
-                                        DOB:
-                                        {{ $member->date_of_birth->format('d M Y') }}
-                                    </small>
-
-                                @endif
-
-                            </td>
-
-
-                            {{-- NATIONAL ID --}}
-                            <td>
-                                {{ $member->national_id ?? '-' }}
-                            </td>
-
-
-                            {{-- EMPLOYER --}}
-                            <td>
-
-                                @if($member->currentEmployment?->employer)
-
-                                    <strong>
-                                        {{ $member->currentEmployment->employer->name }}
-                                    </strong>
-
-                                    <br>
-
-                                    <small class="text-muted">
-                                        {{ $member->currentEmployment->employer->employer_number }}
-                                    </small>
-
-                                @else
-
-                                    <span class="text-muted">
-                                        -
-                                    </span>
-
-                                @endif
-
-                            </td>
-
-
-                            {{-- STAFF NUMBER --}}
-                            <td>
-                                {{ $member->currentEmployment?->staff_number ?? '-' }}
-                            </td>
-
-
-                            {{-- VOTE NUMBER --}}
-                            <td>
-                                {{ $member->currentEmployment?->vote_number ?? '-' }}
-                            </td>
-
-
-                            {{-- STATUS --}}
-                            <td>
-
-                                @php
-
-                                    $statusClass = match(
-                                        $member->membership_status
-                                    ) {
-                                        'active' => 'bg-success',
-                                        'dormant' => 'bg-warning text-dark',
-                                        'suspended' => 'bg-danger',
-                                        default => 'bg-secondary',
-                                    };
-
-                                @endphp
-
-
-                                <span class="badge {{ $statusClass }}">
-
-                                    {{ ucfirst($member->membership_status) }}
-
-                                </span>
-
-                            </td>
-
-
-                            {{-- ACTIONS --}}
-                            <td class="text-center member-action-buttons">
-
-                                <a href="{{ route('pensions-administration.updates.members.show', $member) }}"
-                                   class="btn btn-sm btn-outline-primary"
-                                   title="View Member">
-
-                                    <i class="mdi mdi-eye-outline"></i>
-
-                                </a>
-                                <a href="{{ route('pensions-administration.contributions.members.expected-contributions', $member) }}"
-                                class="btn btn-sm btn-outline-primary"
-                                title="Expected Contribution History">
-                                    <i class="mdi mdi-history"></i>
-                                </a>
-
-
-                                <a href="{{ route('pensions-administration.updates.members.edit', $member) }}"
-                                   class="btn btn-sm btn-primary"
-                                   title="Edit Member">
-
-                                    <i class="mdi mdi-pencil-outline"></i>
-
-                                </a>
-
-                            </td>
-
-                        </tr>
-
-
-                    @empty
-
-                        <tr>
-
-                            <td colspan="10"
-                                class="text-center text-muted py-4">
-
-                                No members found.
-
-                            </td>
-
-                        </tr>
-
-                    @endforelse
-
-                </tbody>
+                <tbody></tbody>
 
             </table>
 
@@ -727,33 +403,19 @@
 @endsection
 
 
-{{-- =========================================================
-     DATATABLE LIBRARIES
-========================================================= --}}
-
 @push('scripts')
 
-{{-- IMPORTANT:
-     Do NOT load another jQuery here.
-     layouts.app should already load jQuery for the PENERP theme.
---}}
-
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
 
@@ -762,13 +424,34 @@ $(document).ready(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Protect Against Duplicate Initialisation
+    | Check DataTables Loaded
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        typeof $.fn.DataTable
+        ===
+        'undefined'
+    ) {
+        console.error(
+            'DataTables library did not load.'
+        );
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prevent Duplicate Initialisation
     |--------------------------------------------------------------------------
     */
 
     if (
         $.fn.DataTable
-        && $.fn.DataTable.isDataTable('#membership-table')
+        .isDataTable(
+            '#membership-table'
+        )
     ) {
         $('#membership-table')
             .DataTable()
@@ -778,305 +461,578 @@ $(document).ready(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Initialise Membership DataTable
+    | Initialise Server-Side Membership Table
     |--------------------------------------------------------------------------
     */
 
-    $('#membership-table').DataTable({
+    const membershipTable =
+        $('#membership-table')
+            .DataTable({
 
-        processing: true,
+                processing:
+                    true,
 
-        responsive: false,
+                serverSide:
+                    true,
 
-        autoWidth: false,
+                deferRender:
+                    true,
 
-        pageLength: 25,
+                searchDelay:
+                    500,
 
+                responsive:
+                    false,
 
-        lengthMenu: [
+                autoWidth:
+                    false,
 
-            [10, 25, 50, 100, -1],
-
-            [10, 25, 50, 100, 'All']
-
-        ],
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Default Sort
-        |--------------------------------------------------------------------------
-        */
-
-        order: [
-            [3, 'asc']
-        ],
+                pageLength:
+                    25,
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | DataTable Layout
-        |--------------------------------------------------------------------------
-        */
-
-        dom:
-
-            "<'row membership-datatable-toolbar align-items-center'"
-
-                + "<'col-xl-8 col-lg-8 col-md-12 mb-2 mb-lg-0'B>"
-
-                + "<'col-xl-4 col-lg-4 col-md-12'f>"
-
-            + ">"
-
-            + "<'row mb-2'"
-
-                + "<'col-md-6'l>"
-
-                + "<'col-md-6 text-md-end'i>"
-
-            + ">"
-
-            + "rt"
-
-            + "<'row mt-3 align-items-center'"
-
-                + "<'col-md-6'i>"
-
-                + "<'col-md-6 d-flex justify-content-md-end'p>"
-
-            + ">",
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Export
-        |--------------------------------------------------------------------------
-        */
-
-        buttons: [
-
-            {
-                extend: 'copyHtml5',
-
-                text:
-                    '<i class="mdi mdi-content-copy me-1"></i> Copy',
-
-                className:
-                    'btn btn-secondary btn-sm',
-
-                title:
-                    'PENERP Membership Register',
-
-                exportOptions: {
-
-                    columns: [
-                        0, 1, 2, 3, 4,
-                        5, 6, 7, 8
+                lengthMenu: [
+                    [
+                        10,
+                        25,
+                        50,
+                        100
                     ],
-
-                    stripHtml: true
-
-                }
-            },
-
-
-            {
-                extend: 'excelHtml5',
-
-                text:
-                    '<i class="mdi mdi-microsoft-excel me-1"></i> Excel',
-
-                className:
-                    'btn btn-success btn-sm',
-
-                title:
-                    'PENERP Membership Register',
-
-                filename:
-                    'PENERP_Membership_Register',
-
-                exportOptions: {
-
-                    columns: [
-                        0, 1, 2, 3, 4,
-                        5, 6, 7, 8
-                    ],
-
-                    stripHtml: true
-
-                }
-            },
+                    [
+                        10,
+                        25,
+                        50,
+                        100
+                    ]
+                ],
 
 
-            {
-                extend: 'csvHtml5',
+                /*
+                |--------------------------------------------------------------------------
+                | AJAX
+                |--------------------------------------------------------------------------
+                */
 
-                text:
-                    '<i class="mdi mdi-file-delimited-outline me-1"></i> CSV',
+                ajax: {
 
-                className:
-                    'btn btn-info btn-sm',
+                    url:
+                        "{{ route('pensions-administration.updates.members.data') }}",
 
-                title:
-                    'PENERP Membership Register',
-
-                filename:
-                    'PENERP_Membership_Register',
-
-                exportOptions: {
-
-                    columns: [
-                        0, 1, 2, 3, 4,
-                        5, 6, 7, 8
-                    ],
-
-                    stripHtml: true
-
-                }
-            },
+                    type:
+                        'GET',
 
 
-            {
-                extend: 'pdfHtml5',
+                    data: function (
+                        data
+                    ) {
 
-                text:
-                    '<i class="mdi mdi-file-pdf-box me-1"></i> PDF',
+                        data.filter_search =
+                            $('#filter-search')
+                                .val();
 
-                className:
-                    'btn btn-danger btn-sm',
+                        data.penerp_member_number =
+                            $('#filter-penerp-number')
+                                .val();
 
-                title:
-                    'PENERP Membership Register',
+                        data.penad_member_number =
+                            $('#filter-penad-number')
+                                .val();
 
-                filename:
-                    'PENERP_Membership_Register',
+                        data.fundworx_member_number =
+                            $('#filter-fundworx-number')
+                                .val();
 
-                orientation:
-                    'landscape',
+                        data.status =
+                            $('#filter-status')
+                                .val();
 
-                pageSize:
-                    'A3',
+                        data.employer_id =
+                            $('#filter-employer')
+                                .val();
 
-                exportOptions: {
+                    },
 
-                    columns: [
-                        0, 1, 2, 3, 4,
-                        5, 6, 7, 8
-                    ],
 
-                    stripHtml: true
+                    error: function (
+                        xhr
+                    ) {
+
+                        console.error(
+                            'Membership DataTable AJAX request failed.'
+                        );
+
+                        console.error(
+                            'HTTP Status:',
+                            xhr.status
+                        );
+
+                        console.error(
+                            xhr.responseText
+                        );
+
+                    }
 
                 },
 
-                customize: function (doc) {
 
-                    doc.defaultStyle.fontSize = 7;
+                /*
+                |--------------------------------------------------------------------------
+                | Columns
+                |--------------------------------------------------------------------------
+                */
 
-                    doc.styles.tableHeader.fontSize = 8;
+                columns: [
 
-                    doc.styles.title = {
+                    {
+                        data:
+                            'penerp_number',
 
-                        fontSize: 16,
+                        name:
+                            'member_number'
+                    },
 
-                        bold: true,
 
-                        alignment: 'center',
+                    {
+                        data:
+                            'penad_number',
 
-                        margin: [
-                            0,
-                            0,
-                            0,
-                            15
-                        ]
+                        name:
+                            'penad_member_number'
+                    },
 
-                    };
+
+                    {
+                        data:
+                            'fundworx_number',
+
+                        name:
+                            'fundworx_member_number'
+                    },
+
+
+                    {
+                        data:
+                            'member',
+
+                        name:
+                            'surname'
+                    },
+
+
+                    {
+                        data:
+                            'national_id',
+
+                        name:
+                            'national_id'
+                    },
+
+
+                    {
+                        data:
+                            'employer',
+
+                        name:
+                            'employer',
+
+                        orderable:
+                            false
+                    },
+
+
+                    {
+                        data:
+                            'staff_number',
+
+                        name:
+                            'staff_number',
+
+                        orderable:
+                            false
+                    },
+
+
+                    {
+                        data:
+                            'vote_number',
+
+                        name:
+                            'vote_number',
+
+                        orderable:
+                            false
+                    },
+
+
+                    {
+                        data:
+                            'status',
+
+                        name:
+                            'membership_status'
+                    },
+
+
+                    {
+                        data:
+                            'actions',
+
+                        name:
+                            'actions',
+
+                        orderable:
+                            false,
+
+                        searchable:
+                            false,
+
+                        className:
+                            'text-center'
+                    }
+
+                ],
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Default Ordering
+                |--------------------------------------------------------------------------
+                */
+
+                order: [
+                    [
+                        3,
+                        'asc'
+                    ]
+                ],
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Toolbar
+                |--------------------------------------------------------------------------
+                */
+
+                dom:
+
+                    "<'row membership-datatable-toolbar align-items-center'"
+
+                        + "<'col-xl-8 col-lg-8 col-md-12 mb-2 mb-lg-0'B>"
+
+                        + "<'col-xl-4 col-lg-4 col-md-12'f>"
+
+                    + ">"
+
+                    + "<'row mb-2'"
+
+                        + "<'col-md-6'l>"
+
+                        + "<'col-md-6 text-md-end'i>"
+
+                    + ">"
+
+                    + "rt"
+
+                    + "<'row mt-3 align-items-center'"
+
+                        + "<'col-md-6'i>"
+
+                        + "<'col-md-6 d-flex justify-content-md-end'p>"
+
+                    + ">",
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Export Buttons
+                |--------------------------------------------------------------------------
+                |
+                | Because this is server-side DataTables, these export the
+                | records currently loaded on the page.
+                |
+                */
+
+                buttons: [
+
+                    {
+                        extend:
+                            'copyHtml5',
+
+                        text:
+                            '<i class="mdi mdi-content-copy me-1"></i> Copy Page',
+
+                        className:
+                            'btn btn-secondary btn-sm',
+
+                        exportOptions: {
+
+                            columns: [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                8
+                            ],
+
+                            stripHtml:
+                                true
+
+                        }
+                    },
+
+
+                    {
+                        extend:
+                            'excelHtml5',
+
+                        text:
+                            '<i class="mdi mdi-microsoft-excel me-1"></i> Excel Page',
+
+                        className:
+                            'btn btn-success btn-sm',
+
+                        title:
+                            'PENERP Membership Register',
+
+                        filename:
+                            'PENERP_Membership_Register',
+
+                        exportOptions: {
+
+                            columns: [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                8
+                            ],
+
+                            stripHtml:
+                                true
+
+                        }
+                    },
+
+
+                    {
+                        extend:
+                            'csvHtml5',
+
+                        text:
+                            '<i class="mdi mdi-file-delimited-outline me-1"></i> CSV Page',
+
+                        className:
+                            'btn btn-info btn-sm',
+
+                        title:
+                            'PENERP Membership Register',
+
+                        filename:
+                            'PENERP_Membership_Register',
+
+                        exportOptions: {
+
+                            columns: [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                8
+                            ],
+
+                            stripHtml:
+                                true
+
+                        }
+                    },
+
+
+                    {
+                        extend:
+                            'print',
+
+                        text:
+                            '<i class="mdi mdi-printer-outline me-1"></i> Print Page',
+
+                        className:
+                            'btn btn-dark btn-sm',
+
+                        title:
+                            'PENERP Membership Register',
+
+                        exportOptions: {
+
+                            columns: [
+                                0,
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6,
+                                7,
+                                8
+                            ],
+
+                            stripHtml:
+                                true
+
+                        }
+                    }
+
+                ],
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Language
+                |--------------------------------------------------------------------------
+                */
+
+                language: {
+
+                    processing:
+                        '<i class="mdi mdi-loading mdi-spin me-1"></i> Loading members...',
+
+                    search:
+                        'Quick Search:',
+
+                    searchPlaceholder:
+                        'Search members...',
+
+                    lengthMenu:
+                        'Show _MENU_ members',
+
+                    info:
+                        'Showing _START_ to _END_ of _TOTAL_ members',
+
+                    infoEmpty:
+                        'No members found',
+
+                    infoFiltered:
+                        '(filtered from _MAX_ members)',
+
+                    zeroRecords:
+                        'No matching members found'
 
                 }
-            },
+
+            });
 
 
-            {
-                extend: 'print',
+    /*
+    |--------------------------------------------------------------------------
+    | Apply Filters
+    |--------------------------------------------------------------------------
+    */
 
-                text:
-                    '<i class="mdi mdi-printer-outline me-1"></i> Print',
+    $('#membership-filter-form')
+        .on(
+            'submit',
+            function (
+                event
+            ) {
 
-                className:
-                    'btn btn-dark btn-sm',
+                event.preventDefault();
 
-                title:
-                    'PENERP Membership Register',
+                membershipTable
+                    .page(
+                        'first'
+                    );
 
-                exportOptions: {
+                membershipTable
+                    .ajax
+                    .reload();
 
-                    columns: [
-                        0, 1, 2, 3, 4,
-                        5, 6, 7, 8
-                    ],
+            }
+        );
 
-                    stripHtml: true
 
+    /*
+    |--------------------------------------------------------------------------
+    | Clear Filters
+    |--------------------------------------------------------------------------
+    */
+
+    $('#clear-membership-filters')
+        .on(
+            'click',
+            function () {
+
+                $('#filter-search')
+                    .val('');
+
+                $('#filter-penerp-number')
+                    .val('');
+
+                $('#filter-penad-number')
+                    .val('');
+
+                $('#filter-fundworx-number')
+                    .val('');
+
+                $('#filter-status')
+                    .val('');
+
+                $('#filter-employer')
+                    .val('');
+
+                membershipTable
+                    .search('');
+
+                membershipTable
+                    .page(
+                        'first'
+                    );
+
+                membershipTable
+                    .ajax
+                    .reload();
+
+            }
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enter Key Applies Filters
+    |--------------------------------------------------------------------------
+    */
+
+    $('#membership-filter-form input')
+        .on(
+            'keypress',
+            function (
+                event
+            ) {
+
+                if (
+                    event.which
+                    ===
+                    13
+                ) {
+                    event.preventDefault();
+
+                    $('#membership-filter-form')
+                        .trigger(
+                            'submit'
+                        );
                 }
+
             }
-
-        ],
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Action Column
-        |--------------------------------------------------------------------------
-        */
-
-        columnDefs: [
-
-            {
-                targets: 9,
-
-                orderable: false,
-
-                searchable: false
-            }
-
-        ],
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Language
-        |--------------------------------------------------------------------------
-        */
-
-        language: {
-
-            search:
-                'Quick Search:',
-
-            searchPlaceholder:
-                'Search filtered records...',
-
-            lengthMenu:
-                'Show _MENU_ members',
-
-            info:
-                'Showing _START_ to _END_ of _TOTAL_ members',
-
-            infoEmpty:
-                'No members found',
-
-            infoFiltered:
-                '(filtered from _MAX_ members)',
-
-            zeroRecords:
-                'No matching members found',
-
-            processing:
-                'Loading members...'
-
-        }
-
-    });
+        );
 
 });
 </script>
