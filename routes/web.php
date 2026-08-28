@@ -44,10 +44,15 @@ use App\Http\Controllers\PensionsAdministration\Contributions\ContributionReview
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionExceptionReportController;
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionReconciliationController;
 use App\Http\Controllers\PensionsAdministration\Contributions\MemberContributionHistoryController;
+use App\Http\Controllers\PensionsAdministration\Contributions\ContributionReceiptController;
+use App\Http\Controllers\PensionsAdministration\Contributions\ContributionReceiptImportController;
+use App\Http\Controllers\PensionsAdministration\Contributions\ExchangeRateController;
 
 use App\Http\Controllers\PensionsAdministration\HistoricalContributions\HistoricalContributionImportController;
 use App\Http\Controllers\PensionsAdministration\HistoricalContributions\HistoricalContributionReviewController;
 use App\Http\Controllers\PensionsAdministration\HistoricalContributions\HistoricalContributionPostingController;
+
+
 
 
 /*
@@ -482,15 +487,100 @@ Route::middleware('auth')->group(function (): void {
                         Route::delete('imports/{batch}', [ContributionImportController::class, 'destroy'])->middleware('permission:contributions.monthly-imports.delete')->name('imports.destroy');
 
 
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Batch Show - Keep Last
-                        |--------------------------------------------------------------------------
-                        */
+                    /*
+|--------------------------------------------------------------------------
+| Batch Show - Keep Last
+|--------------------------------------------------------------------------
+*/
 
-                        Route::get('imports/{batch}', [ContributionImportController::class, 'show'])->middleware('permission:contributions.monthly-imports.view')->name('imports.show');
+Route::get('imports/{batch}', [ContributionImportController::class, 'show'])
+    ->middleware('permission:contributions.monthly-imports.view')
+    ->name('imports.show');
 
-                    });
+
+/*
+|--------------------------------------------------------------------------
+| Contribution Receipts
+|--------------------------------------------------------------------------
+*/
+
+Route::get('receipts', [ContributionReceiptController::class, 'index'])
+    ->middleware('permission:contributions.receipts.view')
+    ->name('receipts.index');
+
+
+/*
+|--------------------------------------------------------------------------
+| Receipt Imports
+|--------------------------------------------------------------------------
+*/
+
+Route::get('receipts/imports', [ContributionReceiptImportController::class, 'index'])
+    ->middleware('permission:contributions.receipts.view')
+    ->name('receipts.imports.index');
+
+Route::get('receipts/imports/create', [ContributionReceiptImportController::class, 'create'])
+    ->middleware('permission:contributions.receipts.create')
+    ->name('receipts.imports.create');
+
+Route::post('receipts/imports', [ContributionReceiptImportController::class, 'store'])
+    ->middleware('permission:contributions.receipts.create')
+    ->name('receipts.imports.store');
+
+
+/*
+|--------------------------------------------------------------------------
+| Receipt Review
+|--------------------------------------------------------------------------
+*/
+
+Route::get('receipts/imports/{batch}/review', [ContributionReceiptImportController::class, 'review'])
+    ->whereNumber('batch')
+    ->middleware('permission:contributions.receipts.view')
+    ->name('receipts.imports.review');
+
+
+/*
+|--------------------------------------------------------------------------
+| Receipt Posting
+|--------------------------------------------------------------------------
+*/
+
+Route::post('receipts/imports/{batch}/post', [ContributionReceiptImportController::class, 'post'])
+    ->whereNumber('batch')
+    ->middleware('permission:contributions.receipts.post')
+    ->name('receipts.imports.post');
+
+
+/*
+|--------------------------------------------------------------------------
+| Exchange Rates
+|--------------------------------------------------------------------------
+*/
+
+Route::get('receipts/exchange-rates', [ExchangeRateController::class, 'index'])
+    ->middleware('permission:contributions.exchange-rates.view')
+    ->name('receipts.exchange-rates.index');
+
+Route::post('receipts/exchange-rates', [ExchangeRateController::class, 'store'])
+    ->middleware('permission:contributions.exchange-rates.manage')
+    ->name('receipts.exchange-rates.store');
+
+
+/*
+|--------------------------------------------------------------------------
+| Posted Receipt
+|--------------------------------------------------------------------------
+| Keep LAST.
+|--------------------------------------------------------------------------
+*/
+
+Route::get('receipts/{receipt}', [ContributionReceiptController::class, 'show'])
+    ->whereNumber('receipt')
+    ->middleware('permission:contributions.receipts.view')
+    ->name('receipts.show');
+
+});
 
             });
 
