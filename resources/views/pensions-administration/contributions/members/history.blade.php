@@ -2,10 +2,10 @@
 
 @section('title', 'Member Contribution History')
 
-@section('page-heading', 'Member Expected Contribution History')
+@section('page-heading', 'Member Contribution History')
 
 @section('page-subheading')
-Monthly expected contributions and service continuity
+Monthly expected contributions, historical Take-On opening balances and service continuity
 @endsection
 
 @push('styles')
@@ -31,7 +31,7 @@ Monthly expected contributions and service continuity
 
     .history-table td.remarks-column {
         white-space: normal;
-        min-width: 260px;
+        min-width: 280px;
     }
 
     .service-break-row {
@@ -44,6 +44,10 @@ Monthly expected contributions and service continuity
 
     .missing-contribution-row {
         background-color: rgba(13, 110, 253, .05) !important;
+    }
+
+    .take-on-only-row {
+        background-color: rgba(108, 117, 125, .07) !important;
     }
 
     .dt-buttons {
@@ -64,6 +68,11 @@ Monthly expected contributions and service continuity
         background: #f8f9fa;
         text-align: center;
     }
+
+    .take-on-heading {
+        background: rgba(108, 117, 125, .10);
+        text-align: center;
+    }
 </style>
 @endpush
 
@@ -71,14 +80,9 @@ Monthly expected contributions and service continuity
 
 @include('pensions-administration.partials.navigation')
 
-{{-- =========================================================
-     MEMBER
-========================================================= --}}
-
 <div class="card mb-3">
     <div class="card-body">
         <div class="row align-items-center">
-
             <div class="col-lg-8">
                 <h4 class="mb-1">
                     {{ $member->surname }},
@@ -117,22 +121,15 @@ Monthly expected contributions and service continuity
                     Contribution Months
                 </span>
             </div>
-
         </div>
     </div>
 </div>
 
-{{-- =========================================================
-     SERVICE SUMMARY
-========================================================= --}}
-
 <div class="row g-3 mb-3">
-
     <div class="col-xl-2 col-md-4 col-6">
         <div class="card history-stat-card">
             <div class="card-body">
                 <p class="text-muted mb-1">History Months</p>
-
                 <h3 class="mb-0">
                     {{ number_format($summary['total_months'] ?? 0) }}
                 </h3>
@@ -144,7 +141,6 @@ Monthly expected contributions and service continuity
         <div class="card history-stat-card">
             <div class="card-body">
                 <p class="text-muted mb-1">Contributed</p>
-
                 <h3 class="text-success mb-0">
                     {{ number_format($summary['contributed_months'] ?? 0) }}
                 </h3>
@@ -155,8 +151,18 @@ Monthly expected contributions and service continuity
     <div class="col-xl-2 col-md-4 col-6">
         <div class="card history-stat-card">
             <div class="card-body">
-                <p class="text-muted mb-1">Nil Contributor</p>
+                <p class="text-muted mb-1">Take-On Month</p>
+                <h3 class="text-secondary mb-0">
+                    {{ number_format($summary['take_on_months'] ?? 0) }}
+                </h3>
+            </div>
+        </div>
+    </div>
 
+    <div class="col-xl-2 col-md-4 col-6">
+        <div class="card history-stat-card">
+            <div class="card-body">
+                <p class="text-muted mb-1">Nil Contributor</p>
                 <h3 class="text-warning mb-0">
                     {{ number_format($summary['nil_contributor_months'] ?? 0) }}
                 </h3>
@@ -168,7 +174,6 @@ Monthly expected contributions and service continuity
         <div class="card history-stat-card">
             <div class="card-body">
                 <p class="text-muted mb-1">Missing Expected</p>
-
                 <h3 class="text-primary mb-0">
                     {{ number_format($summary['missing_expected_months'] ?? 0) }}
                 </h3>
@@ -180,29 +185,76 @@ Monthly expected contributions and service continuity
         <div class="card history-stat-card">
             <div class="card-body">
                 <p class="text-muted mb-1">Break Months</p>
-
                 <h3 class="text-danger mb-0">
                     {{ number_format($summary['break_months'] ?? 0) }}
                 </h3>
             </div>
         </div>
     </div>
-
 </div>
 
-{{-- =========================================================
-     CONTRIBUTION TOTALS
-========================================================= --}}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="mb-3">
+            <h4 class="header-title mb-1">Historical Take-On / Opening Balance</h4>
+            <p class="text-muted mb-0">
+                Opening balances brought forward into January 2009. These amounts are kept separate from the normal January 2009 monthly contribution.
+            </p>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-xl-3 col-md-6">
+                <div class="card history-stat-card border">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Take-On Employee</p>
+                        <h4 class="mb-0">
+                            {{ number_format($summary['take_on_employee_total'] ?? 0, 4) }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card history-stat-card border">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Take-On Employer</p>
+                        <h4 class="mb-0">
+                            {{ number_format($summary['take_on_employer_total'] ?? 0, 4) }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card history-stat-card border">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Take-On Employee AVC</p>
+                        <h4 class="mb-0">
+                            {{ number_format($summary['take_on_employee_avc_total'] ?? 0, 4) }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card history-stat-card border">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Take-On Employer AVC</p>
+                        <h4 class="mb-0">
+                            {{ number_format($summary['take_on_employer_avc_total'] ?? 0, 4) }}
+                        </h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row g-3 mb-3">
-
     <div class="col-xl-3 col-md-6">
         <div class="card history-stat-card">
             <div class="card-body">
-                <p class="text-muted mb-1">
-                    Total Employee Contributions
-                </p>
-
+                <p class="text-muted mb-1">Monthly Employee Contributions</p>
                 <h4 class="mb-0">
                     {{ number_format($summary['zwg_employee_total'] ?? 0, 4) }}
                 </h4>
@@ -213,10 +265,7 @@ Monthly expected contributions and service continuity
     <div class="col-xl-3 col-md-6">
         <div class="card history-stat-card">
             <div class="card-body">
-                <p class="text-muted mb-1">
-                    Total Employer Contributions
-                </p>
-
+                <p class="text-muted mb-1">Monthly Employer Contributions</p>
                 <h4 class="mb-0">
                     {{ number_format($summary['zwg_employer_total'] ?? 0, 4) }}
                 </h4>
@@ -227,10 +276,7 @@ Monthly expected contributions and service continuity
     <div class="col-xl-3 col-md-6">
         <div class="card history-stat-card">
             <div class="card-body">
-                <p class="text-muted mb-1">
-                    Total Employee AVC
-                </p>
-
+                <p class="text-muted mb-1">Monthly Employee AVC</p>
                 <h4 class="mb-0">
                     {{ number_format($summary['zwg_employee_avc_total'] ?? 0, 4) }}
                 </h4>
@@ -241,50 +287,39 @@ Monthly expected contributions and service continuity
     <div class="col-xl-3 col-md-6">
         <div class="card history-stat-card">
             <div class="card-body">
-                <p class="text-muted mb-1">
-                    Total Employer AVC
-                </p>
-
+                <p class="text-muted mb-1">Monthly Employer AVC</p>
                 <h4 class="mb-0">
                     {{ number_format($summary['zwg_employer_avc_total'] ?? 0, 4) }}
                 </h4>
             </div>
         </div>
     </div>
-
 </div>
-
-{{-- =========================================================
-     HISTORY TABLE
-========================================================= --}}
 
 <div class="card">
     <div class="card-body">
-
         <div class="mb-3">
-            <h4 class="header-title mb-1">
-                Expected Contribution History
-            </h4>
+            <h4 class="header-title mb-1">Contribution History</h4>
 
             <p class="text-muted mb-0">
-                Month-by-month expected contribution history showing salary,
-                contribution rates, employee and employer contributions, AVCs,
-                missing contribution periods and breaks in service.
+                History begins from January 2009. Take-On is shown as a separate opening balance and is not combined with the normal January 2009 monthly contribution.
             </p>
         </div>
 
         <div class="table-responsive">
-
             <table id="member-contribution-history-table"
                    class="table table-bordered table-striped table-hover history-table w-100">
 
                 <thead>
-
                     <tr>
                         <th rowspan="2">Period</th>
                         <th rowspan="2">Status</th>
                         <th rowspan="2">Source</th>
                         <th rowspan="2">Employer</th>
+
+                        <th colspan="4" class="take-on-heading">
+                            Take-On / Opening Balance
+                        </th>
 
                         <th colspan="7" class="history-section-heading">
                             Expected Contribution
@@ -298,6 +333,11 @@ Monthly expected contributions and service continuity
                     </tr>
 
                     <tr>
+                        <th>Employee</th>
+                        <th>Employer</th>
+                        <th>EE AVC</th>
+                        <th>ER AVC</th>
+
                         <th>Basic Pay</th>
                         <th>EE Rate</th>
                         <th>Employee</th>
@@ -314,13 +354,10 @@ Monthly expected contributions and service continuity
                         <th>EE AVC</th>
                         <th>ER AVC</th>
                     </tr>
-
                 </thead>
 
                 <tbody>
-
                     @foreach($history as $row)
-
                         @php
                             $status = $row['status'] ?? '';
 
@@ -328,6 +365,7 @@ Monthly expected contributions and service continuity
                                 'break_in_service' => 'service-break-row',
                                 'nil_contributor' => 'nil-contributor-row',
                                 'missing_expected' => 'missing-contribution-row',
+                                'take_on_only' => 'take-on-only-row',
                                 default => '',
                             };
 
@@ -336,12 +374,11 @@ Monthly expected contributions and service continuity
                                 'nil_contributor' => 'bg-warning text-dark',
                                 'break_in_service' => 'bg-danger',
                                 'missing_expected' => 'bg-primary',
+                                'take_on_only' => 'bg-secondary',
                                 default => 'bg-secondary',
                             };
 
-                            $sourceSystem =
-                                $row['source_system']
-                                ?? null;
+                            $sourceSystem = $row['source_system'] ?? null;
 
                             $isHistorical =
                                 $row['is_historical']
@@ -357,21 +394,43 @@ Monthly expected contributions and service continuity
                                     ? 'bg-secondary'
                                     : 'bg-info text-dark';
 
-                            $hasContributionRecord =
-                                $status === 'contributed';
+                            $hasExpected =
+                                (bool) (
+                                    $row['has_expected_contribution']
+                                    ?? ($status === 'contributed')
+                                );
+
+                            $hasTakeOn =
+                                (bool) (
+                                    $row['has_take_on']
+                                    ?? false
+                                );
+
+                            $hasAnyRecord =
+                                $hasExpected
+                                || $hasTakeOn;
+
+                            $formatAmount = function ($value) {
+                                $number = (float) ($value ?? 0);
+
+                                return abs($number) < 0.00005
+                                    ? '-'
+                                    : number_format($number, 4);
+                            };
+
+                            $formatRate = function ($value) {
+                                $number = (float) ($value ?? 0);
+
+                                return abs($number) < 0.00005
+                                    ? '-'
+                                    : number_format($number, 4) . '%';
+                            };
                         @endphp
 
                         <tr class="{{ $rowClass }}">
-
-                            {{-- Period --}}
-
                             <td data-order="{{ $row['period_sort'] ?? '' }}">
-                                <strong>
-                                    {{ $row['period'] ?? '-' }}
-                                </strong>
+                                <strong>{{ $row['period'] ?? '-' }}</strong>
                             </td>
-
-                            {{-- Status --}}
 
                             <td>
                                 <span class="badge {{ $badgeClass }}">
@@ -379,10 +438,8 @@ Monthly expected contributions and service continuity
                                 </span>
                             </td>
 
-                            {{-- Source --}}
-
                             <td>
-                                @if($hasContributionRecord)
+                                @if($hasAnyRecord)
                                     <span class="badge {{ $sourceBadge }} history-source">
                                         {{ $sourceLabel }}
                                     </span>
@@ -391,202 +448,130 @@ Monthly expected contributions and service continuity
                                 @endif
                             </td>
 
-                            {{-- Employer --}}
-
                             <td>
                                 {{ $row['employer_name'] ?? '-' }}
 
                                 @if(!empty($row['employer_number']))
                                     <br>
-
                                     <small class="text-muted">
                                         {{ $row['employer_number'] }}
                                     </small>
                                 @endif
                             </td>
 
-                            {{-- =====================================================
-                                 EXPECTED CONTRIBUTION / HISTORICAL VALUES
-                            ====================================================== --}}
+                            {{-- TAKE-ON --}}
+                            <td class="text-end"
+                                data-order="{{ $row['take_on_employee_contribution'] ?? 0 }}">
+                                {{ $hasTakeOn ? $formatAmount($row['take_on_employee_contribution'] ?? 0) : '-' }}
+                            </td>
 
                             <td class="text-end"
+                                data-order="{{ $row['take_on_employer_contribution'] ?? 0 }}">
+                                {{ $hasTakeOn ? $formatAmount($row['take_on_employer_contribution'] ?? 0) : '-' }}
+                            </td>
+
+                            <td class="text-end"
+                                data-order="{{ $row['take_on_employee_avc'] ?? 0 }}">
+                                {{ $hasTakeOn ? $formatAmount($row['take_on_employee_avc'] ?? 0) : '-' }}
+                            </td>
+
+                            <td class="text-end"
+                                data-order="{{ $row['take_on_employer_avc'] ?? 0 }}">
+                                {{ $hasTakeOn ? $formatAmount($row['take_on_employer_avc'] ?? 0) : '-' }}
+                            </td>
+
+                            {{-- EXPECTED / GENERIC HISTORICAL --}}
+                            <td class="text-end"
                                 data-order="{{ $row['display_basic_pay'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['display_basic_pay'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['display_basic_pay'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['display_employee_rate'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['display_employee_rate'] ?? 0, 4) }}%
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatRate($row['display_employee_rate'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['display_employee_contribution'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
+                                @if($hasExpected)
                                     <strong>
-                                        {{ number_format($row['display_employee_contribution'] ?? 0, 4) }}
+                                        {{ $formatAmount($row['display_employee_contribution'] ?? 0) }}
                                     </strong>
                                 @else
                                     -
                                 @endif
-
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['display_employer_rate'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['display_employer_rate'] ?? 0, 4) }}%
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatRate($row['display_employer_rate'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['display_employer_contribution'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
+                                @if($hasExpected)
                                     <strong>
-                                        {{ number_format($row['display_employer_contribution'] ?? 0, 4) }}
+                                        {{ $formatAmount($row['display_employer_contribution'] ?? 0) }}
                                     </strong>
                                 @else
                                     -
                                 @endif
-
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['display_employee_avc'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['display_employee_avc'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['display_employee_avc'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['display_employer_avc'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['display_employer_avc'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['display_employer_avc'] ?? 0) : '-' }}
                             </td>
 
-                            {{-- =====================================================
-                                 USD
-                            ====================================================== --}}
-
+                            {{-- USD --}}
                             <td class="text-end"
                                 data-order="{{ $row['usd_basic_pay'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['usd_basic_pay'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['usd_basic_pay'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['usd_employee_rate'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['usd_employee_rate'] ?? 0, 4) }}%
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatRate($row['usd_employee_rate'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['usd_employee_contribution'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['usd_employee_contribution'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['usd_employee_contribution'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['usd_employer_rate'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['usd_employer_rate'] ?? 0, 4) }}%
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatRate($row['usd_employer_rate'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['usd_employer_contribution'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['usd_employer_contribution'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['usd_employer_contribution'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['usd_employee_avc'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['usd_employee_avc'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['usd_employee_avc'] ?? 0) : '-' }}
                             </td>
 
                             <td class="text-end"
                                 data-order="{{ $row['usd_employer_avc'] ?? 0 }}">
-
-                                @if($hasContributionRecord)
-                                    {{ number_format($row['usd_employer_avc'] ?? 0, 4) }}
-                                @else
-                                    -
-                                @endif
-
+                                {{ $hasExpected ? $formatAmount($row['usd_employer_avc'] ?? 0) : '-' }}
                             </td>
-
-                            {{-- Remarks --}}
 
                             <td class="remarks-column">
                                 {{ $row['status_reason'] ?? '-' }}
                             </td>
-
                         </tr>
-
                     @endforeach
-
                 </tbody>
-
             </table>
-
         </div>
-
     </div>
 </div>
 
@@ -596,12 +581,9 @@ Monthly expected contributions and service continuity
 
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
@@ -609,7 +591,6 @@ Monthly expected contributions and service continuity
 
 <script>
 $(document).ready(function () {
-
     const table = $('#member-contribution-history-table').DataTable({
         pageLength: 25,
 
@@ -623,7 +604,6 @@ $(document).ready(function () {
         ],
 
         autoWidth: false,
-
         scrollX: true,
 
         dom:
@@ -646,40 +626,36 @@ $(document).ready(function () {
                 extend: 'copyHtml5',
                 text: '<i class="mdi mdi-content-copy me-1"></i> Copy',
                 className: 'btn btn-secondary btn-sm',
-                title: 'PENERP Member Expected Contribution History'
+                title: 'PENERP Member Contribution History'
             },
-
             {
                 extend: 'excelHtml5',
                 text: '<i class="mdi mdi-microsoft-excel me-1"></i> Excel',
                 className: 'btn btn-success btn-sm',
-                title: 'PENERP Member Expected Contribution History',
-                filename: 'PENERP_Member_Expected_Contribution_History'
+                title: 'PENERP Member Contribution History',
+                filename: 'PENERP_Member_Contribution_History'
             },
-
             {
                 extend: 'csvHtml5',
                 text: '<i class="mdi mdi-file-delimited-outline me-1"></i> CSV',
                 className: 'btn btn-info btn-sm',
-                title: 'PENERP Member Expected Contribution History',
-                filename: 'PENERP_Member_Expected_Contribution_History'
+                title: 'PENERP Member Contribution History',
+                filename: 'PENERP_Member_Contribution_History'
             },
-
             {
                 extend: 'pdfHtml5',
                 text: '<i class="mdi mdi-file-pdf-box me-1"></i> PDF',
                 className: 'btn btn-danger btn-sm',
-                title: 'PENERP Member Expected Contribution History',
-                filename: 'PENERP_Member_Expected_Contribution_History',
+                title: 'PENERP Member Contribution History',
+                filename: 'PENERP_Member_Contribution_History',
                 orientation: 'landscape',
                 pageSize: 'A3'
             },
-
             {
                 extend: 'print',
                 text: '<i class="mdi mdi-printer-outline me-1"></i> Print',
                 className: 'btn btn-dark btn-sm',
-                title: 'PENERP Member Expected Contribution History'
+                title: 'PENERP Member Contribution History'
             }
         ]
     });
@@ -687,7 +663,6 @@ $(document).ready(function () {
     setTimeout(function () {
         table.columns.adjust();
     }, 100);
-
 });
 </script>
 

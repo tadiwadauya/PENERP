@@ -52,8 +52,15 @@ class ActuarialDataExportService
         $spreadsheet =
             new Spreadsheet();
 
-        $activeSheet =
+        $allMembersSheet =
             $spreadsheet->getActiveSheet();
+
+        $allMembersSheet->setTitle(
+            'All Members'
+        );
+
+        $activeSheet =
+            $spreadsheet->createSheet();
 
         $activeSheet->setTitle(
             'Active Members'
@@ -80,6 +87,13 @@ class ActuarialDataExportService
             'Exited Members'
         );
 
+        $allExitedSheet =
+            $spreadsheet->createSheet();
+
+        $allExitedSheet->setTitle(
+            'All Exited Members'
+        );
+
         /*
         |--------------------------------------------------------------------------
         | Headers
@@ -88,6 +102,11 @@ class ActuarialDataExportService
 
         $headers =
             $this->headers();
+
+        $this->writeHeaders(
+            $allMembersSheet,
+            $headers
+        );
 
         $this->writeHeaders(
             $activeSheet,
@@ -109,6 +128,11 @@ class ActuarialDataExportService
             $headers
         );
 
+        $this->writeHeaders(
+            $allExitedSheet,
+            $headers
+        );
+
         $batch->update([
             'progress_percentage' => 8,
         ]);
@@ -126,8 +150,89 @@ class ActuarialDataExportService
                 to: $to
             );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Cumulative Contributions Up To Selected End Date
+        |--------------------------------------------------------------------------
+        |
+        | These totals ignore the selected start date and include qualifying
+        | contribution records from the beginning of the member's history up
+        | to the selected actuarial end date.
+        |
+        */
+
+        $cumulativeContributions =
+            $this->loadCumulativeContributions(
+                batch: $batch,
+                to: $to
+            );
+
         $batch->update([
             'progress_percentage' => 25,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | All Members Of Selected Employer
+        |--------------------------------------------------------------------------
+        |
+        | This sheet guarantees that every member linked to the selected
+        | employer is included, regardless of membership status or whether
+        | a contribution exists in the selected period.
+        |
+        | The specialised sheets below then classify Active, Contributing,
+        | Nil Contributor and Exited members separately.
+        |
+        */
+
+        $allMembers =
+            $this->memberQuery(
+                batch: $batch,
+                status: null
+            )->get();
+
+        $allMembersRow = 2;
+
+        foreach ($allMembers as $member) {
+            $memberContributions =
+                $contributions[
+                    (int) $member->id
+                ]
+                ??
+                [];
+
+            $memberIsExited =
+                strtolower(
+                    trim(
+                        (string) $member->membership_status
+                    )
+                )
+                ===
+                'exited';
+
+            $this->writeMemberRow(
+                sheet: $allMembersSheet,
+                rowNumber: $allMembersRow++,
+                member: $member,
+                contributions: $memberContributions,
+                cumulativeContributions:
+                    $cumulativeContributions[
+                        (int) $member->id
+                    ][
+                        (int) $member->employer_id
+                    ]
+                    ??
+                    null,
+                isExited: $memberIsExited
+            );
+        }
+
+        unset(
+            $allMembers
+        );
+
+        $batch->update([
+            'progress_percentage' => 38,
         ]);
 
         /*
@@ -139,11 +244,11 @@ class ActuarialDataExportService
         |     Every member currently marked Active.
         |
         | Active and Contributing:
-        |     Active member with a positive contribution / AVC somewhere
-        |     inside the selected actuarial period.
+        |     Active member with at least one qualifying contribution record
+        |     inside the selected actuarial period. A posted zero still counts.
         |
         | Nil Contributors:
-        |     Active member without a positive contribution / AVC anywhere
+        |     Active member without a qualifying contribution record anywhere
         |     inside the selected actuarial period.
         |
         */
@@ -181,6 +286,14 @@ class ActuarialDataExportService
                 rowNumber: $activeRow++,
                 member: $member,
                 contributions: $memberContributions,
+                cumulativeContributions:
+                    $cumulativeContributions[
+                        (int) $member->id
+                    ][
+                        (int) $member->employer_id
+                    ]
+                    ??
+                    null,
                 isExited: false
             );
 
@@ -203,6 +316,14 @@ class ActuarialDataExportService
                     rowNumber: $contributingRow++,
                     member: $member,
                     contributions: $memberContributions,
+                    cumulativeContributions:
+                        $cumulativeContributions[
+                            (int) $member->id
+                        ][
+                            (int) $member->employer_id
+                        ]
+                        ??
+                        null,
                     isExited: false
                 );
 
@@ -213,6 +334,14 @@ class ActuarialDataExportService
                     rowNumber: $nilRow++,
                     member: $member,
                     contributions: $memberContributions,
+                    cumulativeContributions:
+                        $cumulativeContributions[
+                            (int) $member->id
+                        ][
+                            (int) $member->employer_id
+                        ]
+                        ??
+                        null,
                     isExited: false
                 );
 
@@ -242,7 +371,7 @@ class ActuarialDataExportService
                 $nilCount,
 
             'progress_percentage' =>
-                60,
+                68,
         ];
 
         if (
@@ -301,13 +430,73 @@ class ActuarialDataExportService
                 rowNumber: $exitedRow++,
                 member: $member,
                 contributions: $memberContributions,
+                cumulativeContributions:
+                    $cumulativeContributions[
+                        (int) $member->id
+                    ][
+                        (int) $member->employer_id
+                    ]
+                    ??
+                    null,
                 isExited: true
             );
         }
 
         unset(
-            $exitedMembers,
-            $contributions
+            $exitedMembers
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | All Exited Members
+        |--------------------------------------------------------------------------
+        |
+        | Every exited member linked to the selected employer is included here,
+        | regardless of when the member exited.
+        |
+        | Monthly financial columns still use the selected actuarial period.
+        | Cumulative contribution totals run from the beginning of the member's
+        | contribution history up to the selected actuarial end date.
+        |
+        */
+
+        $allExitedMembers =
+            $this->memberQuery(
+                batch: $batch,
+                status: 'exited'
+            )->get();
+
+        $allExitedRow = 2;
+
+        foreach ($allExitedMembers as $member) {
+            $memberContributions =
+                $contributions[
+                    (int) $member->id
+                ]
+                ??
+                [];
+
+            $this->writeMemberRow(
+                sheet: $allExitedSheet,
+                rowNumber: $allExitedRow++,
+                member: $member,
+                contributions: $memberContributions,
+                cumulativeContributions:
+                    $cumulativeContributions[
+                        (int) $member->id
+                    ][
+                        (int) $member->employer_id
+                    ]
+                    ??
+                    null,
+                isExited: true
+            );
+        }
+
+        unset(
+            $allExitedMembers,
+            $contributions,
+            $cumulativeContributions
         );
 
         $batch->update([
@@ -315,7 +504,7 @@ class ActuarialDataExportService
                 $exitedCount,
 
             'progress_percentage' =>
-                82,
+                84,
         ]);
 
         /*
@@ -479,7 +668,7 @@ class ActuarialDataExportService
 
     private function memberQuery(
         ActuarialDataExtractBatch $batch,
-        string $status,
+        ?string $status = null,
         ?Carbon $from = null,
         ?Carbon $to = null
     ): Builder {
@@ -504,15 +693,29 @@ class ActuarialDataExportService
                 )
                 ->whereNull(
                     'e.deleted_at'
-                )
-                ->whereRaw(
-                    'LOWER(LTRIM(RTRIM(m.membership_status))) = ?',
-                    [
-                        strtolower(
-                            $status
-                        ),
-                    ]
                 );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Membership Status Filter
+        |--------------------------------------------------------------------------
+        |
+        | NULL means return every member linked to the selected employer.
+        |
+        */
+
+        if ($status !== null) {
+            $query->whereRaw(
+                'LOWER(LTRIM(RTRIM(m.membership_status))) = ?',
+                [
+                    strtolower(
+                        trim(
+                            $status
+                        )
+                    ),
+                ]
+            );
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -534,6 +737,8 @@ class ActuarialDataExportService
         */
 
         if (
+            $status !== null
+            &&
             strtolower($status)
             ===
             'exited'
@@ -636,6 +841,9 @@ class ActuarialDataExportService
                         $from->toDateString(),
                         $to->toDateString(),
                     ]
+                )
+                ->whereRaw(
+                    "LOWER(LTRIM(RTRIM(COALESCE(mc.transaction_type, 'expected')))) = 'expected'"
                 );
 
         if ($batch->employer_id) {
@@ -771,6 +979,139 @@ class ActuarialDataExportService
 
     /*
     |--------------------------------------------------------------------------
+    | Load Cumulative Contributions Up To Selected End Date
+    |--------------------------------------------------------------------------
+    |
+    | The selected start date is intentionally ignored here. This returns each
+    | member's qualifying contribution totals from the beginning of their
+    | contribution history up to the selected actuarial end date.
+    |
+    | Expected contributions and TAKE-ON opening contribution balances are
+    | included so that historical opening balances are not omitted.
+    |
+    */
+
+    private function loadCumulativeContributions(
+        ActuarialDataExtractBatch $batch,
+        Carbon $to
+    ): array {
+        $query =
+            DB::table(
+                'member_contributions AS mc'
+            )
+                ->where(
+                    'mc.period_date',
+                    '<=',
+                    $to->toDateString()
+                )
+                ->whereIn(
+                    DB::raw(
+                        "LOWER(LTRIM(RTRIM(COALESCE(mc.transaction_type, 'expected'))))"
+                    ),
+                    [
+                        'expected',
+                        'take_on',
+                    ]
+                );
+
+        if ($batch->employer_id) {
+            $query->where(
+                'mc.employer_id',
+                $batch->employer_id
+            );
+        }
+
+        $rows =
+            $query
+                ->selectRaw("
+                    mc.member_id,
+                    mc.employer_id,
+
+                    SUM(
+                        CASE
+                            WHEN mc.source_system = 'historical_migration'
+                            THEN COALESCE(mc.employee_contribution, 0)
+                            ELSE
+                                CASE
+                                    WHEN COALESCE(mc.zwg_employee_contribution, 0) <> 0
+                                    THEN COALESCE(mc.zwg_employee_contribution, 0)
+                                    ELSE COALESCE(mc.employee_contribution, 0)
+                                END
+                        END
+                    ) AS employee_contribution,
+
+                    SUM(
+                        CASE
+                            WHEN mc.source_system = 'historical_migration'
+                            THEN COALESCE(mc.employee_avc, 0)
+                            ELSE
+                                CASE
+                                    WHEN COALESCE(mc.zwg_employee_avc, 0) <> 0
+                                    THEN COALESCE(mc.zwg_employee_avc, 0)
+                                    ELSE COALESCE(mc.employee_avc, 0)
+                                END
+                        END
+                    ) AS employee_avc,
+
+                    SUM(
+                        CASE
+                            WHEN mc.source_system = 'historical_migration'
+                            THEN COALESCE(mc.employer_contribution, 0)
+                            ELSE
+                                CASE
+                                    WHEN COALESCE(mc.zwg_employer_contribution, 0) <> 0
+                                    THEN COALESCE(mc.zwg_employer_contribution, 0)
+                                    ELSE COALESCE(mc.employer_contribution, 0)
+                                END
+                        END
+                    ) AS employer_contribution,
+
+                    SUM(
+                        CASE
+                            WHEN mc.source_system = 'historical_migration'
+                            THEN COALESCE(mc.employer_avc, 0)
+                            ELSE
+                                CASE
+                                    WHEN COALESCE(mc.zwg_employer_avc, 0) <> 0
+                                    THEN COALESCE(mc.zwg_employer_avc, 0)
+                                    ELSE COALESCE(mc.employer_avc, 0)
+                                END
+                        END
+                    ) AS employer_avc
+                ")
+                ->groupBy([
+                    'mc.member_id',
+                    'mc.employer_id',
+                ])
+                ->get();
+
+        $result = [];
+
+        foreach ($rows as $row) {
+            $result[
+                (int) $row->member_id
+            ][
+                (int) $row->employer_id
+            ] = [
+                'employee_contribution' =>
+                    (float) $row->employee_contribution,
+
+                'employee_avc' =>
+                    (float) $row->employee_avc,
+
+                'employer_contribution' =>
+                    (float) $row->employer_contribution,
+
+                'employer_avc' =>
+                    (float) $row->employer_avc,
+            ];
+        }
+
+        return $result;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Headers
     |--------------------------------------------------------------------------
     */
@@ -794,7 +1135,7 @@ class ActuarialDataExportService
             'Date Joined Employer',
             'Date Of Exit',
             'Type Of Exit',
-            'Pensionable Service To Date',
+            'Pensionable Service (Months)',
             'Gender',
             'Member Status',
             'Current Monthly Pensionable Salary',
@@ -836,10 +1177,14 @@ class ActuarialDataExportService
         return array_merge(
             $headers,
             [
-                'Total EE Cont',
-                'Total EE AV Cont',
-                'Total ER Cont',
-                'Total ER AV Cont',
+                'Period Total EE Cont',
+                'Period Total EE AV Cont',
+                'Period Total ER Cont',
+                'Period Total ER AV Cont',
+                'Cumulative EE Cont To Date',
+                'Cumulative EE AV Cont To Date',
+                'Cumulative ER Cont To Date',
+                'Cumulative ER AV Cont To Date',
                 'Exit Benefit Paid',
                 'Date Of Payment',
                 'Benefit Outstanding',
@@ -927,6 +1272,7 @@ class ActuarialDataExportService
         int $rowNumber,
         mixed $member,
         array $contributions,
+        ?array $cumulativeContributions,
         bool $isExited
     ): void {
         $employerId =
@@ -1204,6 +1550,48 @@ class ActuarialDataExportService
 
         /*
         |--------------------------------------------------------------------------
+        | Cumulative Contribution Totals To Selected End Date
+        |--------------------------------------------------------------------------
+        */
+
+        $values[] =
+            $this->displayFinancial(
+                $cumulativeContributions[
+                    'employee_contribution'
+                ]
+                ??
+                null
+            );
+
+        $values[] =
+            $this->displayFinancial(
+                $cumulativeContributions[
+                    'employee_avc'
+                ]
+                ??
+                null
+            );
+
+        $values[] =
+            $this->displayFinancial(
+                $cumulativeContributions[
+                    'employer_contribution'
+                ]
+                ??
+                null
+            );
+
+        $values[] =
+            $this->displayFinancial(
+                $cumulativeContributions[
+                    'employer_avc'
+                ]
+                ??
+                null
+            );
+
+        /*
+        |--------------------------------------------------------------------------
         | Benefit Fields
         |--------------------------------------------------------------------------
         */
@@ -1256,8 +1644,9 @@ class ActuarialDataExportService
     | The contribution array supplied to this method already contains ONLY
     | transactions inside the selected actuarial period.
     |
-    | Therefore any positive EE/ER contribution or AVC in any selected month
-    | means that the Active member is "Active and Contributing".
+    | Therefore the existence of any qualifying expected-contribution record
+    | in a selected month means that the Active member is
+    | "Active and Contributing", even when the posted values are zero.
     |
     */
 
@@ -1275,49 +1664,23 @@ class ActuarialDataExportService
             ??
             [];
 
-        foreach (
+        /*
+        |--------------------------------------------------------------------------
+        | Contribution Qualification
+        |--------------------------------------------------------------------------
+        |
+        | A member is contributing when at least one qualifying contribution
+        | record exists in the selected period for this employer.
+        |
+        | An explicitly posted zero contribution still counts as a contribution
+        | record. We therefore test record existence, not whether the financial
+        | values are greater than zero.
+        |
+        */
+
+        return !empty(
             $periods
-            as $data
-        ) {
-            $total =
-                (float) (
-                    $data[
-                        'employee_contribution'
-                    ]
-                    ??
-                    0
-                )
-                +
-                (float) (
-                    $data[
-                        'employee_avc'
-                    ]
-                    ??
-                    0
-                )
-                +
-                (float) (
-                    $data[
-                        'employer_contribution'
-                    ]
-                    ??
-                    0
-                )
-                +
-                (float) (
-                    $data[
-                        'employer_avc'
-                    ]
-                    ??
-                    0
-                );
-
-            if ($total > 0) {
-                return true;
-            }
-        }
-
-        return false;
+        );
     }
 
     /*
@@ -1406,7 +1769,7 @@ class ActuarialDataExportService
     private function pensionableService(
         mixed $joined,
         mixed $exitDate = null
-    ): ?string {
+    ): ?int {
         if (!$joined) {
             return null;
         }
@@ -1415,7 +1778,7 @@ class ActuarialDataExportService
             $start =
                 Carbon::parse(
                     $joined
-                );
+                )->startOfDay();
 
             /*
             |--------------------------------------------------------------------------
@@ -1425,8 +1788,11 @@ class ActuarialDataExportService
             | Exited member:
             |     actual exit date
             |
-            | Active member:
+            | All other members:
             |     selected actuarial period end
+            |
+            | The result is returned as completed pensionable service MONTHS,
+            | not a "years / months" text description.
             |
             */
 
@@ -1434,12 +1800,16 @@ class ActuarialDataExportService
                 $end =
                     Carbon::parse(
                         $exitDate
-                    );
+                    )->startOfDay();
             } else {
                 $lastMonth =
                     end(
                         $this->months
                     );
+
+                if (!$lastMonth) {
+                    return null;
+                }
 
                 $end =
                     Carbon::parse(
@@ -1454,29 +1824,14 @@ class ActuarialDataExportService
                     $end
                 )
             ) {
-                return '0 years 0 months';
+                return 0;
             }
 
-            $years =
-                $start->diffInYears(
+            return (int) floor(
+                $start->diffInMonths(
                     $end
-                );
-
-            $months =
-                $start
-                    ->copy()
-                    ->addYears(
-                        $years
-                    )
-                    ->diffInMonths(
-                        $end
-                    );
-
-            return
-                $years
-                . ' years '
-                . $months
-                . ' months';
+                )
+            );
 
         } catch (\Throwable) {
             return null;

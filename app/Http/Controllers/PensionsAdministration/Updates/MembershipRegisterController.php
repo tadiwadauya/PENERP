@@ -78,9 +78,6 @@ class MembershipRegisterController extends Controller
         |--------------------------------------------------------------------------
         | Total Members
         |--------------------------------------------------------------------------
-        |
-        | This count is done before any filters are applied.
-        |
         */
 
         $recordsTotal = Member::query()->count();
@@ -90,10 +87,16 @@ class MembershipRegisterController extends Controller
         | Base Query
         |--------------------------------------------------------------------------
         |
-        | Only select fields used by the register.
+        | We load all employment relationships for each member on the current
+        | DataTables page.
         |
-        | currentEmployment and employer are eager-loaded so Laravel does not
-        | execute one query per member.
+        | Display priority:
+        |
+        | 1. Current employment
+        | 2. Latest historical employment
+        |
+        | This means exited/non-active members can still show their last
+        | employer without incorrectly marking that employment as current.
         |
         */
 
@@ -113,23 +116,33 @@ class MembershipRegisterController extends Controller
                 'is_active',
             ])
             ->with([
-                'currentEmployment' => function ($query) {
-                    $query->select([
-                        'id',
-                        'member_id',
-                        'employer_id',
-                        'staff_number',
-                        'vote_number',
-                    ]);
-                },
-                'currentEmployment.employer' => function ($query) {
-                    $query->select([
-                        'id',
-                        'employer_number',
-                        'penad_employer_number',
-                        'fundworx_employer_number',
-                        'name',
-                    ]);
+                'employments' => function ($query) {
+                    $query
+                        ->select([
+                            'id',
+                            'member_id',
+                            'employer_id',
+                            'staff_number',
+                            'vote_number',
+                            'employment_status',
+                            'is_current',
+                            'effective_from',
+                            'effective_to',
+                        ])
+                        ->with([
+                            'employer' => function ($query) {
+                                $query->select([
+                                    'id',
+                                    'employer_number',
+                                    'penad_employer_number',
+                                    'fundworx_employer_number',
+                                    'name',
+                                ]);
+                            },
+                        ])
+                        ->orderByDesc('is_current')
+                        ->orderByDesc('effective_from')
+                        ->orderByDesc('id');
                 },
             ]);
 
@@ -205,8 +218,8 @@ class MembershipRegisterController extends Controller
         | Orderable Columns
         |--------------------------------------------------------------------------
         |
-        | Employer, Staff Number and Vote Number come from a relationship.
-        | They are deliberately not ordered here to keep the query fast.
+        | Employer, Staff Number and Vote Number come from relationships and
+        | are deliberately not ordered here to keep the member query fast.
         |
         */
 
@@ -244,9 +257,6 @@ class MembershipRegisterController extends Controller
         |--------------------------------------------------------------------------
         | Server-Side Pagination
         |--------------------------------------------------------------------------
-        |
-        | Only this page of records is retrieved from SQL Server.
-        |
         */
 
         $members = $query
@@ -444,6 +454,14 @@ class MembershipRegisterController extends Controller
         |--------------------------------------------------------------------------
         | Employer
         |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | Search all employments, not only currentEmployment.
+        |
+        | This allows an exited historical member to still be found under the
+        | employer they belonged to.
+        |
         */
 
         $employerId = $request->input(
@@ -456,7 +474,7 @@ class MembershipRegisterController extends Controller
             $employerId !== ''
         ) {
             $query->whereHas(
-                'currentEmployment',
+                'employments',
                 function (Builder $employmentQuery) use (
                     $employerId
                 ): void {
@@ -525,7 +543,7 @@ class MembershipRegisterController extends Controller
                         '%' . $search . '%'
                     )
                     ->orWhereHas(
-                        'currentEmployment',
+                        'employments',
                         function (
                             Builder $employmentQuery
                         ) use (
@@ -545,7 +563,7 @@ class MembershipRegisterController extends Controller
                         }
                     )
                     ->orWhereHas(
-                        'currentEmployment.employer',
+                        'employments.employer',
                         function (
                             Builder $employerQuery
                         ) use (
@@ -587,8 +605,85 @@ class MembershipRegisterController extends Controller
     private function formatMemberRow(
         Member $member
     ): array {
-        $employment =
-            $member->currentEmployment;
+        /*
+        |--------------------------------------------------------------------------
+        | Resolve Employment For Register Display
+        |--------------------------------------------------------------------------
+        |
+        | Rules:
+        |
+        | 1. Prefer current employment.
+        | 2. If there is no current employment, use latest historical employment.
+        | 3. If no employment exists at all, display "-".
+        |
+        */
+
+        $employment = $member
+            ->employments
+            ->sort(
+                function ($a, $b): int {
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Current Employment First
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $aCurrent =
+                        (bool) $a->is_current;
+
+                    $bCurrent =
+                        (bool) $b->is_current;
+
+                    if ($aCurrent !== $bCurrent) {
+                        return $aCurrent
+                            ? -1
+                            : 1;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Latest Effective From Next
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $aEffectiveFrom =
+                        $a->effective_from
+                            ? strtotime(
+                                (string) $a->effective_from
+                            )
+                            : 0;
+
+                    $bEffectiveFrom =
+                        $b->effective_from
+                            ? strtotime(
+                                (string) $b->effective_from
+                            )
+                            : 0;
+
+                    if (
+                        $aEffectiveFrom
+                        !==
+                        $bEffectiveFrom
+                    ) {
+                        return
+                            $bEffectiveFrom
+                            <=>
+                            $aEffectiveFrom;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Highest Employment ID Last Tie-Breaker
+                    |--------------------------------------------------------------------------
+                    */
+
+                    return
+                        (int) $b->id
+                        <=>
+                        (int) $a->id;
+                }
+            )
+            ->first();
 
         $employer =
             $employment?->employer;
@@ -654,7 +749,9 @@ class MembershipRegisterController extends Controller
                     )
                     . '</small>';
             } catch (\Throwable) {
-                // Do not allow one invalid date to break the register.
+                /*
+                 * Do not allow one invalid date to break the register.
+                 */
             }
         }
 
@@ -670,13 +767,47 @@ class MembershipRegisterController extends Controller
                 . e(
                     $employer->name
                 )
-                . '</strong>'
-                . '<br><small class="text-muted">'
-                . e(
-                    $employer->employer_number
-                    ?? ''
+                . '</strong>';
+
+            $employerReference =
+                $employer->employer_number
+                ??
+                $employer->penad_employer_number
+                ??
+                $employer->fundworx_employer_number
+                ??
+                null;
+
+            if (
+                filled(
+                    $employerReference
                 )
-                . '</small>';
+            ) {
+                $employerDisplay .=
+                    '<br><small class="text-muted">'
+                    . e(
+                        $employerReference
+                    )
+                    . '</small>';
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Historical Employment Indicator
+            |--------------------------------------------------------------------------
+            |
+            | Do not imply that an exited member is currently employed.
+            |
+            */
+
+            if (
+                !$employment->is_current
+            ) {
+                $employerDisplay .=
+                    '<br><small class="text-muted">'
+                    . 'Historical Employment'
+                    . '</small>';
+            }
         } else {
             $employerDisplay =
                 '<span class="text-muted">-</span>';
@@ -705,6 +836,18 @@ class MembershipRegisterController extends Controller
 
             'inactive' =>
                 'bg-secondary',
+
+            'exited' =>
+                'bg-secondary',
+
+            'waiting approval' =>
+                'bg-warning text-dark',
+
+            'waiting_approval' =>
+                'bg-warning text-dark',
+
+            'deferred' =>
+                'bg-info text-dark',
 
             default =>
                 'bg-secondary',
@@ -763,6 +906,12 @@ class MembershipRegisterController extends Controller
             . '<i class="mdi mdi-pencil-outline"></i>'
             . '</a>'
             . '</div>';
+
+        /*
+        |--------------------------------------------------------------------------
+        | Row
+        |--------------------------------------------------------------------------
+        */
 
         return [
             'penerp_number' =>
