@@ -1486,6 +1486,20 @@ class HistoricalContributionValidator
                     null
                 ),
 
+                'exit_date' =>
+                    $memberData[
+                        'exit_date'
+                    ]
+                    ??
+                    null,
+
+                'exit_reason' =>
+                    $memberData[
+                        'exit_reason'
+                    ]
+                    ??
+                    null,
+
             'occupation' =>
                 $memberData[
                     'occupation'

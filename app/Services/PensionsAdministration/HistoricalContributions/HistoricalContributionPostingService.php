@@ -6,7 +6,6 @@ use App\Models\PensionsAdministration\HistoricalContributions\HistoricalContribu
 use App\Models\PensionsAdministration\HistoricalContributions\HistoricalContributionImportRow;
 use App\Models\PensionsAdministration\Updates\Member;
 use App\Models\PensionsAdministration\Updates\MemberEmployment;
-use App\Services\PensionsAdministration\HistoricalContributions\HistoricalMembershipStatus;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -114,33 +113,12 @@ class HistoricalContributionPostingService
 
             /*
             |--------------------------------------------------------------------------
-            | Existing Contribution Cache
+            | Caches
             |--------------------------------------------------------------------------
-            |
-            | Prevents one SQL query for every historical month.
-            |
-            | Key:
-            |
-            | member_id|employer_id
-            |
             */
 
             $existingContributionCache = [];
-
-            /*
-            |--------------------------------------------------------------------------
-            | Contribution Period Cache
-            |--------------------------------------------------------------------------
-            */
-
             $contributionPeriodCache = [];
-
-            /*
-            |--------------------------------------------------------------------------
-            | Employment Cache
-            |--------------------------------------------------------------------------
-            */
-
             $employmentCache = [];
 
             /*
@@ -148,8 +126,8 @@ class HistoricalContributionPostingService
             | Member Status Cache
             |--------------------------------------------------------------------------
             |
-            | A source member can have hundreds of monthly transaction rows.  Update
-            | the live member status only once per member instead of once per month.
+            | Exit details are included in the cache key so a later source row
+            | containing an exit date/reason is not skipped.
             |
             */
 
@@ -239,7 +217,7 @@ class HistoricalContributionPostingService
 
                             /*
                             |--------------------------------------------------------------------------
-                            | Preserve / Correct Live Membership Status
+                            | Preserve Historical Member Status / Exit Details
                             |--------------------------------------------------------------------------
                             */
 
@@ -268,9 +246,6 @@ class HistoricalContributionPostingService
                             |--------------------------------------------------------------------------
                             | Break In Service
                             |--------------------------------------------------------------------------
-                            |
-                            | Breaks are not inserted into member_contributions.
-                            |
                             */
 
                             if (
@@ -321,12 +296,6 @@ class HistoricalContributionPostingService
                             |--------------------------------------------------------------------------
                             | Existing Contribution
                             |--------------------------------------------------------------------------
-                            |
-                            | This lookup is cached by member/employer.
-                            |
-                            | JAN 2009 TAKE_ON + JAN 2009 EXPECTED are allowed because
-                            | transaction_type is part of the duplicate key.
-                            |
                             */
 
                             $existingContributionId =
@@ -571,9 +540,6 @@ class HistoricalContributionPostingService
                     |--------------------------------------------------------------------------
                     | Strong Identifier Recheck
                     |--------------------------------------------------------------------------
-                    |
-                    | Staff Number is NOT used as a universal unique identifier here.
-                    |
                     */
 
                     $existingMemberId =
@@ -582,12 +548,6 @@ class HistoricalContributionPostingService
                         );
 
                     if ($existingMemberId) {
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Correct Existing Member Status From Historical Source
-                        |--------------------------------------------------------------------------
-                        */
-
                         $memberStatusCache = [];
 
                         $this->syncMemberStatusFromHistorical(
@@ -803,6 +763,25 @@ class HistoricalContributionPostingService
                                 'membership_status' =>
                                     $status,
 
+                                /*
+                                |--------------------------------------------------------------------------
+                                | Historical Exit Details
+                                |--------------------------------------------------------------------------
+                                |
+                                | Optional.
+                                |
+                                | Never infer exit date from contribution activity.
+                                |
+                                */
+
+                                'exit_date' =>
+                                    $row->exit_date,
+
+                                'exit_reason' =>
+                                    $this->clean(
+                                        $row->exit_reason
+                                    ),
+
                                 'is_active' =>
                                     HistoricalMembershipStatus::isActive(
                                         $status
@@ -861,12 +840,6 @@ class HistoricalContributionPostingService
     |--------------------------------------------------------------------------
     | Existing Member Recheck
     |--------------------------------------------------------------------------
-    |
-    | Strong identifiers only.
-    |
-    | Staff Number alone is NOT enough to match an exited historical member
-    | because Staff Numbers can be reused.
-    |
     */
 
     private function findExistingMemberBeforeCreate(
@@ -965,15 +938,6 @@ class HistoricalContributionPostingService
         |--------------------------------------------------------------------------
         | Staff Number
         |--------------------------------------------------------------------------
-        |
-        | Only use Staff Number as a posting recheck when:
-        |
-        | - source historical person is ACTIVE; and
-        | - exactly one active/current holder exists.
-        |
-        | Never use an exited Staff Number holder to automatically identify
-        | another historical contributor.
-        |
         */
 
         if (
@@ -1002,17 +966,8 @@ class HistoricalContributionPostingService
                         trim($row->staff_number)
                     )
                     ->where(
-                        function ($query): void {
-                            $query
-                                ->where(
-                                    'member_employments.is_current',
-                                    true
-                                )
-                                ->orWhere(
-                                    'members.is_active',
-                                    true
-                                );
-                        }
+                        'members.is_active',
+                        true
                     )
                     ->distinct()
                     ->limit(2)
@@ -1032,11 +987,6 @@ class HistoricalContributionPostingService
     |--------------------------------------------------------------------------
     | Synchronise Member Status From Historical Source
     |--------------------------------------------------------------------------
-    |
-    | This handles BOTH newly-created members and members that already existed
-    | in PENERP.  Exited, Suspended, Deferred and Waiting Approval are preserved
-    | instead of being collapsed to inactive.
-    |
     */
 
     private function syncMemberStatusFromHistorical(
@@ -1050,10 +1000,34 @@ class HistoricalContributionPostingService
                 $row->membership_status
             );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Cache Key
+        |--------------------------------------------------------------------------
+        |
+        | Exit information is included because a later source row can contain
+        | exit information that an earlier monthly row did not contain.
+        |
+        */
+
+        $sourceExitDate =
+            $row->exit_date
+                ? $row->exit_date->format('Y-m-d')
+                : '';
+
+        $sourceExitReason =
+            trim(
+                (string) $row->exit_reason
+            );
+
         $cacheKey =
             $memberId
             . '|'
-            . $status;
+            . $status
+            . '|'
+            . $sourceExitDate
+            . '|'
+            . $sourceExitReason;
 
         if (isset($cache[$cacheKey])) {
             return;
@@ -1080,6 +1054,12 @@ class HistoricalContributionPostingService
 
         $updates = [];
 
+        /*
+        |--------------------------------------------------------------------------
+        | Membership Status
+        |--------------------------------------------------------------------------
+        */
+
         if (
             strtolower(
                 trim(
@@ -1093,6 +1073,70 @@ class HistoricalContributionPostingService
                 $status;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Exit Date
+        |--------------------------------------------------------------------------
+        |
+        | Exit date is optional.
+        |
+        | Only use an actual supplied source exit date.
+        | Never derive it from the final contribution month.
+        |
+        */
+
+        if (
+            $status === 'exited'
+            &&
+            $row->exit_date
+        ) {
+            $currentExitDate =
+                $member->exit_date
+                    ? $member->exit_date->format('Y-m-d')
+                    : null;
+
+            if (
+                $currentExitDate
+                !==
+                $sourceExitDate
+            ) {
+                $updates['exit_date'] =
+                    $row->exit_date;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Exit Reason
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $status === 'exited'
+            &&
+            filled($row->exit_reason)
+        ) {
+            $currentExitReason =
+                trim(
+                    (string) $member->exit_reason
+                );
+
+            if (
+                $currentExitReason
+                !==
+                $sourceExitReason
+            ) {
+                $updates['exit_reason'] =
+                    $sourceExitReason;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active Flag
+        |--------------------------------------------------------------------------
+        */
+
         if (
             (bool) $member->is_active
             !==
@@ -1102,6 +1146,12 @@ class HistoricalContributionPostingService
                 $isActive;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Save
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($updates)) {
             $updates['updated_by'] =
                 $userId;
@@ -1110,8 +1160,13 @@ class HistoricalContributionPostingService
                 now();
 
             Member::query()
-                ->where('id', $memberId)
-                ->update($updates);
+                ->where(
+                    'id',
+                    $memberId
+                )
+                ->update(
+                    $updates
+                );
         }
 
         $cache[$cacheKey] =
@@ -1122,13 +1177,6 @@ class HistoricalContributionPostingService
     |--------------------------------------------------------------------------
     | Ensure Employment
     |--------------------------------------------------------------------------
-    |
-    | Historical Staff Number rules:
-    |
-    | Exited + Exited = allowed
-    | Exited + Active = allowed
-    | Active + Active = rejected
-    |
     */
 
     private function ensureEmployment(
@@ -1143,11 +1191,7 @@ class HistoricalContributionPostingService
             . '|'
             . $employerId;
 
-        if (
-            isset(
-                $cache[$cacheKey]
-            )
-        ) {
+        if (isset($cache[$cacheKey])) {
             return (int) $cache[$cacheKey];
         }
 
@@ -1165,15 +1209,9 @@ class HistoricalContributionPostingService
         |--------------------------------------------------------------------------
         | Employment Relationship
         |--------------------------------------------------------------------------
-        |
-        | is_current means this is the member's current/primary employer link in
-        | PENERP.  Do not clear it merely because membership_status is Exited,
-        | Suspended, Deferred or Inactive; otherwise those historical members will
-        | incorrectly appear in the Missing Employer report.
-        |
         */
 
-        $isCurrentEmployment = true;
+        $isCurrentEmployment = $isActiveStatus;
 
         /*
         |--------------------------------------------------------------------------
@@ -1208,17 +1246,8 @@ class HistoricalContributionPostingService
                         $memberId
                     )
                     ->where(
-                        function ($query): void {
-                            $query
-                                ->where(
-                                    'member_employments.is_current',
-                                    true
-                                )
-                                ->orWhere(
-                                    'members.is_active',
-                                    true
-                                );
-                        }
+                        'members.is_active',
+                        true
                     )
                     ->value(
                         'member_employments.member_id'
@@ -1237,7 +1266,7 @@ class HistoricalContributionPostingService
 
         /*
         |--------------------------------------------------------------------------
-        | Existing Employment For This Exact Member
+        | Existing Employment
         |--------------------------------------------------------------------------
         */
 
@@ -1347,6 +1376,12 @@ class HistoricalContributionPostingService
                         ?:
                         $row->date_joined_fund,
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Do Not Infer Employment End From Membership Exit
+                    |--------------------------------------------------------------------------
+                    */
+
                     'effective_to' =>
                         null,
 
@@ -1392,19 +1427,9 @@ class HistoricalContributionPostingService
             . '|'
             . $month;
 
-        if (
-            isset(
-                $cache[$cacheKey]
-            )
-        ) {
+        if (isset($cache[$cacheKey])) {
             return (int) $cache[$cacheKey];
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Existing Period
-        |--------------------------------------------------------------------------
-        */
 
         $periodId =
             DB::table(
@@ -1430,12 +1455,6 @@ class HistoricalContributionPostingService
 
             return (int) $periodId;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create Period
-        |--------------------------------------------------------------------------
-        */
 
         $periodId =
             (int) DB::table(
@@ -1498,9 +1517,6 @@ class HistoricalContributionPostingService
     |--------------------------------------------------------------------------
     | Find Existing Contribution
     |--------------------------------------------------------------------------
-    |
-    | One database read for each member + employer combination.
-    |
     */
 
     private function findExistingContribution(
@@ -1516,13 +1532,8 @@ class HistoricalContributionPostingService
             . '|'
             . $employerId;
 
-        if (
-            !isset(
-                $cache[$memberEmployerKey]
-            )
-        ) {
-            $existing =
-                [];
+        if (!isset($cache[$memberEmployerKey])) {
+            $existing = [];
 
             $rows =
                 DB::table(
@@ -1592,17 +1603,6 @@ class HistoricalContributionPostingService
         HistoricalContributionImportBatch $batch,
         int $userId
     ): array {
-        /*
-        |--------------------------------------------------------------------------
-        | Historical Financial Values
-        |--------------------------------------------------------------------------
-        |
-        | Blank stays NULL.
-        |
-        | Explicit zero stays 0.0000.
-        |
-        */
-
         $basicPay =
             $this->nullableDecimal4(
                 $row->basic_pay
@@ -1641,23 +1641,11 @@ class HistoricalContributionPostingService
             'contribution_period_id' =>
                 $contributionPeriodId,
 
-            /*
-            |--------------------------------------------------------------------------
-            | Normal Monthly Import Trace
-            |--------------------------------------------------------------------------
-            */
-
             'import_batch_id' =>
                 null,
 
             'import_row_id' =>
                 null,
-
-            /*
-            |--------------------------------------------------------------------------
-            | Historical Import Trace
-            |--------------------------------------------------------------------------
-            */
 
             'historical_import_batch_id' =>
                 $batch->id,
@@ -1671,12 +1659,6 @@ class HistoricalContributionPostingService
             'source_system' =>
                 'historical_migration',
 
-            /*
-            |--------------------------------------------------------------------------
-            | Member References
-            |--------------------------------------------------------------------------
-            */
-
             'penerp_member_number' =>
                 $row->penerp_member_number,
 
@@ -1688,12 +1670,6 @@ class HistoricalContributionPostingService
 
             'staff_number' =>
                 $row->staff_number,
-
-            /*
-            |--------------------------------------------------------------------------
-            | Period
-            |--------------------------------------------------------------------------
-            */
 
             'period_date' =>
                 $row->period_date,
@@ -1742,9 +1718,6 @@ class HistoricalContributionPostingService
             |--------------------------------------------------------------------------
             | ZWG Legacy Fields
             |--------------------------------------------------------------------------
-            |
-            | Historical data uses the generic financial columns below.
-            |
             */
 
             'zwg_basic_pay' => 0,
@@ -1795,35 +1768,28 @@ class HistoricalContributionPostingService
             'employer_avc' =>
                 $employerAvc,
 
-            /*
-            |--------------------------------------------------------------------------
-            | Not In Historical Template
-            |--------------------------------------------------------------------------
-            */
+            'employee_arrear' =>
+                null,
 
-            'employee_arrear' => null,
-            'employer_arrear' => null,
-            'employee_transfer_in' => null,
-            'employer_transfer_in' => null,
-            'employee_late_interest' => null,
-            'employer_late_interest' => null,
+            'employer_arrear' =>
+                null,
 
-            /*
-            |--------------------------------------------------------------------------
-            | Comments
-            |--------------------------------------------------------------------------
-            */
+            'employee_transfer_in' =>
+                null,
+
+            'employer_transfer_in' =>
+                null,
+
+            'employee_late_interest' =>
+                null,
+
+            'employer_late_interest' =>
+                null,
 
             'comments' =>
                 $row->comments
                 ??
                 $row->source_reference,
-
-            /*
-            |--------------------------------------------------------------------------
-            | Audit
-            |--------------------------------------------------------------------------
-            */
 
             'posted_by' =>
                 $userId,
@@ -1859,19 +1825,10 @@ class HistoricalContributionPostingService
             return 0;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Source Maps
-        |--------------------------------------------------------------------------
-        */
-
         $recordsBySourceKey = [];
         $stagingRowBySourceKey = [];
 
-        foreach (
-            $contributionBuffer
-            as $index => $record
-        ) {
+        foreach ($contributionBuffer as $index => $record) {
             $sourceKey =
                 $record['historical_import_batch_id']
                 . '|'
@@ -1883,12 +1840,6 @@ class HistoricalContributionPostingService
             $stagingRowBySourceKey[$sourceKey] =
                 (int) $stagingRowIds[$index];
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Current Batch
-        |--------------------------------------------------------------------------
-        */
 
         $batchIds =
             array_values(
@@ -1916,12 +1867,6 @@ class HistoricalContributionPostingService
                 )
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Check Previously Inserted Historical Sources In One Query
-        |--------------------------------------------------------------------------
-        */
-
         $existingRows =
             DB::table(
                 'member_contributions'
@@ -1941,20 +1886,7 @@ class HistoricalContributionPostingService
                 ])
                 ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Rows Successfully Linked During This Flush
-        |--------------------------------------------------------------------------
-        */
-
-        $linkedCount =
-            0;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Reconnect Retry Rows
-        |--------------------------------------------------------------------------
-        */
+        $linkedCount = 0;
 
         foreach ($existingRows as $existing) {
             $sourceKey =
@@ -1996,12 +1928,6 @@ class HistoricalContributionPostingService
             $linkedCount++;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Nothing Left To Insert
-        |--------------------------------------------------------------------------
-        */
-
         if (empty($recordsBySourceKey)) {
             $contributionBuffer = [];
             $stagingRowIds = [];
@@ -2009,27 +1935,10 @@ class HistoricalContributionPostingService
             return $linkedCount;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | New Rows
-        |--------------------------------------------------------------------------
-        */
-
         $newRecords =
             array_values(
                 $recordsBySourceKey
             );
-
-        /*
-        |--------------------------------------------------------------------------
-        | SQL Server Safe Bulk Inserts
-        |--------------------------------------------------------------------------
-        |
-        | member_contributions is very wide.
-        |
-        | 20 records remains below SQL Server's parameter ceiling.
-        |
-        */
 
         foreach (
             array_chunk(
@@ -2045,12 +1954,6 @@ class HistoricalContributionPostingService
                     $chunk
                 );
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Read Generated IDs Back
-        |--------------------------------------------------------------------------
-        */
 
         $newHistoricalRowIds =
             array_values(
@@ -2084,12 +1987,6 @@ class HistoricalContributionPostingService
                 ])
                 ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Prepare Bulk Staging Updates
-        |--------------------------------------------------------------------------
-        */
-
         $stagingUpdates = [];
 
         foreach ($insertedRows as $inserted) {
@@ -2116,12 +2013,6 @@ class HistoricalContributionPostingService
             ];
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Bulk CASE Update
-        |--------------------------------------------------------------------------
-        */
-
         foreach (
             array_chunk(
                 $stagingUpdates,
@@ -2136,11 +2027,8 @@ class HistoricalContributionPostingService
             $caseSql =
                 'CASE id ';
 
-            $bindings =
-                [];
-
-            $ids =
-                [];
+            $bindings = [];
+            $ids = [];
 
             foreach ($updateChunk as $update) {
                 $caseSql .=
@@ -2192,12 +2080,6 @@ class HistoricalContributionPostingService
             count(
                 $stagingUpdates
             );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Clear Buffers
-        |--------------------------------------------------------------------------
-        */
 
         $contributionBuffer = [];
         $stagingRowIds = [];
@@ -2322,8 +2204,7 @@ class HistoricalContributionPostingService
                 ->limit(500)
                 ->pluck('member_number');
 
-        $highest =
-            0;
+        $highest = 0;
 
         foreach ($recentNumbers as $memberNumber) {
             if (

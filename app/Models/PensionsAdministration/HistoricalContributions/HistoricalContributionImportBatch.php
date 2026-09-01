@@ -2,7 +2,7 @@
 
 namespace App\Models\PensionsAdministration\HistoricalContributions;
 
-use App\Models\User;
+use App\Models\UserManagement\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;

@@ -62,16 +62,11 @@ return [
     */
 
     'providers' => [
-        'users' => [
-            'driver' => 'eloquent',
-             'model' => App\Models\UserManagement\User::class,
-        ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+    'users' => [
+        'driver' => 'eloquent',
+        'model' => App\Models\UserManagement\User::class,
     ],
+],
 
     /*
     |--------------------------------------------------------------------------

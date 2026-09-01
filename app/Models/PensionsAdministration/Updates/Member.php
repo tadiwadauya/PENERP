@@ -51,6 +51,8 @@ class Member extends Model
         'postal_country',
 
         'date_joined_fund',
+        'exit_date',
+        'exit_reason',
 
         'membership_status',
         'is_active',
@@ -61,6 +63,7 @@ class Member extends Model
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'exit_date' => 'date',
         'date_joined_fund' => 'date',
         'is_active' => 'boolean',
     ];

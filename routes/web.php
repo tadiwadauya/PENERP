@@ -52,6 +52,8 @@ use App\Http\Controllers\PensionsAdministration\HistoricalContributions\Historic
 use App\Http\Controllers\PensionsAdministration\HistoricalContributions\HistoricalContributionReviewController;
 use App\Http\Controllers\PensionsAdministration\HistoricalContributions\HistoricalContributionPostingController;
 
+use App\Http\Controllers\PensionsAdministration\Reports\ActuarialDataExtractController;
+
 
 
 
@@ -102,6 +104,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/password/change', [PasswordController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [PasswordController::class, 'update'])->name('password.change.update');
+
+
 
 
     /*
@@ -159,6 +163,45 @@ Route::middleware('auth')->group(function (): void {
 
                 Route::get('/', [PensionsDashboardController::class, 'index'])
                     ->name('dashboard');
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Shared Pensions Reports - Actuarial Data
+                |--------------------------------------------------------------------------
+                */
+
+                Route::prefix('reports/actuarial-data')
+                    ->name('reports.actuarial-data.')
+                    ->middleware('permission:pensions.reports.actuarial-data.view')
+                    ->group(function (): void {
+
+                        Route::get('/', [ActuarialDataExtractController::class, 'index'])
+                            ->name('index');
+
+                        Route::post('/', [ActuarialDataExtractController::class, 'store'])
+                            ->middleware('permission:pensions.reports.actuarial-data.generate')
+                            ->name('store');
+
+                        Route::get('/{batch}/status', [ActuarialDataExtractController::class, 'status'])
+                            ->whereNumber('batch')
+                            ->name('status');
+
+                        Route::get('/{batch}/download', [ActuarialDataExtractController::class, 'download'])
+                            ->whereNumber('batch')
+                            ->name('download');
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Generic Batch Route - Keep Last
+                        |--------------------------------------------------------------------------
+                        */
+
+                        Route::get('/{batch}', [ActuarialDataExtractController::class, 'show'])
+                            ->whereNumber('batch')
+                            ->name('show');
+
+                    });
 
 
                 /*

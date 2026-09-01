@@ -956,6 +956,8 @@ class HistoricalContributionExcelReader
             'date_joined_fund',
             'date_joined_employer',
             'membership_status',
+            'exit_date',
+            'exit_reason',
 
             'occupation',
 
@@ -1756,22 +1758,42 @@ class HistoricalContributionExcelReader
                 ),
 
             'membership_status_raw' =>
-    $this->readStringByMappedColumn(
+    $this->textCell(
         $sheet,
         $rowNumber,
-        $columnMap,
-        'membership_status'
+        $headers['membership_status'] ?? null
     ),
 
 'membership_status' =>
     HistoricalMembershipStatus::normalize(
-        $this->readStringByMappedColumn(
+        $this->textCell(
             $sheet,
             $rowNumber,
-            $columnMap,
-            'membership_status'
+            $headers['membership_status'] ?? null
         )
     ),
+
+            'exit_date' =>
+            $this->dateCell(
+                $sheet,
+                $rowNumber,
+                $headers[
+                    'exit_date'
+                ]
+                ??
+                null
+            ),
+
+        'exit_reason' =>
+            $this->textCell(
+                $sheet,
+                $rowNumber,
+                $headers[
+                    'exit_reason'
+                ]
+                ??
+                null
+            ),
             'occupation' =>
                 $this->textCell(
                     $sheet,

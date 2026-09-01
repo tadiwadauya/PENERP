@@ -17,9 +17,7 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        app(
-            PermissionRegistrar::class
-        )->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
 
         /*
@@ -28,176 +26,215 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $systemAdministrator =
-            Role::updateOrCreate(
-                [
-                    'name' =>
-                        'system-administrator',
-
-                    'guard_name' =>
-                        'web',
-                ],
-                [
-                    'display_name' =>
-                        'System Administrator',
-
-                    'description' =>
-                        'ICT system administration role.',
-
-                    'is_system_role' =>
-                        true,
-
-                    'is_active' =>
-                        true,
-                ]
-            );
+        $systemAdministrator = Role::updateOrCreate(
+            [
+                'name' => 'system-administrator',
+                'guard_name' => 'web',
+            ],
+            [
+                'display_name' => 'System Administrator',
+                'description' => 'ICT system administration role.',
+                'is_system_role' => true,
+                'is_active' => true,
+            ]
+        );
 
 
         /*
         |--------------------------------------------------------------------------
         | System Administrator Permissions
         |--------------------------------------------------------------------------
-        |
-        | All active contribution permissions are included automatically.
-        |--------------------------------------------------------------------------
         */
 
-        $adminPermissions =
-            Permission::query()
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->where(
-                    function (
-                        $query
-                    ): void {
-                        $query
-                            ->where(
-                                'name',
-                                'like',
-                                'user-management.%'
-                            )
+        $adminPermissions = Permission::query()
+            ->where('is_active', true)
+            ->where(function ($query): void {
 
-                            ->orWhere(
-                                'name',
-                                'like',
-                                'audit.%'
-                            )
+                /*
+                |--------------------------------------------------------------------------
+                | User Management
+                |--------------------------------------------------------------------------
+                */
 
-                            ->orWhere(
-                                'name',
-                                'dashboard.system-administration.view'
-                            )
+                $query
+                    ->where('name', 'like', 'user-management.%')
 
-                            ->orWhere(
-                                'name',
-                                'dashboard.pensions.view'
-                            )
 
-                            ->orWhere(
-                                'name',
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Audit
+                    |--------------------------------------------------------------------------
+                    */
 
-                                'contributions.monthly-imports.view'
-                            )
+                    ->orWhere('name', 'like', 'audit.%')
 
-                            ->orWhere(
-                                'name',
-                                'contributions.monthly-imports.approve'
-                            )
 
-                            ->orWhere(
-                                'name',
-                                'contributions.monthly-imports.reject'
-                            )
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Dashboards
+                    |--------------------------------------------------------------------------
+                    */
 
-                            ->orWhere(
-                                'name',
-                                'contributions.monthly-imports.post'
-                            )
+                    ->orWhere(
+                        'name',
+                        'dashboard.system-administration.view'
+                    )
 
-                            ->orWhere(
-                                'name',
-                                'contributions.reports.view'
-                            )
+                    ->orWhere(
+                        'name',
+                        'dashboard.pensions.view'
+                    )
 
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Contribution Receipts
-                            |--------------------------------------------------------------------------
-                            */
 
-                            ->orWhere(
-                                'name',
-                                'contributions.receipts.view'
-                            )
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Monthly Contributions
+                    |--------------------------------------------------------------------------
+                    */
 
-                            ->orWhere(
-                                'name',
-                                'contributions.receipts.create'
-                            )
+                    ->orWhere(
+                        'name',
+                        'contributions.monthly-imports.view'
+                    )
 
-                            ->orWhere(
-                                'name',
-                                'contributions.receipts.post'
-                            )
+                    ->orWhere(
+                        'name',
+                        'contributions.monthly-imports.create'
+                    )
 
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Contribution Exchange Rates
-                            |--------------------------------------------------------------------------
-                            */
+                    ->orWhere(
+                        'name',
+                        'contributions.monthly-imports.update'
+                    )
 
-                            ->orWhere(
-                                'name',
-                                'contributions.exchange-rates.view'
-                            )
+                    ->orWhere(
+                        'name',
+                        'contributions.monthly-imports.delete'
+                    )
 
-                            ->orWhere(
-                                'name',
-                                'contributions.exchange-rates.manage'
-                            )
+                    ->orWhere(
+                        'name',
+                        'contributions.monthly-imports.approve'
+                    )
 
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Historical Migration - System Administrator Only
-                            |--------------------------------------------------------------------------
-                            */
+                    ->orWhere(
+                        'name',
+                        'contributions.monthly-imports.reject'
+                    )
 
-                            ->orWhere(
-                                'name',
-                                'contributions.historical-imports.manage'
-                            )
+                    ->orWhere(
+                        'name',
+                        'contributions.monthly-imports.post'
+                    )
 
-                            /*
-                            |--------------------------------------------------------------------------
-                            | Shared Pensions Reports
-                            |--------------------------------------------------------------------------
-                            */
 
-                            ->orWhere(
-                                'name',
-                                'pensions.reports.membership.view'
-                            )
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Contribution Reports
+                    |--------------------------------------------------------------------------
+                    */
 
-                            ->orWhere(
-                                'name',
-                                'pensions.reports.membership.export'
-                            )
+                    ->orWhere(
+                        'name',
+                        'contributions.reports.view'
+                    )
 
-                            ->orWhere(
-                                'name',
-                                'pensions.reports.employer-membership.view'
-                            )
 
-                            ->orWhere(
-                                'name',
-                                'pensions.reports.employer-membership.export'
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Contribution Receipts
+                    |--------------------------------------------------------------------------
+                    */
 
-                            );
-                    }
-                )
-                ->get();
+                    ->orWhere(
+                        'name',
+                        'contributions.receipts.view'
+                    )
+
+                    ->orWhere(
+                        'name',
+                        'contributions.receipts.create'
+                    )
+
+                    ->orWhere(
+                        'name',
+                        'contributions.receipts.post'
+                    )
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Contribution Exchange Rates
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhere(
+                        'name',
+                        'contributions.exchange-rates.view'
+                    )
+
+                    ->orWhere(
+                        'name',
+                        'contributions.exchange-rates.manage'
+                    )
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Historical Contributions
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhere(
+                        'name',
+                        'contributions.historical-imports.manage'
+                    )
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Shared Membership Reports
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhere(
+                        'name',
+                        'pensions.reports.membership.view'
+                    )
+
+                    ->orWhere(
+                        'name',
+                        'pensions.reports.membership.export'
+                    )
+
+                    ->orWhere(
+                        'name',
+                        'pensions.reports.employer-membership.view'
+                    )
+
+                    ->orWhere(
+                        'name',
+                        'pensions.reports.employer-membership.export'
+                    )
+
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Actuarial Valuation / Actuarial Data Extract
+                    |--------------------------------------------------------------------------
+                    */
+
+                    ->orWhere(
+                        'name',
+                        'pensions.reports.actuarial-data.view'
+                    )
+
+                    ->orWhere(
+                        'name',
+                        'pensions.reports.actuarial-data.generate'
+                    );
+            })
+            ->get();
 
 
         $systemAdministrator->syncPermissions(
@@ -211,33 +248,24 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $updatesOfficer =
-            Role::updateOrCreate(
-                [
-                    'name' =>
-                        'updates-officer',
-
-                    'guard_name' =>
-                        'web',
-                ],
-                [
-                    'display_name' =>
-                        'Updates Officer',
-
-                    'description' =>
-                        'Processes member, employer and membership updates within the Pensions Administration module.',
-
-                    'is_system_role' =>
-                        false,
-
-                    'is_active' =>
-                        true,
-                ]
-            );
+        $updatesOfficer = Role::updateOrCreate(
+            [
+                'name' => 'updates-officer',
+                'guard_name' => 'web',
+            ],
+            [
+                'display_name' => 'Updates Officer',
+                'description' => 'Processes member, employer and membership updates within the Pensions Administration module.',
+                'is_system_role' => false,
+                'is_active' => true,
+            ]
+        );
 
 
         $updatesOfficerPermissions = [
+
             'dashboard.pensions.view',
+
             'updates.dashboard.view',
 
             'updates.employer-groups.view',
@@ -273,6 +301,7 @@ class RolePermissionSeeder extends Seeder
 
             'pensions.reports.membership.view',
             'pensions.reports.membership.export',
+
             'pensions.reports.employer-membership.view',
             'pensions.reports.employer-membership.export',
         ];
@@ -294,33 +323,24 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $updatesSupervisor =
-            Role::updateOrCreate(
-                [
-                    'name' =>
-                        'updates-supervisor',
-
-                    'guard_name' =>
-                        'web',
-                ],
-                [
-                    'display_name' =>
-                        'Updates Supervisor',
-
-                    'description' =>
-                        'Supervises member, employer and membership updates.',
-
-                    'is_system_role' =>
-                        false,
-
-                    'is_active' =>
-                        true,
-                ]
-            );
+        $updatesSupervisor = Role::updateOrCreate(
+            [
+                'name' => 'updates-supervisor',
+                'guard_name' => 'web',
+            ],
+            [
+                'display_name' => 'Updates Supervisor',
+                'description' => 'Supervises member, employer and membership updates.',
+                'is_system_role' => false,
+                'is_active' => true,
+            ]
+        );
 
 
         $updatesSupervisorPermissions = [
+
             'dashboard.pensions.view',
+
             'updates.dashboard.view',
 
             'updates.employer-groups.view',
@@ -365,6 +385,7 @@ class RolePermissionSeeder extends Seeder
 
             'pensions.reports.membership.view',
             'pensions.reports.membership.export',
+
             'pensions.reports.employer-membership.view',
             'pensions.reports.employer-membership.export',
 
@@ -393,40 +414,25 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS OFFICER
         |--------------------------------------------------------------------------
-        |
-        | Can upload and review expected contributions and actual receipts.
-        | Cannot post receipts.
-        |--------------------------------------------------------------------------
         */
 
-        $contributionsOfficer =
-            Role::updateOrCreate(
-                [
-                    'name' =>
-                        'contributions-officer',
-
-                    'guard_name' =>
-                        'web',
-                ],
-                [
-                    'display_name' =>
-                        'Contributions Officer',
-
-                    'description' =>
-                        'Uploads, validates and reviews monthly expected contribution schedules and employer receipt files.',
-
-                    'is_system_role' =>
-                        false,
-
-                    'is_active' =>
-                        true,
-                ]
-            );
+        $contributionsOfficer = Role::updateOrCreate(
+            [
+                'name' => 'contributions-officer',
+                'guard_name' => 'web',
+            ],
+            [
+                'display_name' => 'Contributions Officer',
+                'description' => 'Uploads, validates and reviews monthly expected contribution schedules and employer receipt files.',
+                'is_system_role' => false,
+                'is_active' => true,
+            ]
+        );
 
 
         $contributionsOfficerPermissions = [
-            'dashboard.pensions.view',
 
+            'dashboard.pensions.view',
 
             /*
             |--------------------------------------------------------------------------
@@ -439,7 +445,6 @@ class RolePermissionSeeder extends Seeder
             'contributions.monthly-imports.update',
             'contributions.monthly-imports.delete',
 
-
             /*
             |--------------------------------------------------------------------------
             | Employer Receipts
@@ -449,7 +454,6 @@ class RolePermissionSeeder extends Seeder
             'contributions.receipts.view',
             'contributions.receipts.create',
 
-
             /*
             |--------------------------------------------------------------------------
             | Exchange Rates
@@ -458,7 +462,6 @@ class RolePermissionSeeder extends Seeder
 
             'contributions.exchange-rates.view',
 
-
             /*
             |--------------------------------------------------------------------------
             | Reports
@@ -466,7 +469,6 @@ class RolePermissionSeeder extends Seeder
             */
 
             'contributions.reports.view',
-
 
             /*
             |--------------------------------------------------------------------------
@@ -494,39 +496,25 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS SUPERVISOR
         |--------------------------------------------------------------------------
-        |
-        | Full day-to-day receipt access including posting and exchange rates.
-        |--------------------------------------------------------------------------
         */
 
-        $contributionsSupervisor =
-            Role::updateOrCreate(
-                [
-                    'name' =>
-                        'contributions-supervisor',
-
-                    'guard_name' =>
-                        'web',
-                ],
-                [
-                    'display_name' =>
-                        'Contributions Supervisor',
-
-                    'description' =>
-                        'Supervises monthly contribution processing, employer receipts and exchange rates.',
-
-                    'is_system_role' =>
-                        false,
-
-                    'is_active' =>
-                        true,
-                ]
-            );
+        $contributionsSupervisor = Role::updateOrCreate(
+            [
+                'name' => 'contributions-supervisor',
+                'guard_name' => 'web',
+            ],
+            [
+                'display_name' => 'Contributions Supervisor',
+                'description' => 'Supervises monthly contribution processing, employer receipts and exchange rates.',
+                'is_system_role' => false,
+                'is_active' => true,
+            ]
+        );
 
 
         $contributionsSupervisorPermissions = [
-            'dashboard.pensions.view',
 
+            'dashboard.pensions.view',
 
             /*
             |--------------------------------------------------------------------------
@@ -539,7 +527,6 @@ class RolePermissionSeeder extends Seeder
             'contributions.monthly-imports.update',
             'contributions.monthly-imports.delete',
 
-
             /*
             |--------------------------------------------------------------------------
             | Employer Receipts
@@ -550,7 +537,6 @@ class RolePermissionSeeder extends Seeder
             'contributions.receipts.create',
             'contributions.receipts.post',
 
-
             /*
             |--------------------------------------------------------------------------
             | Exchange Rates
@@ -560,7 +546,6 @@ class RolePermissionSeeder extends Seeder
             'contributions.exchange-rates.view',
             'contributions.exchange-rates.manage',
 
-
             /*
             |--------------------------------------------------------------------------
             | Reports
@@ -568,7 +553,6 @@ class RolePermissionSeeder extends Seeder
             */
 
             'contributions.reports.view',
-
 
             /*
             |--------------------------------------------------------------------------
@@ -596,41 +580,24 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS APPROVER
         |--------------------------------------------------------------------------
-
-        |
-        | This role remains specifically for EXPECTED monthly contributions.
-        |
-        | Receipts do not require approval.
-        |--------------------------------------------------------------------------
-
         */
 
-        $contributionsApprover =
-            Role::updateOrCreate(
-                [
-                    'name' =>
-                        'contributions-approver',
-
-                    'guard_name' =>
-                        'web',
-                ],
-                [
-                    'display_name' =>
-                        'Contributions Approver',
-
-                    'description' =>
-                        'Authorised to approve or reject monthly expected contribution batches.',
-
-                    'is_system_role' =>
-                        false,
-
-                    'is_active' =>
-                        true,
-                ]
-            );
+        $contributionsApprover = Role::updateOrCreate(
+            [
+                'name' => 'contributions-approver',
+                'guard_name' => 'web',
+            ],
+            [
+                'display_name' => 'Contributions Approver',
+                'description' => 'Authorised to approve or reject monthly expected contribution batches.',
+                'is_system_role' => false,
+                'is_active' => true,
+            ]
+        );
 
 
         $contributionsApproverPermissions = [
+
             'dashboard.pensions.view',
 
             'contributions.monthly-imports.view',
@@ -658,39 +625,25 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         | CONTRIBUTIONS POSTER
         |--------------------------------------------------------------------------
-        |
-        | Can permanently post expected contributions and actual receipts.
-        |--------------------------------------------------------------------------
         */
 
-        $contributionsPoster =
-            Role::updateOrCreate(
-                [
-                    'name' =>
-                        'contributions-poster',
-
-                    'guard_name' =>
-                        'web',
-                ],
-                [
-                    'display_name' =>
-                        'Contributions Poster',
-
-                    'description' =>
-                        'Authorised to permanently post expected contributions and validated employer contribution receipts.',
-
-                    'is_system_role' =>
-                        false,
-
-                    'is_active' =>
-                        true,
-                ]
-            );
+        $contributionsPoster = Role::updateOrCreate(
+            [
+                'name' => 'contributions-poster',
+                'guard_name' => 'web',
+            ],
+            [
+                'display_name' => 'Contributions Poster',
+                'description' => 'Authorised to permanently post expected contributions and validated employer contribution receipts.',
+                'is_system_role' => false,
+                'is_active' => true,
+            ]
+        );
 
 
         $contributionsPosterPermissions = [
-            'dashboard.pensions.view',
 
+            'dashboard.pensions.view',
 
             /*
             |--------------------------------------------------------------------------
@@ -701,7 +654,6 @@ class RolePermissionSeeder extends Seeder
             'contributions.monthly-imports.view',
             'contributions.monthly-imports.post',
 
-
             /*
             |--------------------------------------------------------------------------
             | Employer Receipts
@@ -711,7 +663,6 @@ class RolePermissionSeeder extends Seeder
             'contributions.receipts.view',
             'contributions.receipts.post',
 
-
             /*
             |--------------------------------------------------------------------------
             | Exchange Rates
@@ -720,7 +671,6 @@ class RolePermissionSeeder extends Seeder
 
             'contributions.exchange-rates.view',
 
-
             /*
             |--------------------------------------------------------------------------
             | Reports
@@ -728,7 +678,6 @@ class RolePermissionSeeder extends Seeder
             */
 
             'contributions.reports.view',
-
 
             /*
             |--------------------------------------------------------------------------
@@ -753,15 +702,11 @@ class RolePermissionSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
-        | FUTURE BENEFITS / PAYROLL ROLES
+        | Future Benefits / Payroll Roles
         |--------------------------------------------------------------------------
         |
-        | When Benefits and Payroll roles are added, grant:
-        |
-        | pensions.reports.membership.view
-        | pensions.reports.employer-membership.view
-        |
-        | No changes to report controllers/routes will then be necessary.
+        | Shared report permissions can later be assigned to Benefits and
+        | Payroll roles without changing the report routes/controllers.
         |
         */
 
@@ -772,8 +717,6 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        app(
-            PermissionRegistrar::class
-        )->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

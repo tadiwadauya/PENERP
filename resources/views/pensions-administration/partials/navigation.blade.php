@@ -10,8 +10,7 @@
     |--------------------------------------------------------------------------
     */
 
-    $pensionsNavUser =
-        auth()->user();
+    $pensionsNavUser = auth()->user();
 
 
     /*
@@ -24,33 +23,19 @@
         $pensionsNavUser
         &&
         (
-            $pensionsNavUser->can(
-                'updates.dashboard.view'
-            )
+            $pensionsNavUser->can('updates.dashboard.view')
             ||
-            $pensionsNavUser->can(
-                'updates.members.view'
-            )
+            $pensionsNavUser->can('updates.members.view')
             ||
-            $pensionsNavUser->can(
-                'updates.employers.view'
-            )
+            $pensionsNavUser->can('updates.employers.view')
             ||
-            $pensionsNavUser->can(
-                'updates.employer-groups.view'
-            )
+            $pensionsNavUser->can('updates.employer-groups.view')
             ||
-            $pensionsNavUser->can(
-                'updates.membership-imports.view'
-            )
+            $pensionsNavUser->can('updates.membership-imports.view')
             ||
-            $pensionsNavUser->can(
-                'updates.employer-imports.view'
-            )
+            $pensionsNavUser->can('updates.employer-imports.view')
             ||
-            $pensionsNavUser->can(
-                'updates.member-movements.view'
-            )
+            $pensionsNavUser->can('updates.member-movements.view')
         );
 
 
@@ -58,20 +43,65 @@
     |--------------------------------------------------------------------------
     | Historical Contribution Migration
     |--------------------------------------------------------------------------
-    |
-    | System Administrator ONLY.
-    |
     */
 
     $canManageHistoricalContributions =
         $pensionsNavUser
         &&
-        $pensionsNavUser->hasRole(
-            'system-administrator'
-        )
+        $pensionsNavUser->hasRole('system-administrator')
         &&
         $pensionsNavUser->can(
             'contributions.historical-imports.manage'
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Contribution Receipts
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | Defined BEFORE $canSeeContributions because that variable uses it.
+    |
+    */
+
+    $canSeeReceipts =
+        $pensionsNavUser
+        &&
+        (
+            $pensionsNavUser->can(
+                'contributions.receipts.view'
+            )
+            ||
+            $pensionsNavUser->can(
+                'contributions.receipts.create'
+            )
+            ||
+            $pensionsNavUser->can(
+                'contributions.receipts.post'
+            )
+            ||
+            $pensionsNavUser->can(
+                'contributions.exchange-rates.view'
+            )
+            ||
+            $pensionsNavUser->can(
+                'contributions.exchange-rates.manage'
+            )
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Contribution Reports
+    |--------------------------------------------------------------------------
+    */
+
+    $canSeeContributionReports =
+        $pensionsNavUser
+        &&
+        $pensionsNavUser->can(
+            'contributions.reports.view'
         );
 
 
@@ -113,9 +143,9 @@
                 'contributions.monthly-imports.post'
             )
             ||
-            $pensionsNavUser->can(
-                'contributions.reports.view'
-            )
+            $canSeeContributionReports
+            ||
+            $canSeeReceipts
             ||
             $canManageHistoricalContributions
         );
@@ -191,11 +221,6 @@
     |--------------------------------------------------------------------------
     | Shared Membership Reports
     |--------------------------------------------------------------------------
-    |
-    | These reports are not Updates-only.
-    |
-    | Benefits and Payroll users can later receive the same permissions.
-    |
     */
 
     $canSeeMembershipReports =
@@ -222,15 +247,15 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Contribution Reports
+    | Actuarial Valuation / Actuarial Data Extract
     |--------------------------------------------------------------------------
     */
 
-    $canSeeContributionReports =
+    $canSeeActuarialReports =
         $pensionsNavUser
         &&
         $pensionsNavUser->can(
-            'contributions.reports.view'
+            'pensions.reports.actuarial-data.view'
         );
 
 
@@ -245,7 +270,9 @@
         ||
         $canSeeEmployerMembershipReports
         ||
-        $canSeeContributionReports;
+        $canSeeContributionReports
+        ||
+        $canSeeActuarialReports;
 
 @endphp
 
@@ -272,9 +299,7 @@
                 aria-expanded="false"
                 aria-label="Toggle navigation"
             >
-
                 <span class="navbar-toggler-icon"></span>
-
             </button>
 
 
@@ -311,11 +336,9 @@
                                     )
                                 }}"
                             >
-
                                 <i class="dripicons-home me-2"></i>
 
                                 Pensions Home
-
                             </a>
 
                         </li>
@@ -352,13 +375,11 @@
                                 id="pensions-updates-menu"
                                 role="button"
                             >
-
                                 <i class="dripicons-user-group me-2"></i>
 
                                 Updates / Membership
 
                                 <div class="arrow-down"></div>
-
                             </a>
 
 
@@ -386,11 +407,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-view-dashboard-outline me-2"></i>
 
                                         Updates Dashboard
-
                                     </a>
 
                                 @endcan
@@ -438,11 +457,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-account-group-outline me-2"></i>
 
                                         Members
-
                                     </a>
 
                                 @endcan
@@ -467,11 +484,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-office-building-outline me-2"></i>
 
                                         Employers
-
                                     </a>
 
                                 @endcan
@@ -496,11 +511,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-folder-multiple-outline me-2"></i>
 
                                         Employer Groups
-
                                     </a>
 
                                 @endcan
@@ -517,7 +530,6 @@
                                         "
                                         style="cursor:default;"
                                     >
-
                                         <i class="mdi mdi-swap-horizontal me-2"></i>
 
                                         Member Movements
@@ -525,7 +537,6 @@
                                         <small class="ms-1">
                                             Coming next
                                         </small>
-
                                     </span>
 
                                 @endcan
@@ -569,11 +580,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-account-arrow-up-outline me-2"></i>
 
                                         Member Imports
-
                                     </a>
 
                                 @endcan
@@ -598,11 +607,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-office-building-cog-outline me-2"></i>
 
                                         Employer Imports
-
                                     </a>
 
                                 @endcan
@@ -643,13 +650,11 @@
                                 id="pensions-contributions-menu"
                                 role="button"
                             >
-
                                 <i class="mdi mdi-cash-multiple me-2"></i>
 
                                 Contributions
 
                                 <div class="arrow-down"></div>
-
                             </a>
 
 
@@ -657,7 +662,6 @@
                                 class="dropdown-menu"
                                 aria-labelledby="pensions-contributions-menu"
                             >
-
 
                                 @can('contributions.monthly-imports.view')
 
@@ -678,11 +682,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-format-list-bulleted me-2"></i>
 
                                         Monthly Contribution Batches
-
                                     </a>
 
                                 @endcan
@@ -707,19 +709,139 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-upload me-2"></i>
 
                                         Upload Monthly Contributions
-
                                     </a>
 
                                 @endcan
 
 
                                 {{-- =====================================
+                                     CONTRIBUTION RECEIPTS
+                                ====================================== --}}
+
+                                @if($canSeeReceipts)
+
+                                    <div class="dropdown-divider"></div>
+
+                                    <h6 class="dropdown-header">
+                                        Contribution Receipts
+                                    </h6>
+
+
+                                    @can('contributions.receipts.view')
+
+                                        <a
+                                            href="{{
+                                                route(
+                                                    'pensions-administration.contributions.receipts.index'
+                                                )
+                                            }}"
+                                            class="
+                                                dropdown-item
+                                                {{
+                                                    request()->routeIs(
+                                                        'pensions-administration.contributions.receipts.index'
+                                                    )
+                                                    ||
+                                                    request()->routeIs(
+                                                        'pensions-administration.contributions.receipts.show'
+                                                    )
+                                                        ? 'active'
+                                                        : ''
+                                                }}
+                                            "
+                                        >
+                                            <i class="mdi mdi-receipt-text-outline me-2"></i>
+
+                                            Receipts
+                                        </a>
+
+
+                                        <a
+                                            href="{{
+                                                route(
+                                                    'pensions-administration.contributions.receipts.imports.index'
+                                                )
+                                            }}"
+                                            class="
+                                                dropdown-item
+                                                {{
+                                                    request()->routeIs(
+                                                        'pensions-administration.contributions.receipts.imports.*'
+                                                    )
+                                                        ? 'active'
+                                                        : ''
+                                                }}
+                                            "
+                                        >
+                                            <i class="mdi mdi-file-document-multiple-outline me-2"></i>
+
+                                            Receipt Imports
+                                        </a>
+
+                                    @endcan
+
+
+                                    @can('contributions.receipts.create')
+
+                                        <a
+                                            href="{{
+                                                route(
+                                                    'pensions-administration.contributions.receipts.imports.create'
+                                                )
+                                            }}"
+                                            class="
+                                                dropdown-item
+                                                {{
+                                                    request()->routeIs(
+                                                        'pensions-administration.contributions.receipts.imports.create'
+                                                    )
+                                                        ? 'active'
+                                                        : ''
+                                                }}
+                                            "
+                                        >
+                                            <i class="mdi mdi-upload-outline me-2"></i>
+
+                                            Upload Receipts
+                                        </a>
+
+                                    @endcan
+
+
+                                    @can('contributions.exchange-rates.view')
+
+                                        <a
+                                            href="{{
+                                                route(
+                                                    'pensions-administration.contributions.receipts.exchange-rates.index'
+                                                )
+                                            }}"
+                                            class="
+                                                dropdown-item
+                                                {{
+                                                    request()->routeIs(
+                                                        'pensions-administration.contributions.receipts.exchange-rates.*'
+                                                    )
+                                                        ? 'active'
+                                                        : ''
+                                                }}
+                                            "
+                                        >
+                                            <i class="mdi mdi-currency-usd me-2"></i>
+
+                                            Receipt Exchange Rates
+                                        </a>
+
+                                    @endcan
+
+                                @endif
+
+
+                                {{-- =====================================
                                      HISTORICAL CONTRIBUTIONS
-                                     SYSTEM ADMINISTRATOR ONLY
                                 ====================================== --}}
 
                                 @if($canManageHistoricalContributions)
@@ -760,11 +882,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-database-clock-outline me-2"></i>
 
                                         Historical Contributions
-
                                     </a>
 
 
@@ -785,11 +905,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-database-import-outline me-2"></i>
 
                                         Upload Historical Contributions
-
                                     </a>
 
                                 @endif
@@ -818,11 +936,9 @@
                                             }}"
                                             class="dropdown-item"
                                         >
-
                                             <i class="mdi mdi-file-search-outline me-2"></i>
 
                                             Batches Awaiting Review
-
                                         </a>
 
                                     @endcan
@@ -855,11 +971,9 @@
                                         }}"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-clipboard-check-outline me-2"></i>
 
                                         Contribution Approval Queue
-
                                     </a>
 
 
@@ -871,11 +985,9 @@
                                                 contribution-permission-hint
                                             "
                                         >
-
                                             <i class="mdi mdi-check-decagram-outline me-2 text-success"></i>
 
                                             You Can Approve
-
                                         </span>
 
                                     @endif
@@ -889,11 +1001,9 @@
                                                 contribution-permission-hint
                                             "
                                         >
-
                                             <i class="mdi mdi-close-circle-outline me-2 text-danger"></i>
 
                                             You Can Reject
-
                                         </span>
 
                                     @endif
@@ -922,11 +1032,9 @@
                                         }}"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-database-arrow-up-outline me-2"></i>
 
                                         Approved Batches to Post
-
                                     </a>
 
                                 @endif
@@ -942,7 +1050,6 @@
 
                                     <div class="dropdown-divider"></div>
 
-
                                     <a
                                         href="{{
                                             route(
@@ -955,11 +1062,9 @@
                                         }}"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-file-cancel-outline me-2"></i>
 
                                         Rejected Batches
-
                                     </a>
 
                                 @endif
@@ -986,11 +1091,9 @@
                                         }}"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-file-chart-outline me-2"></i>
 
                                         Posted Contributions
-
                                     </a>
 
 
@@ -1000,7 +1103,6 @@
                                             contribution-permission-hint
                                         "
                                     >
-
                                         <i class="mdi mdi-scale-balance me-2"></i>
 
                                         Reconciliation Reports
@@ -1008,7 +1110,6 @@
                                         <small class="ms-1 text-muted">
                                             Open a batch
                                         </small>
-
                                     </span>
 
                                 @endif
@@ -1041,6 +1142,10 @@
                                         request()->routeIs(
                                             'pensions-administration.contributions.reconciliation.*'
                                         )
+                                        ||
+                                        request()->routeIs(
+                                            'pensions-administration.reports.actuarial-data.*'
+                                        )
                                             ? 'active'
                                             : ''
                                     }}
@@ -1049,13 +1154,11 @@
                                 id="pensions-reports-menu"
                                 role="button"
                             >
-
                                 <i class="dripicons-graph-bar me-2"></i>
 
                                 Reports
 
                                 <div class="arrow-down"></div>
-
                             </a>
 
 
@@ -1064,9 +1167,8 @@
                                 aria-labelledby="pensions-reports-menu"
                             >
 
-
                                 {{-- =====================================
-                                     SHARED MEMBERSHIP REPORTS
+                                     MEMBERSHIP REPORTS
                                 ====================================== --}}
 
                                 @if(
@@ -1101,11 +1203,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-chart-box-outline me-2"></i>
 
                                         Membership Reports Centre
-
                                     </a>
 
 
@@ -1117,11 +1217,9 @@
                                         }}#member-register"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-account-group-outline me-2"></i>
 
                                         Membership Register
-
                                     </a>
 
                                 @endif
@@ -1146,11 +1244,9 @@
                                             }}
                                         "
                                     >
-
                                         <i class="mdi mdi-office-building-outline me-2"></i>
 
                                         Employer Membership Report
-
                                     </a>
 
                                 @endif
@@ -1166,11 +1262,9 @@
                                         }}#age-profile"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-calendar-account-outline me-2"></i>
 
                                         Age Profile
-
                                     </a>
 
 
@@ -1182,11 +1276,9 @@
                                         }}#legacy-mapping"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-link-variant me-2"></i>
 
                                         Legacy Number Mapping
-
                                     </a>
 
 
@@ -1198,11 +1290,54 @@
                                         }}#data-quality"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-database-alert-outline me-2"></i>
 
                                         Data Quality
+                                    </a>
 
+                                @endif
+
+
+                                {{-- =====================================
+                                     ACTUARIAL VALUATION REPORTS
+                                ====================================== --}}
+
+                                @if($canSeeActuarialReports)
+
+                                    @if(
+                                        $canSeeMembershipReports
+                                        ||
+                                        $canSeeEmployerMembershipReports
+                                    )
+                                        <div class="dropdown-divider"></div>
+                                    @endif
+
+
+                                    <h6 class="dropdown-header">
+                                        Actuarial Valuation
+                                    </h6>
+
+
+                                    <a
+                                        href="{{
+                                            route(
+                                                'pensions-administration.reports.actuarial-data.index'
+                                            )
+                                        }}"
+                                        class="
+                                            dropdown-item
+                                            {{
+                                                request()->routeIs(
+                                                    'pensions-administration.reports.actuarial-data.*'
+                                                )
+                                                    ? 'active'
+                                                    : ''
+                                            }}
+                                        "
+                                    >
+                                        <i class="mdi mdi-file-excel-outline me-2"></i>
+
+                                        Actuarial Valuation Data Extract
                                     </a>
 
                                 @endif
@@ -1217,6 +1352,8 @@
                                         $canSeeMembershipReports
                                         ||
                                         $canSeeEmployerMembershipReports
+                                        ||
+                                        $canSeeActuarialReports
                                     )
                                     &&
                                     $canSeeContributionReports
@@ -1246,11 +1383,9 @@
                                         }}"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-cash-check me-2"></i>
 
                                         Posted Monthly Contributions
-
                                     </a>
 
 
@@ -1262,11 +1397,9 @@
                                         }}"
                                         class="dropdown-item"
                                     >
-
                                         <i class="mdi mdi-scale-balance me-2"></i>
 
                                         Contribution Reconciliations
-
                                     </a>
 
                                 @endif
@@ -1286,17 +1419,11 @@
 
                         <a
                             class="nav-link"
-                            href="{{
-                                route(
-                                    'dashboard'
-                                )
-                            }}"
+                            href="{{ route('dashboard') }}"
                         >
-
                             <i class="mdi mdi-arrow-left-circle-outline me-2"></i>
 
                             Main ERP
-
                         </a>
 
                     </li>
@@ -1323,22 +1450,18 @@
                 z-index: 900;
             }
 
-
             .pensions-topnav .nav-link.active {
                 font-weight: 600;
             }
-
 
             .pensions-topnav .dropdown-item.active {
                 font-weight: 600;
             }
 
-
             .pensions-topnav .dropdown-item i {
                 width: 18px;
                 display: inline-block;
             }
-
 
             .pensions-topnav .dropdown-header {
                 font-size: 11px;
@@ -1347,12 +1470,10 @@
                 font-weight: 600;
             }
 
-
             .pensions-topnav .contribution-permission-hint {
                 cursor: default;
                 font-size: 12px;
             }
-
 
             body.lapf-dark-mode .pensions-topnav {
                 border-bottom:

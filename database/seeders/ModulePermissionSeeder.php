@@ -674,6 +674,24 @@ class ModulePermissionSeeder extends Seeder
                         'display_name' => 'Export Employer Membership Reports',
                         'action' => 'export',
                     ],
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Actuarial Data Extract
+                    |--------------------------------------------------------------------------
+                    */
+
+                    [
+                        'name' => 'pensions.reports.actuarial-data.view',
+                        'display_name' => 'View Actuarial Data Extracts',
+                        'action' => 'view',
+                    ],
+
+                    [
+                        'name' => 'pensions.reports.actuarial-data.generate',
+                        'display_name' => 'Generate Actuarial Data Extracts',
+                        'action' => 'export',
+                    ],
                 ],
             ],
         ];
@@ -802,7 +820,6 @@ class ModulePermissionSeeder extends Seeder
                 'terminate',
                 'reset-password',
                 'assign-permissions',
-                'manage',
             ],
             true
         );

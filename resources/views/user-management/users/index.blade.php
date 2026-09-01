@@ -1,9 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Users')
-
 @section('page-heading', 'User Management')
-
 
 @push('styles')
 
@@ -25,7 +23,7 @@
         rel="stylesheet"
         type="text/css"
     >
-    
+
     <link
         href="{{ asset('layouts/assets/libs/select2/css/select2.min.css') }}"
         rel="stylesheet"
@@ -43,6 +41,7 @@
             justify-content: center;
             font-weight: 600;
             font-size: 14px;
+            flex-shrink: 0;
         }
 
         .user-name-cell {
@@ -50,12 +49,57 @@
         }
 
         .user-table-actions {
-            white-space: nowrap;
+            white-space: nowrap !important;
+            min-width: 90px;
+            text-align: center;
+        }
+
+        .user-table-actions .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 30px;
+            padding: 0;
+        }
+
+        .user-table-actions .btn + .btn {
+            margin-left: 4px;
+        }
+
+        .user-table-actions .mdi {
+            font-size: 17px;
+            line-height: 1;
         }
 
         .dt-buttons .btn {
             margin-right: 5px;
             margin-bottom: 5px;
+        }
+
+        #users-datatable th:last-child,
+        #users-datatable td:last-child {
+            display: table-cell !important;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container .select2-selection--single {
+            height: 38px;
+        }
+
+        .select2-container--default
+        .select2-selection--single
+        .select2-selection__rendered {
+            line-height: 36px;
+        }
+
+        .select2-container--default
+        .select2-selection--single
+        .select2-selection__arrow {
+            height: 36px;
         }
 
         body.lapf-dark-mode .dataTables_wrapper .dataTables_filter input,
@@ -76,25 +120,6 @@
             border-color: #343a46;
             color: #6f7b89;
         }
-         .select2-container {
-            width: 100% !important;
-        }
-
-        .select2-container .select2-selection--single {
-            height: 38px;
-        }
-
-        .select2-container--default
-        .select2-selection--single
-        .select2-selection__rendered {
-            line-height: 36px;
-        }
-
-        .select2-container--default
-        .select2-selection--single
-        .select2-selection__arrow {
-            height: 36px;
-        }
 
         body.lapf-dark-mode
         .select2-container--default
@@ -114,8 +139,7 @@
             color: #ffffff;
         }
 
-        body.lapf-dark-mode
-        .select2-dropdown {
+        body.lapf-dark-mode .select2-dropdown {
             background-color: #252a34;
             border-color: #3b424f;
             color: #ffffff;
@@ -126,7 +150,6 @@
         .select2-results__option--highlighted[aria-selected] {
             background-color: #303641;
         }
-
 
     </style>
 
@@ -152,7 +175,6 @@
 
 @section('content')
 
-
 {{-- =========================================================
      FILTERS
 ========================================================= --}}
@@ -174,14 +196,12 @@
                     department, section or account status.
                 </p>
 
-
                 <form
                     method="GET"
                     action="{{ route('user-management.users.index') }}"
                 >
 
                     <div class="row">
-
 
                         {{-- Search --}}
                         <div class="col-xl-4 col-lg-4 col-md-6">
@@ -312,7 +332,6 @@
                             Search
                         </button>
 
-
                         <a
                             href="{{ route('user-management.users.index') }}"
                             class="btn btn-light"
@@ -332,7 +351,6 @@
     </div>
 
 </div>
-
 
 
 {{-- =========================================================
@@ -363,7 +381,6 @@
 
                     </div>
 
-
                     <div class="text-muted font-size-13">
 
                         @if(method_exists($users, 'total'))
@@ -391,7 +408,7 @@
 
                     <table
                         id="users-datatable"
-                        class="table table-striped table-bordered dt-responsive nowrap"
+                        class="table table-striped table-bordered nowrap w-100"
                         style="
                             border-collapse: collapse;
                             border-spacing: 0;
@@ -403,42 +420,18 @@
 
                             <tr>
 
-                                <th>
-                                    Employee No.
-                                </th>
-
-                                <th>
-                                    Employee
-                                </th>
-
-                                <th>
-                                    Job Title
-                                </th>
-
-                                <th>
-                                    Department / Section
-                                </th>
-
-                                <th>
-                                    Role
-                                </th>
-
-                                <th>
-                                    Status
-                                </th>
-
-                                <th>
-                                    Last Login
-                                </th>
-
-                                <th>
-                                    Actions
-                                </th>
+                                <th>Employee No.</th>
+                                <th>Employee</th>
+                                <th>Job Title</th>
+                                <th>Department / Section</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th class="text-center">Actions</th>
 
                             </tr>
 
                         </thead>
-
 
                         <tbody>
 
@@ -472,9 +465,7 @@
 
                                 @endphp
 
-
                                 <tr>
-
 
                                     {{-- Employee Number --}}
                                     <td>
@@ -497,7 +488,6 @@
                                                 {{ $initials ?: 'U' }}
                                             </div>
 
-
                                             <div>
 
                                                 <h6 class="mb-1">
@@ -506,7 +496,6 @@
                                                     {{ $user->first_name }}
 
                                                 </h6>
-
 
                                                 <span class="text-muted font-size-13">
 
@@ -544,10 +533,10 @@
 
                                         @forelse($user->roles as $role)
 
-                                            <span class="badge bg-soft-primary text-primary me-1 mb-1">
-
+                                            <span
+                                                class="badge bg-soft-primary text-primary me-1 mb-1"
+                                            >
                                                 {{ $role->display_name ?: $role->name }}
-
                                             </span>
 
                                         @empty
@@ -567,9 +556,7 @@
                                         <span
                                             class="badge bg-{{ $statusClass }}"
                                         >
-
                                             {{ ucfirst($user->account_status) }}
-
                                         </span>
 
                                     </td>
@@ -604,16 +591,21 @@
                                     {{-- Actions --}}
                                     <td class="user-table-actions">
 
-                                        <a
-                                            href="{{ route(
-                                                'user-management.users.show',
-                                                $user
-                                            ) }}"
-                                            class="btn btn-sm btn-info"
-                                            title="View User"
-                                        >
-                                            <i class="mdi mdi-eye-outline"></i>
-                                        </a>
+                                        @can('user-management.users.view')
+
+                                            <a
+                                                href="{{ route(
+                                                    'user-management.users.show',
+                                                    $user->id
+                                                ) }}"
+                                                class="btn btn-sm btn-info"
+                                                title="View User"
+                                                aria-label="View User"
+                                            >
+                                                <i class="mdi mdi-eye-outline"></i>
+                                            </a>
+
+                                        @endcan
 
 
                                         @can('user-management.users.update')
@@ -621,10 +613,11 @@
                                             <a
                                                 href="{{ route(
                                                     'user-management.users.edit',
-                                                    $user
+                                                    $user->id
                                                 ) }}"
                                                 class="btn btn-sm btn-primary"
                                                 title="Edit User"
+                                                aria-label="Edit User"
                                             >
                                                 <i class="mdi mdi-pencil-outline"></i>
                                             </a>
@@ -632,7 +625,6 @@
                                         @endcan
 
                                     </td>
-
 
                                 </tr>
 
@@ -666,7 +658,7 @@
                 </div>
 
 
-                {{-- Keep Laravel pagination because controller currently paginates --}}
+                {{-- Laravel Pagination --}}
                 @if(
                     method_exists($users, 'links')
                     && $users->hasPages()
@@ -763,7 +755,12 @@ $(document).ready(function () {
 
     const table = $('#users-datatable').DataTable({
 
-        responsive: true,
+        responsive: {
+            details: {
+                type: 'inline',
+                target: 'tr'
+            }
+        },
 
         ordering: true,
 
@@ -853,17 +850,32 @@ $(document).ready(function () {
             {
                 extend: 'colvis',
                 text: '<i class="mdi mdi-view-column-outline me-1"></i> Columns',
-                className: 'btn btn-secondary'
+                className: 'btn btn-secondary',
+                columns: ':not(:last-child)'
             }
 
         ],
 
         columnDefs: [
+
+            {
+                targets: 0,
+                responsivePriority: 3
+            },
+
+            {
+                targets: 1,
+                responsivePriority: 2
+            },
+
             {
                 targets: 7,
                 searchable: false,
-                orderable: false
+                orderable: false,
+                responsivePriority: 1,
+                className: 'all text-center'
             }
+
         ]
 
     });
@@ -874,7 +886,6 @@ $(document).ready(function () {
         .container()
         .find('.btn')
         .removeClass('btn-secondary');
-
 
 });
 
