@@ -50,44 +50,28 @@
         &&
         $pensionsNavUser->hasRole('system-administrator')
         &&
-        $pensionsNavUser->can(
-            'contributions.historical-imports.manage'
-        );
+        $pensionsNavUser->can('contributions.historical-imports.manage');
 
 
     /*
     |--------------------------------------------------------------------------
     | Contribution Receipts
     |--------------------------------------------------------------------------
-    |
-    | IMPORTANT:
-    | Defined BEFORE $canSeeContributions because that variable uses it.
-    |
     */
 
     $canSeeReceipts =
         $pensionsNavUser
         &&
         (
-            $pensionsNavUser->can(
-                'contributions.receipts.view'
-            )
+            $pensionsNavUser->can('contributions.receipts.view')
             ||
-            $pensionsNavUser->can(
-                'contributions.receipts.create'
-            )
+            $pensionsNavUser->can('contributions.receipts.create')
             ||
-            $pensionsNavUser->can(
-                'contributions.receipts.post'
-            )
+            $pensionsNavUser->can('contributions.receipts.post')
             ||
-            $pensionsNavUser->can(
-                'contributions.exchange-rates.view'
-            )
+            $pensionsNavUser->can('contributions.exchange-rates.view')
             ||
-            $pensionsNavUser->can(
-                'contributions.exchange-rates.manage'
-            )
+            $pensionsNavUser->can('contributions.exchange-rates.manage')
         );
 
 
@@ -100,9 +84,7 @@
     $canSeeContributionReports =
         $pensionsNavUser
         &&
-        $pensionsNavUser->can(
-            'contributions.reports.view'
-        );
+        $pensionsNavUser->can('contributions.reports.view');
 
 
     /*
@@ -115,33 +97,19 @@
         $pensionsNavUser
         &&
         (
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.view'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.view')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.create'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.create')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.update'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.update')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.delete'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.delete')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.approve'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.approve')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.reject'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.reject')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.post'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.post')
             ||
             $canSeeContributionReports
             ||
@@ -161,17 +129,11 @@
         $pensionsNavUser
         &&
         (
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.create'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.create')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.update'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.update')
             ||
-            $pensionsNavUser->can(
-                'contributions.monthly-imports.delete'
-            )
+            $pensionsNavUser->can('contributions.monthly-imports.delete')
         );
 
 
@@ -184,9 +146,7 @@
     $canApproveContributions =
         $pensionsNavUser
         &&
-        $pensionsNavUser->can(
-            'contributions.monthly-imports.approve'
-        );
+        $pensionsNavUser->can('contributions.monthly-imports.approve');
 
 
     /*
@@ -198,9 +158,7 @@
     $canRejectContributions =
         $pensionsNavUser
         &&
-        $pensionsNavUser->can(
-            'contributions.monthly-imports.reject'
-        );
+        $pensionsNavUser->can('contributions.monthly-imports.reject');
 
 
     /*
@@ -212,9 +170,7 @@
     $canPostContributions =
         $pensionsNavUser
         &&
-        $pensionsNavUser->can(
-            'contributions.monthly-imports.post'
-        );
+        $pensionsNavUser->can('contributions.monthly-imports.post');
 
 
     /*
@@ -226,9 +182,7 @@
     $canSeeMembershipReports =
         $pensionsNavUser
         &&
-        $pensionsNavUser->can(
-            'pensions.reports.membership.view'
-        );
+        $pensionsNavUser->can('pensions.reports.membership.view');
 
 
     /*
@@ -240,9 +194,7 @@
     $canSeeEmployerMembershipReports =
         $pensionsNavUser
         &&
-        $pensionsNavUser->can(
-            'pensions.reports.employer-membership.view'
-        );
+        $pensionsNavUser->can('pensions.reports.employer-membership.view');
 
 
     /*
@@ -254,9 +206,7 @@
     $canSeeActuarialReports =
         $pensionsNavUser
         &&
-        $pensionsNavUser->can(
-            'pensions.reports.actuarial-data.view'
-        );
+        $pensionsNavUser->can('pensions.reports.actuarial-data.view');
 
 
     /*
@@ -274,6 +224,23 @@
         ||
         $canSeeActuarialReports;
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pension Benefit Settings
+    |--------------------------------------------------------------------------
+    |
+    | Settings are restricted to System Administrator.
+    |
+    */
+
+    $canSeeBenefitSettings =
+        $pensionsNavUser
+        &&
+        $pensionsNavUser->hasRole('system-administrator')
+        &&
+        $pensionsNavUser->can('pensions.settings.view');
+
 @endphp
 
 
@@ -281,14 +248,7 @@
 
     <div class="container-fluid">
 
-        <nav
-            class="
-                navbar
-                navbar-light
-                navbar-expand-lg
-                topnav-menu
-            "
-        >
+        <nav class="navbar navbar-light navbar-expand-lg topnav-menu">
 
             <button
                 class="navbar-toggler"
@@ -320,21 +280,12 @@
                         <li class="nav-item">
 
                             <a
-                                class="
-                                    nav-link
-                                    {{
-                                        request()->routeIs(
-                                            'pensions-administration.dashboard'
-                                        )
-                                            ? 'active'
-                                            : ''
-                                    }}
-                                "
-                                href="{{
-                                    route(
-                                        'pensions-administration.dashboard'
-                                    )
+                                class="nav-link {{
+                                    request()->routeIs('pensions-administration.dashboard')
+                                        ? 'active'
+                                        : ''
                                 }}"
+                                href="{{ route('pensions-administration.dashboard') }}"
                             >
                                 <i class="dripicons-home me-2"></i>
 
@@ -355,22 +306,13 @@
                         <li class="nav-item dropdown">
 
                             <a
-                                class="
-                                    nav-link
-                                    dropdown-toggle
-                                    arrow-none
-                                    {{
-                                        request()->routeIs(
-                                            'pensions-administration.updates.*'
-                                        )
-                                        &&
-                                        !request()->routeIs(
-                                            'pensions-administration.updates.reports.*'
-                                        )
-                                            ? 'active'
-                                            : ''
-                                    }}
-                                "
+                                class="nav-link dropdown-toggle arrow-none {{
+                                    request()->routeIs('pensions-administration.updates.*')
+                                    &&
+                                    !request()->routeIs('pensions-administration.updates.reports.*')
+                                        ? 'active'
+                                        : ''
+                                }}"
                                 href="javascript:void(0);"
                                 id="pensions-updates-menu"
                                 role="button"
@@ -391,21 +333,12 @@
                                 @can('updates.dashboard.view')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.dashboard'
-                                            )
+                                        href="{{ route('pensions-administration.updates.dashboard') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.dashboard')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.dashboard'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-view-dashboard-outline me-2"></i>
 
@@ -416,17 +349,11 @@
 
 
                                 @if(
-                                    $pensionsNavUser->can(
-                                        'updates.members.view'
-                                    )
+                                    $pensionsNavUser->can('updates.members.view')
                                     ||
-                                    $pensionsNavUser->can(
-                                        'updates.employers.view'
-                                    )
+                                    $pensionsNavUser->can('updates.employers.view')
                                     ||
-                                    $pensionsNavUser->can(
-                                        'updates.employer-groups.view'
-                                    )
+                                    $pensionsNavUser->can('updates.employer-groups.view')
                                 )
 
                                     <div class="dropdown-divider"></div>
@@ -441,21 +368,12 @@
                                 @can('updates.members.view')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.members.index'
-                                            )
+                                        href="{{ route('pensions-administration.updates.members.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.members.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.members.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-account-group-outline me-2"></i>
 
@@ -468,21 +386,12 @@
                                 @can('updates.employers.view')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.employers.index'
-                                            )
+                                        href="{{ route('pensions-administration.updates.employers.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.employers.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.employers.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-office-building-outline me-2"></i>
 
@@ -495,21 +404,12 @@
                                 @can('updates.employer-groups.view')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.employer-groups.index'
-                                            )
+                                        href="{{ route('pensions-administration.updates.employer-groups.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.employer-groups.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.employer-groups.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-folder-multiple-outline me-2"></i>
 
@@ -524,10 +424,7 @@
                                     <div class="dropdown-divider"></div>
 
                                     <span
-                                        class="
-                                            dropdown-item
-                                            text-muted
-                                        "
+                                        class="dropdown-item text-muted"
                                         style="cursor:default;"
                                     >
                                         <i class="mdi mdi-swap-horizontal me-2"></i>
@@ -543,13 +440,9 @@
 
 
                                 @if(
-                                    $pensionsNavUser->can(
-                                        'updates.membership-imports.view'
-                                    )
+                                    $pensionsNavUser->can('updates.membership-imports.view')
                                     ||
-                                    $pensionsNavUser->can(
-                                        'updates.employer-imports.view'
-                                    )
+                                    $pensionsNavUser->can('updates.employer-imports.view')
                                 )
 
                                     <div class="dropdown-divider"></div>
@@ -564,21 +457,12 @@
                                 @can('updates.membership-imports.view')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.imports.index'
-                                            )
+                                        href="{{ route('pensions-administration.updates.imports.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.imports.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.imports.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-account-arrow-up-outline me-2"></i>
 
@@ -591,21 +475,12 @@
                                 @can('updates.employer-imports.view')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.employer-imports.index'
-                                            )
+                                        href="{{ route('pensions-administration.updates.employer-imports.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.employer-imports.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.employer-imports.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-office-building-cog-outline me-2"></i>
 
@@ -630,22 +505,13 @@
                         <li class="nav-item dropdown">
 
                             <a
-                                class="
-                                    nav-link
-                                    dropdown-toggle
-                                    arrow-none
-                                    {{
-                                        request()->routeIs(
-                                            'pensions-administration.contributions.*'
-                                        )
-                                        ||
-                                        request()->routeIs(
-                                            'pensions-administration.historical-contributions.*'
-                                        )
-                                            ? 'active'
-                                            : ''
-                                    }}
-                                "
+                                class="nav-link dropdown-toggle arrow-none {{
+                                    request()->routeIs('pensions-administration.contributions.*')
+                                    ||
+                                    request()->routeIs('pensions-administration.historical-contributions.*')
+                                        ? 'active'
+                                        : ''
+                                }}"
                                 href="javascript:void(0);"
                                 id="pensions-contributions-menu"
                                 role="button"
@@ -666,21 +532,12 @@
                                 @can('contributions.monthly-imports.view')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.index'
-                                            )
+                                        href="{{ route('pensions-administration.contributions.imports.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.contributions.imports.index')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.contributions.imports.index'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-format-list-bulleted me-2"></i>
 
@@ -693,21 +550,12 @@
                                 @can('contributions.monthly-imports.create')
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.create'
-                                            )
+                                        href="{{ route('pensions-administration.contributions.imports.create') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.contributions.imports.create')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.contributions.imports.create'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-upload me-2"></i>
 
@@ -733,25 +581,14 @@
                                     @can('contributions.receipts.view')
 
                                         <a
-                                            href="{{
-                                                route(
-                                                    'pensions-administration.contributions.receipts.index'
-                                                )
+                                            href="{{ route('pensions-administration.contributions.receipts.index') }}"
+                                            class="dropdown-item {{
+                                                request()->routeIs('pensions-administration.contributions.receipts.index')
+                                                ||
+                                                request()->routeIs('pensions-administration.contributions.receipts.show')
+                                                    ? 'active'
+                                                    : ''
                                             }}"
-                                            class="
-                                                dropdown-item
-                                                {{
-                                                    request()->routeIs(
-                                                        'pensions-administration.contributions.receipts.index'
-                                                    )
-                                                    ||
-                                                    request()->routeIs(
-                                                        'pensions-administration.contributions.receipts.show'
-                                                    )
-                                                        ? 'active'
-                                                        : ''
-                                                }}
-                                            "
                                         >
                                             <i class="mdi mdi-receipt-text-outline me-2"></i>
 
@@ -760,21 +597,12 @@
 
 
                                         <a
-                                            href="{{
-                                                route(
-                                                    'pensions-administration.contributions.receipts.imports.index'
-                                                )
+                                            href="{{ route('pensions-administration.contributions.receipts.imports.index') }}"
+                                            class="dropdown-item {{
+                                                request()->routeIs('pensions-administration.contributions.receipts.imports.*')
+                                                    ? 'active'
+                                                    : ''
                                             }}"
-                                            class="
-                                                dropdown-item
-                                                {{
-                                                    request()->routeIs(
-                                                        'pensions-administration.contributions.receipts.imports.*'
-                                                    )
-                                                        ? 'active'
-                                                        : ''
-                                                }}
-                                            "
                                         >
                                             <i class="mdi mdi-file-document-multiple-outline me-2"></i>
 
@@ -787,21 +615,12 @@
                                     @can('contributions.receipts.create')
 
                                         <a
-                                            href="{{
-                                                route(
-                                                    'pensions-administration.contributions.receipts.imports.create'
-                                                )
+                                            href="{{ route('pensions-administration.contributions.receipts.imports.create') }}"
+                                            class="dropdown-item {{
+                                                request()->routeIs('pensions-administration.contributions.receipts.imports.create')
+                                                    ? 'active'
+                                                    : ''
                                             }}"
-                                            class="
-                                                dropdown-item
-                                                {{
-                                                    request()->routeIs(
-                                                        'pensions-administration.contributions.receipts.imports.create'
-                                                    )
-                                                        ? 'active'
-                                                        : ''
-                                                }}
-                                            "
                                         >
                                             <i class="mdi mdi-upload-outline me-2"></i>
 
@@ -814,21 +633,12 @@
                                     @can('contributions.exchange-rates.view')
 
                                         <a
-                                            href="{{
-                                                route(
-                                                    'pensions-administration.contributions.receipts.exchange-rates.index'
-                                                )
+                                            href="{{ route('pensions-administration.contributions.receipts.exchange-rates.index') }}"
+                                            class="dropdown-item {{
+                                                request()->routeIs('pensions-administration.contributions.receipts.exchange-rates.*')
+                                                    ? 'active'
+                                                    : ''
                                             }}"
-                                            class="
-                                                dropdown-item
-                                                {{
-                                                    request()->routeIs(
-                                                        'pensions-administration.contributions.receipts.exchange-rates.*'
-                                                    )
-                                                        ? 'active'
-                                                        : ''
-                                                }}
-                                            "
                                         >
                                             <i class="mdi mdi-currency-usd me-2"></i>
 
@@ -854,33 +664,18 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.historical-contributions.imports.index'
-                                            )
+                                        href="{{ route('pensions-administration.historical-contributions.imports.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.historical-contributions.imports.index')
+                                            ||
+                                            request()->routeIs('pensions-administration.historical-contributions.imports.show')
+                                            ||
+                                            request()->routeIs('pensions-administration.historical-contributions.review.*')
+                                            ||
+                                            request()->routeIs('pensions-administration.historical-contributions.posting.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.historical-contributions.imports.index'
-                                                )
-                                                ||
-                                                request()->routeIs(
-                                                    'pensions-administration.historical-contributions.imports.show'
-                                                )
-                                                ||
-                                                request()->routeIs(
-                                                    'pensions-administration.historical-contributions.review.*'
-                                                )
-                                                ||
-                                                request()->routeIs(
-                                                    'pensions-administration.historical-contributions.posting.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-database-clock-outline me-2"></i>
 
@@ -889,21 +684,12 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.historical-contributions.imports.create'
-                                            )
+                                        href="{{ route('pensions-administration.historical-contributions.imports.create') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.historical-contributions.imports.create')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.historical-contributions.imports.create'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-database-import-outline me-2"></i>
 
@@ -925,15 +711,10 @@
                                     @can('contributions.monthly-imports.view')
 
                                         <a
-                                            href="{{
-                                                route(
-                                                    'pensions-administration.contributions.imports.index',
-                                                    [
-                                                        'status' =>
-                                                            'awaiting_review',
-                                                    ]
-                                                )
-                                            }}"
+                                            href="{{ route(
+                                                'pensions-administration.contributions.imports.index',
+                                                ['status' => 'awaiting_review']
+                                            ) }}"
                                             class="dropdown-item"
                                         >
                                             <i class="mdi mdi-file-search-outline me-2"></i>
@@ -960,15 +741,10 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.index',
-                                                [
-                                                    'status' =>
-                                                        'awaiting_review',
-                                                ]
-                                            )
-                                        }}"
+                                        href="{{ route(
+                                            'pensions-administration.contributions.imports.index',
+                                            ['status' => 'awaiting_review']
+                                        ) }}"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-clipboard-check-outline me-2"></i>
@@ -979,12 +755,7 @@
 
                                     @if($canApproveContributions)
 
-                                        <span
-                                            class="
-                                                dropdown-item
-                                                contribution-permission-hint
-                                            "
-                                        >
+                                        <span class="dropdown-item contribution-permission-hint">
                                             <i class="mdi mdi-check-decagram-outline me-2 text-success"></i>
 
                                             You Can Approve
@@ -995,12 +766,7 @@
 
                                     @if($canRejectContributions)
 
-                                        <span
-                                            class="
-                                                dropdown-item
-                                                contribution-permission-hint
-                                            "
-                                        >
+                                        <span class="dropdown-item contribution-permission-hint">
                                             <i class="mdi mdi-close-circle-outline me-2 text-danger"></i>
 
                                             You Can Reject
@@ -1021,15 +787,10 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.index',
-                                                [
-                                                    'status' =>
-                                                        'approved',
-                                                ]
-                                            )
-                                        }}"
+                                        href="{{ route(
+                                            'pensions-administration.contributions.imports.index',
+                                            ['status' => 'approved']
+                                        ) }}"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-database-arrow-up-outline me-2"></i>
@@ -1051,15 +812,10 @@
                                     <div class="dropdown-divider"></div>
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.index',
-                                                [
-                                                    'status' =>
-                                                        'rejected',
-                                                ]
-                                            )
-                                        }}"
+                                        href="{{ route(
+                                            'pensions-administration.contributions.imports.index',
+                                            ['status' => 'rejected']
+                                        ) }}"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-file-cancel-outline me-2"></i>
@@ -1080,15 +836,10 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.index',
-                                                [
-                                                    'status' =>
-                                                        'posted',
-                                                ]
-                                            )
-                                        }}"
+                                        href="{{ route(
+                                            'pensions-administration.contributions.imports.index',
+                                            ['status' => 'posted']
+                                        ) }}"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-file-chart-outline me-2"></i>
@@ -1097,12 +848,7 @@
                                     </a>
 
 
-                                    <span
-                                        class="
-                                            dropdown-item
-                                            contribution-permission-hint
-                                        "
-                                    >
+                                    <span class="dropdown-item contribution-permission-hint">
                                         <i class="mdi mdi-scale-balance me-2"></i>
 
                                         Reconciliation Reports
@@ -1130,26 +876,15 @@
                         <li class="nav-item dropdown">
 
                             <a
-                                class="
-                                    nav-link
-                                    dropdown-toggle
-                                    arrow-none
-                                    {{
-                                        request()->routeIs(
-                                            'pensions-administration.updates.reports.*'
-                                        )
-                                        ||
-                                        request()->routeIs(
-                                            'pensions-administration.contributions.reconciliation.*'
-                                        )
-                                        ||
-                                        request()->routeIs(
-                                            'pensions-administration.reports.actuarial-data.*'
-                                        )
-                                            ? 'active'
-                                            : ''
-                                    }}
-                                "
+                                class="nav-link dropdown-toggle arrow-none {{
+                                    request()->routeIs('pensions-administration.updates.reports.*')
+                                    ||
+                                    request()->routeIs('pensions-administration.contributions.reconciliation.*')
+                                    ||
+                                    request()->routeIs('pensions-administration.reports.actuarial-data.*')
+                                        ? 'active'
+                                        : ''
+                                }}"
                                 href="javascript:void(0);"
                                 id="pensions-reports-menu"
                                 role="button"
@@ -1187,21 +922,12 @@
                                 @if($canSeeMembershipReports)
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.reports.membership.index'
-                                            )
+                                        href="{{ route('pensions-administration.updates.reports.membership.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.reports.membership.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.reports.membership.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-chart-box-outline me-2"></i>
 
@@ -1210,11 +936,7 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.reports.membership.index'
-                                            )
-                                        }}#member-register"
+                                        href="{{ route('pensions-administration.updates.reports.membership.index') }}#member-register"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-account-group-outline me-2"></i>
@@ -1228,21 +950,12 @@
                                 @if($canSeeEmployerMembershipReports)
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.reports.employer-membership.index'
-                                            )
+                                        href="{{ route('pensions-administration.updates.reports.employer-membership.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.updates.reports.employer-membership.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.updates.reports.employer-membership.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-office-building-outline me-2"></i>
 
@@ -1255,11 +968,7 @@
                                 @if($canSeeMembershipReports)
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.reports.membership.index'
-                                            )
-                                        }}#age-profile"
+                                        href="{{ route('pensions-administration.updates.reports.membership.index') }}#age-profile"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-calendar-account-outline me-2"></i>
@@ -1269,11 +978,7 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.reports.membership.index'
-                                            )
-                                        }}#legacy-mapping"
+                                        href="{{ route('pensions-administration.updates.reports.membership.index') }}#legacy-mapping"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-link-variant me-2"></i>
@@ -1283,11 +988,7 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.updates.reports.membership.index'
-                                            )
-                                        }}#data-quality"
+                                        href="{{ route('pensions-administration.updates.reports.membership.index') }}#data-quality"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-database-alert-outline me-2"></i>
@@ -1309,7 +1010,9 @@
                                         ||
                                         $canSeeEmployerMembershipReports
                                     )
+
                                         <div class="dropdown-divider"></div>
+
                                     @endif
 
 
@@ -1319,21 +1022,12 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.reports.actuarial-data.index'
-                                            )
+                                        href="{{ route('pensions-administration.reports.actuarial-data.index') }}"
+                                        class="dropdown-item {{
+                                            request()->routeIs('pensions-administration.reports.actuarial-data.*')
+                                                ? 'active'
+                                                : ''
                                         }}"
-                                        class="
-                                            dropdown-item
-                                            {{
-                                                request()->routeIs(
-                                                    'pensions-administration.reports.actuarial-data.*'
-                                                )
-                                                    ? 'active'
-                                                    : ''
-                                            }}
-                                        "
                                     >
                                         <i class="mdi mdi-file-excel-outline me-2"></i>
 
@@ -1372,15 +1066,10 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.index',
-                                                [
-                                                    'status' =>
-                                                        'posted',
-                                                ]
-                                            )
-                                        }}"
+                                        href="{{ route(
+                                            'pensions-administration.contributions.imports.index',
+                                            ['status' => 'posted']
+                                        ) }}"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-cash-check me-2"></i>
@@ -1390,11 +1079,7 @@
 
 
                                     <a
-                                        href="{{
-                                            route(
-                                                'pensions-administration.contributions.imports.index'
-                                            )
-                                        }}"
+                                        href="{{ route('pensions-administration.contributions.imports.index') }}"
                                         class="dropdown-item"
                                     >
                                         <i class="mdi mdi-scale-balance me-2"></i>
@@ -1403,6 +1088,196 @@
                                     </a>
 
                                 @endif
+
+                            </div>
+
+                        </li>
+
+                    @endif
+
+
+                    {{-- =================================================
+                         SETTINGS
+                    ================================================== --}}
+
+                    @if($canSeeBenefitSettings)
+
+                        <li class="nav-item dropdown">
+
+                            <a
+                                class="nav-link dropdown-toggle arrow-none {{
+                                    request()->routeIs('pensions-administration.settings.*')
+                                        ? 'active'
+                                        : ''
+                                }}"
+                                href="javascript:void(0);"
+                                id="pensions-settings-menu"
+                                role="button"
+                            >
+                                <i class="mdi mdi-cog-outline me-2"></i>
+
+                                Settings
+
+                                <div class="arrow-down"></div>
+                            </a>
+
+
+                            <div
+                                class="dropdown-menu"
+                                aria-labelledby="pensions-settings-menu"
+                            >
+
+                                {{-- =====================================
+                                     SETTINGS DASHBOARD
+                                ====================================== --}}
+
+                                <h6 class="dropdown-header">
+                                    Benefit Settings
+                                </h6>
+
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.index')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-view-dashboard-outline me-2"></i>
+
+                                    Settings Dashboard
+                                </a>
+
+
+                                {{-- =====================================
+                                     GENERAL RULES
+                                ====================================== --}}
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.general.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.general.*')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-tune-variant me-2"></i>
+
+                                    General Benefit Rules
+                                </a>
+
+
+                                {{-- =====================================
+                                     WITHDRAWAL RULES
+                                ====================================== --}}
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.withdrawal-scales.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.withdrawal-scales.*')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-format-list-numbered me-2"></i>
+
+                                    Withdrawal Scales
+                                </a>
+
+
+                                <div class="dropdown-divider"></div>
+
+
+                                {{-- =====================================
+                                     ACTUARIAL FACTORS
+                                ====================================== --}}
+
+                                <h6 class="dropdown-header">
+                                    Actuarial Factors
+                                </h6>
+
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.accumulated-interest-factors.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.accumulated-interest-factors.*')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-chart-line me-2"></i>
+
+                                    Accumulated Interest Factors
+                                </a>
+
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.commutation-factors.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.commutation-factors.*')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-calculator-variant-outline me-2"></i>
+
+                                    Commutation Factors
+                                </a>
+
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.retirement-increases.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.retirement-increases.*')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-trending-up me-2"></i>
+
+                                    Retirement Increase Factors
+                                </a>
+<a class="dropdown-item {{ request()->routeIs('pensions-administration.settings.interest-rates.*') ? 'active' : '' }}" href="{{ route('pensions-administration.settings.interest-rates.index') }}">Interest Rates</a>
+
+                                <div class="dropdown-divider"></div>
+
+
+                                {{-- =====================================
+                                     TAX AND CURRENCY
+                                ====================================== --}}
+
+                                <h6 class="dropdown-header">
+                                    Tax & Currency
+                                </h6>
+
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.tax-tables.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.tax-tables.*')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-table-large me-2"></i>
+
+                                    Tax Tables
+                                </a>
+
+
+                                <a
+                                    href="{{ route('pensions-administration.settings.exchange-rates.index') }}"
+                                    class="dropdown-item {{
+                                        request()->routeIs('pensions-administration.settings.exchange-rates.*')
+                                            ? 'active'
+                                            : ''
+                                    }}"
+                                >
+                                    <i class="mdi mdi-currency-usd me-2"></i>
+
+                                    Exchange Rates
+                                </a>
 
                             </div>
 

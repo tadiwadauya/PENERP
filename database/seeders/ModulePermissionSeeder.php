@@ -479,9 +479,6 @@ class ModulePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     | Legacy Updates Report Permissions
                     |--------------------------------------------------------------------------
-                    |
-                    | Retained temporarily for backwards compatibility.
-                    |
                     */
 
                     [
@@ -588,7 +585,7 @@ class ModulePermissionSeeder extends Seeder
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Receipt Exchange Rates
+                    | Exchange Rates
                     |--------------------------------------------------------------------------
                     */
 
@@ -617,13 +614,11 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'view',
                     ],
 
+
                     /*
                     |--------------------------------------------------------------------------
                     | Historical Contribution Migration
                     |--------------------------------------------------------------------------
-                    |
-                    | Assigned only to System Administrator.
-                    |
                     */
 
                     [
@@ -639,9 +634,6 @@ class ModulePermissionSeeder extends Seeder
             |--------------------------------------------------------------------------
             | Pensions Administration - Shared Reports
             |--------------------------------------------------------------------------
-            |
-            | These reports are shared across Updates, Benefits and Payroll.
-            |
             */
 
             [
@@ -675,12 +667,6 @@ class ModulePermissionSeeder extends Seeder
                         'action' => 'export',
                     ],
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Actuarial Data Extract
-                    |--------------------------------------------------------------------------
-                    */
-
                     [
                         'name' => 'pensions.reports.actuarial-data.view',
                         'display_name' => 'View Actuarial Data Extracts',
@@ -694,6 +680,40 @@ class ModulePermissionSeeder extends Seeder
                     ],
                 ],
             ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Pensions Administration - Benefit Settings
+            |--------------------------------------------------------------------------
+            |
+            | Settings used by benefit statements, claims and calculations.
+            |
+            | These permissions are defined here, but role assignment is handled
+            | by RolePermissionSeeder.
+            |
+            */
+
+            [
+                'code' => 'pensions-benefit-settings',
+                'name' => 'Pensions Administration - Benefit Settings',
+                'display_order' => 7,
+
+                'permissions' => [
+
+                    [
+                        'name' => 'pensions.settings.view',
+                        'display_name' => 'View Pension Benefit Settings',
+                        'action' => 'view',
+                    ],
+
+                    [
+                        'name' => 'pensions.settings.manage',
+                        'display_name' => 'Manage Pension Benefit Settings',
+                        'action' => 'manage',
+                    ],
+                ],
+            ],
         ];
 
 
@@ -703,85 +723,54 @@ class ModulePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        foreach (
-            $modules
-            as $moduleData
-        ) {
-            $permissions =
-                $moduleData[
-                    'permissions'
-                ];
+        foreach ($modules as $moduleData) {
 
-            unset(
-                $moduleData[
-                    'permissions'
+            $permissions = $moduleData['permissions'];
+
+            unset($moduleData['permissions']);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create / Update System Module
+            |--------------------------------------------------------------------------
+            */
+
+            $module = SystemModule::updateOrCreate(
+                [
+                    'code' => $moduleData['code'],
+                ],
+                [
+                    'name' => $moduleData['name'],
+                    'display_order' => $moduleData['display_order'],
+                    'is_active' => true,
+                    'show_in_sidebar' => true,
                 ]
             );
 
-            $module =
-                SystemModule::updateOrCreate(
-                    [
-                        'code' =>
-                            $moduleData[
-                                'code'
-                            ],
-                    ],
-                    [
-                        'name' =>
-                            $moduleData[
-                                'name'
-                            ],
 
-                        'display_order' =>
-                            $moduleData[
-                                'display_order'
-                            ],
+            /*
+            |--------------------------------------------------------------------------
+            | Create / Update Permissions
+            |--------------------------------------------------------------------------
+            */
 
-                        'is_active' =>
-                            true,
+            foreach ($permissions as $permissionData) {
 
-                        'show_in_sidebar' =>
-                            true,
-                    ]
-                );
-
-            foreach (
-                $permissions
-                as $permissionData
-            ) {
                 Permission::updateOrCreate(
                     [
-                        'name' =>
-                            $permissionData[
-                                'name'
-                            ],
-
-                        'guard_name' =>
-                            'web',
+                        'name' => $permissionData['name'],
+                        'guard_name' => 'web',
                     ],
                     [
-                        'system_module_id' =>
-                            $module->id,
+                        'system_module_id' => $module->id,
+                        'display_name' => $permissionData['display_name'],
+                        'action' => $permissionData['action'],
+                        'is_active' => true,
 
-                        'display_name' =>
-                            $permissionData[
-                                'display_name'
-                            ],
-
-                        'action' =>
-                            $permissionData[
-                                'action'
-                            ],
-
-                        'is_active' =>
-                            true,
-
-                        'is_sensitive' =>
-                            $this->isSensitivePermission(
-                                $permissionData[
-                                    'action'
-                                ]
-                            ),
+                        'is_sensitive' => $this->isSensitivePermission(
+                            $permissionData['action']
+                        ),
                     ]
                 );
             }
@@ -806,9 +795,8 @@ class ModulePermissionSeeder extends Seeder
     |--------------------------------------------------------------------------
     */
 
-    private function isSensitivePermission(
-        string $action
-    ): bool {
+    private function isSensitivePermission(string $action): bool
+    {
         return in_array(
             $action,
             [

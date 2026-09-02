@@ -54,6 +54,16 @@ use App\Http\Controllers\PensionsAdministration\HistoricalContributions\Historic
 
 use App\Http\Controllers\PensionsAdministration\Reports\ActuarialDataExtractController;
 
+use App\Http\Controllers\PensionsAdministration\Settings\AccumulatedInterestFactorController;
+use App\Http\Controllers\PensionsAdministration\Settings\BenefitSettingController;
+use App\Http\Controllers\PensionsAdministration\Settings\BenefitSettingsDashboardController;
+use App\Http\Controllers\PensionsAdministration\Settings\BenefitTaxTableController;
+use App\Http\Controllers\PensionsAdministration\Settings\CommutationFactorController;
+use App\Http\Controllers\PensionsAdministration\Settings\ExchangeRateSettingsController;
+use App\Http\Controllers\PensionsAdministration\Settings\RetirementIncreaseFactorController;
+use App\Http\Controllers\PensionsAdministration\Settings\WithdrawalEntitlementScaleController;
+use App\Http\Controllers\PensionsAdministration\Settings\InterestRateController;
+
 
 
 
@@ -89,6 +99,7 @@ Route::middleware('guest')->group(function (): void {
 | Authenticated Routes
 |--------------------------------------------------------------------------
 */
+
 
 Route::middleware('auth')->group(function (): void {
 
@@ -203,8 +214,103 @@ Route::middleware('auth')->group(function (): void {
 
                     });
 
-
                 /*
+                |--------------------------------------------------------------------------
+                | Pension Benefit Settings
+                |--------------------------------------------------------------------------
+                |
+                | System Administrator only.
+                |
+                */
+
+                Route::prefix('settings')
+                    ->name('settings.')
+                    ->middleware([
+                        'role:system-administrator',
+                        'permission:pensions.settings.view',
+                    ])
+                    ->group(function (): void {
+
+                        Route::get('/', [BenefitSettingsDashboardController::class, 'index'])->name('index');
+                        
+
+                        Route::get('/general', [BenefitSettingController::class, 'index'])->name('general.index');
+                        Route::get('/general/create', [BenefitSettingController::class, 'create'])->name('general.create');
+                        Route::post('/general', [BenefitSettingController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('general.store');
+                        Route::get('/general/{setting}/edit', [BenefitSettingController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('general.edit');
+                        Route::put('/general/{setting}', [BenefitSettingController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('general.update');
+                        Route::get('/general/{setting}/version', [BenefitSettingController::class, 'createVersion'])->middleware('permission:pensions.settings.manage')->name('general.version.create');
+                        Route::post('/general/{setting}/version', [BenefitSettingController::class, 'storeVersion'])->middleware('permission:pensions.settings.manage')->name('general.version.store');
+                        Route::patch('/general/{setting}/deactivate', [BenefitSettingController::class, 'deactivate'])->middleware('permission:pensions.settings.manage')->name('general.deactivate');
+
+
+                        Route::get('/withdrawal-scales', [WithdrawalEntitlementScaleController::class, 'index'])->name('withdrawal-scales.index');
+                        Route::get('/withdrawal-scales/create', [WithdrawalEntitlementScaleController::class, 'create'])->middleware('permission:pensions.settings.manage')->name('withdrawal-scales.create');
+                        Route::post('/withdrawal-scales', [WithdrawalEntitlementScaleController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('withdrawal-scales.store');
+                        Route::get('/withdrawal-scales/{scale}/edit', [WithdrawalEntitlementScaleController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('withdrawal-scales.edit');
+                        Route::put('/withdrawal-scales/{scale}', [WithdrawalEntitlementScaleController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('withdrawal-scales.update');
+                        Route::get('/withdrawal-scales/{scale}/version', [WithdrawalEntitlementScaleController::class, 'createVersion'])->middleware('permission:pensions.settings.manage')->name('withdrawal-scales.version.create');
+                        Route::post('/withdrawal-scales/{scale}/version', [WithdrawalEntitlementScaleController::class, 'storeVersion'])->middleware('permission:pensions.settings.manage')->name('withdrawal-scales.version.store');
+                        Route::patch('/withdrawal-scales/{scale}/deactivate', [WithdrawalEntitlementScaleController::class, 'deactivate'])->middleware('permission:pensions.settings.manage')->name('withdrawal-scales.deactivate');
+
+                        Route::get('/accumulated-interest-factors', [AccumulatedInterestFactorController::class, 'index'])->name('accumulated-interest-factors.index');
+                        Route::get('/accumulated-interest-factors/create', [AccumulatedInterestFactorController::class, 'create'])->middleware('permission:pensions.settings.manage')->name('accumulated-interest-factors.create');
+                        Route::post('/accumulated-interest-factors', [AccumulatedInterestFactorController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('accumulated-interest-factors.store');
+                        Route::get('/accumulated-interest-factors/{factor}/edit', [AccumulatedInterestFactorController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('accumulated-interest-factors.edit');
+                        Route::put('/accumulated-interest-factors/{factor}', [AccumulatedInterestFactorController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('accumulated-interest-factors.update');
+                        Route::get('/accumulated-interest-factors/{factor}/version', [AccumulatedInterestFactorController::class, 'createVersion'])->middleware('permission:pensions.settings.manage')->name('accumulated-interest-factors.version.create');
+                        Route::post('/accumulated-interest-factors/{factor}/version', [AccumulatedInterestFactorController::class, 'storeVersion'])->middleware('permission:pensions.settings.manage')->name('accumulated-interest-factors.version.store');
+                        Route::patch('/accumulated-interest-factors/{factor}/deactivate', [AccumulatedInterestFactorController::class, 'deactivate'])->middleware('permission:pensions.settings.manage')->name('accumulated-interest-factors.deactivate');
+
+                        Route::get('/commutation-factors', [CommutationFactorController::class, 'index'])->name('commutation-factors.index');
+                        Route::get('/commutation-factors/create', [CommutationFactorController::class, 'create'])->middleware('permission:pensions.settings.manage')->name('commutation-factors.create');
+                        Route::post('/commutation-factors', [CommutationFactorController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('commutation-factors.store');
+                        Route::get('/commutation-factors/{factor}/edit', [CommutationFactorController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('commutation-factors.edit');
+                        Route::put('/commutation-factors/{factor}', [CommutationFactorController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('commutation-factors.update');
+                        Route::get('/commutation-factors/{factor}/version', [CommutationFactorController::class, 'createVersion'])->middleware('permission:pensions.settings.manage')->name('commutation-factors.version.create');
+                        Route::post('/commutation-factors/{factor}/version', [CommutationFactorController::class, 'storeVersion'])->middleware('permission:pensions.settings.manage')->name('commutation-factors.version.store');
+                        Route::patch('/commutation-factors/{factor}/deactivate', [CommutationFactorController::class, 'deactivate'])->middleware('permission:pensions.settings.manage')->name('commutation-factors.deactivate');
+
+                        Route::get('/retirement-increases', [RetirementIncreaseFactorController::class, 'index'])->name('retirement-increases.index');
+                        Route::get('/retirement-increases/create', [RetirementIncreaseFactorController::class, 'create'])->middleware('permission:pensions.settings.manage')->name('retirement-increases.create');
+                        Route::post('/retirement-increases', [RetirementIncreaseFactorController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('retirement-increases.store');
+                        Route::get('/retirement-increases/{factor}/edit', [RetirementIncreaseFactorController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('retirement-increases.edit');
+                        Route::put('/retirement-increases/{factor}', [RetirementIncreaseFactorController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('retirement-increases.update');
+                        Route::get('/retirement-increases/{factor}/version', [RetirementIncreaseFactorController::class, 'createVersion'])->middleware('permission:pensions.settings.manage')->name('retirement-increases.version.create');
+                        Route::post('/retirement-increases/{factor}/version', [RetirementIncreaseFactorController::class, 'storeVersion'])->middleware('permission:pensions.settings.manage')->name('retirement-increases.version.store');
+                        Route::patch('/retirement-increases/{factor}/deactivate', [RetirementIncreaseFactorController::class, 'deactivate'])->middleware('permission:pensions.settings.manage')->name('retirement-increases.deactivate');
+
+                        Route::get('/tax-tables', [BenefitTaxTableController::class, 'index'])->name('tax-tables.index');
+                        Route::get('/tax-tables/create', [BenefitTaxTableController::class, 'create'])->middleware('permission:pensions.settings.manage')->name('tax-tables.create');
+                        Route::post('/tax-tables', [BenefitTaxTableController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('tax-tables.store');
+                        Route::get('/tax-tables/{taxTable}', [BenefitTaxTableController::class, 'show'])->name('tax-tables.show');
+                        Route::get('/tax-tables/{taxTable}/edit', [BenefitTaxTableController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('tax-tables.edit');
+                        Route::put('/tax-tables/{taxTable}', [BenefitTaxTableController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('tax-tables.update');
+                        Route::get('/tax-tables/{taxTable}/version', [BenefitTaxTableController::class, 'createVersion'])->middleware('permission:pensions.settings.manage')->name('tax-tables.version.create');
+                        Route::post('/tax-tables/{taxTable}/version', [BenefitTaxTableController::class, 'storeVersion'])->middleware('permission:pensions.settings.manage')->name('tax-tables.version.store');
+                        Route::patch('/tax-tables/{taxTable}/deactivate', [BenefitTaxTableController::class, 'deactivate'])->middleware('permission:pensions.settings.manage')->name('tax-tables.deactivate');
+
+                        Route::get('/exchange-rates', [ExchangeRateSettingsController::class, 'index'])->name('exchange-rates.index');
+                        Route::get('/exchange-rates/create', [ExchangeRateSettingsController::class, 'create'])->middleware('permission:pensions.settings.manage')->name('exchange-rates.create');
+                        Route::post('/exchange-rates', [ExchangeRateSettingsController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('exchange-rates.store');
+                        Route::get('/exchange-rates/{exchangeRate}', [ExchangeRateSettingsController::class, 'show'])->name('exchange-rates.show');
+                        Route::get('/exchange-rates/{exchangeRate}/edit', [ExchangeRateSettingsController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('exchange-rates.edit');
+                        Route::put('/exchange-rates/{exchangeRate}', [ExchangeRateSettingsController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('exchange-rates.update');
+
+                        Route::get('/interest-rates', [InterestRateController::class, 'index'])->name('interest-rates.index');
+                        Route::get('/interest-rates/create', [InterestRateController::class, 'create'])->middleware('permission:pensions.settings.manage')->name('interest-rates.create');
+                        Route::post('/interest-rates', [InterestRateController::class, 'store'])->middleware('permission:pensions.settings.manage')->name('interest-rates.store');
+                        Route::get('/interest-rates/{interestRate}', [InterestRateController::class, 'show'])->name('interest-rates.show');
+                        Route::get('/interest-rates/{interestRate}/edit', [InterestRateController::class, 'edit'])->middleware('permission:pensions.settings.manage')->name('interest-rates.edit');
+                        Route::put('/interest-rates/{interestRate}', [InterestRateController::class, 'update'])->middleware('permission:pensions.settings.manage')->name('interest-rates.update');
+                        Route::get('/interest-rates/{interestRate}/version', [InterestRateController::class, 'createVersion'])->middleware('permission:pensions.settings.manage')->name('interest-rates.version.create');
+                        Route::post('/interest-rates/{interestRate}/version', [InterestRateController::class, 'storeVersion'])->middleware('permission:pensions.settings.manage')->name('interest-rates.version.store');
+                        Route::patch('/interest-rates/{interestRate}/deactivate', [InterestRateController::class, 'deactivate'])->middleware('permission:pensions.settings.manage')->name('interest-rates.deactivate');
+
+                    });
+               
+               
+                    /*
                 |--------------------------------------------------------------------------
                 | Updates
                 |--------------------------------------------------------------------------
@@ -531,14 +637,14 @@ Route::middleware('auth')->group(function (): void {
 
 
                     /*
-|--------------------------------------------------------------------------
-| Batch Show - Keep Last
-|--------------------------------------------------------------------------
-*/
+                        |--------------------------------------------------------------------------
+                        | Batch Show - Keep Last
+                        |--------------------------------------------------------------------------
+                        */
 
-Route::get('imports/{batch}', [ContributionImportController::class, 'show'])
-    ->middleware('permission:contributions.monthly-imports.view')
-    ->name('imports.show');
+                        Route::get('imports/{batch}', [ContributionImportController::class, 'show'])
+                            ->middleware('permission:contributions.monthly-imports.view')
+                            ->name('imports.show');
 
 
 /*
@@ -547,83 +653,83 @@ Route::get('imports/{batch}', [ContributionImportController::class, 'show'])
 |--------------------------------------------------------------------------
 */
 
-Route::get('receipts', [ContributionReceiptController::class, 'index'])
-    ->middleware('permission:contributions.receipts.view')
-    ->name('receipts.index');
+            Route::get('receipts', [ContributionReceiptController::class, 'index'])
+                ->middleware('permission:contributions.receipts.view')
+                ->name('receipts.index');
 
 
-/*
-|--------------------------------------------------------------------------
-| Receipt Imports
-|--------------------------------------------------------------------------
-*/
+            /*
+            |--------------------------------------------------------------------------
+            | Receipt Imports
+            |--------------------------------------------------------------------------
+            */
 
-Route::get('receipts/imports', [ContributionReceiptImportController::class, 'index'])
-    ->middleware('permission:contributions.receipts.view')
-    ->name('receipts.imports.index');
+            Route::get('receipts/imports', [ContributionReceiptImportController::class, 'index'])
+                ->middleware('permission:contributions.receipts.view')
+                ->name('receipts.imports.index');
 
-Route::get('receipts/imports/create', [ContributionReceiptImportController::class, 'create'])
-    ->middleware('permission:contributions.receipts.create')
-    ->name('receipts.imports.create');
+            Route::get('receipts/imports/create', [ContributionReceiptImportController::class, 'create'])
+                ->middleware('permission:contributions.receipts.create')
+                ->name('receipts.imports.create');
 
-Route::post('receipts/imports', [ContributionReceiptImportController::class, 'store'])
-    ->middleware('permission:contributions.receipts.create')
-    ->name('receipts.imports.store');
-
-
-/*
-|--------------------------------------------------------------------------
-| Receipt Review
-|--------------------------------------------------------------------------
-*/
-
-Route::get('receipts/imports/{batch}/review', [ContributionReceiptImportController::class, 'review'])
-    ->whereNumber('batch')
-    ->middleware('permission:contributions.receipts.view')
-    ->name('receipts.imports.review');
+            Route::post('receipts/imports', [ContributionReceiptImportController::class, 'store'])
+                ->middleware('permission:contributions.receipts.create')
+                ->name('receipts.imports.store');
 
 
-/*
-|--------------------------------------------------------------------------
-| Receipt Posting
-|--------------------------------------------------------------------------
-*/
+            /*
+            |--------------------------------------------------------------------------
+            | Receipt Review
+            |--------------------------------------------------------------------------
+            */
 
-Route::post('receipts/imports/{batch}/post', [ContributionReceiptImportController::class, 'post'])
-    ->whereNumber('batch')
-    ->middleware('permission:contributions.receipts.post')
-    ->name('receipts.imports.post');
-
-
-/*
-|--------------------------------------------------------------------------
-| Exchange Rates
-|--------------------------------------------------------------------------
-*/
-
-Route::get('receipts/exchange-rates', [ExchangeRateController::class, 'index'])
-    ->middleware('permission:contributions.exchange-rates.view')
-    ->name('receipts.exchange-rates.index');
-
-Route::post('receipts/exchange-rates', [ExchangeRateController::class, 'store'])
-    ->middleware('permission:contributions.exchange-rates.manage')
-    ->name('receipts.exchange-rates.store');
+            Route::get('receipts/imports/{batch}/review', [ContributionReceiptImportController::class, 'review'])
+                ->whereNumber('batch')
+                ->middleware('permission:contributions.receipts.view')
+                ->name('receipts.imports.review');
 
 
-/*
-|--------------------------------------------------------------------------
-| Posted Receipt
-|--------------------------------------------------------------------------
-| Keep LAST.
-|--------------------------------------------------------------------------
-*/
+            /*
+            |--------------------------------------------------------------------------
+            | Receipt Posting
+            |--------------------------------------------------------------------------
+            */
 
-Route::get('receipts/{receipt}', [ContributionReceiptController::class, 'show'])
-    ->whereNumber('receipt')
-    ->middleware('permission:contributions.receipts.view')
-    ->name('receipts.show');
+            Route::post('receipts/imports/{batch}/post', [ContributionReceiptImportController::class, 'post'])
+                ->whereNumber('batch')
+                ->middleware('permission:contributions.receipts.post')
+                ->name('receipts.imports.post');
 
-});
+
+            /*
+            |--------------------------------------------------------------------------
+            | Exchange Rates
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('receipts/exchange-rates', [ExchangeRateController::class, 'index'])
+                ->middleware('permission:contributions.exchange-rates.view')
+                ->name('receipts.exchange-rates.index');
+
+            Route::post('receipts/exchange-rates', [ExchangeRateController::class, 'store'])
+                ->middleware('permission:contributions.exchange-rates.manage')
+                ->name('receipts.exchange-rates.store');
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Posted Receipt
+            |--------------------------------------------------------------------------
+            | Keep LAST.
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('receipts/{receipt}', [ContributionReceiptController::class, 'show'])
+                ->whereNumber('receipt')
+                ->middleware('permission:contributions.receipts.view')
+                ->name('receipts.show');
+
+            });
 
             });
 

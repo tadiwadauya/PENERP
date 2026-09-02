@@ -59,15 +59,6 @@ class DatabaseSeeder extends Seeder
             |--------------------------------------------------------------------------
             | Modules and Permissions
             |--------------------------------------------------------------------------
-            |
-            | Includes:
-            |
-            | - Dashboard
-            | - User Management
-            | - Audit and Security
-            | - Pensions Administration - Updates
-            | - Pensions Administration - Contributions
-            |
             */
 
             ModulePermissionSeeder::class,
@@ -89,6 +80,22 @@ class DatabaseSeeder extends Seeder
             */
 
             SystemAdministratorSeeder::class,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Pension Benefit Calculation Settings
+            |--------------------------------------------------------------------------
+            */
+
+            BenefitCalculationSettingsSeeder::class,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Employer Groups
+            |--------------------------------------------------------------------------
+            */
 
             EmployerGroupSeeder::class,
 

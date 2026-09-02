@@ -50,13 +50,14 @@ class RolePermissionSeeder extends Seeder
             ->where('is_active', true)
             ->where(function ($query): void {
 
-                /*
-                |--------------------------------------------------------------------------
-                | User Management
-                |--------------------------------------------------------------------------
-                */
-
                 $query
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | User Management
+                    |--------------------------------------------------------------------------
+                    */
+
                     ->where('name', 'like', 'user-management.%')
 
 
@@ -75,15 +76,8 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'dashboard.system-administration.view'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'dashboard.pensions.view'
-                    )
+                    ->orWhere('name', 'dashboard.system-administration.view')
+                    ->orWhere('name', 'dashboard.pensions.view')
 
 
                     /*
@@ -92,40 +86,13 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'contributions.monthly-imports.view'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.monthly-imports.create'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.monthly-imports.update'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.monthly-imports.delete'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.monthly-imports.approve'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.monthly-imports.reject'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.monthly-imports.post'
-                    )
+                    ->orWhere('name', 'contributions.monthly-imports.view')
+                    ->orWhere('name', 'contributions.monthly-imports.create')
+                    ->orWhere('name', 'contributions.monthly-imports.update')
+                    ->orWhere('name', 'contributions.monthly-imports.delete')
+                    ->orWhere('name', 'contributions.monthly-imports.approve')
+                    ->orWhere('name', 'contributions.monthly-imports.reject')
+                    ->orWhere('name', 'contributions.monthly-imports.post')
 
 
                     /*
@@ -134,10 +101,7 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'contributions.reports.view'
-                    )
+                    ->orWhere('name', 'contributions.reports.view')
 
 
                     /*
@@ -146,20 +110,9 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'contributions.receipts.view'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.receipts.create'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.receipts.post'
-                    )
+                    ->orWhere('name', 'contributions.receipts.view')
+                    ->orWhere('name', 'contributions.receipts.create')
+                    ->orWhere('name', 'contributions.receipts.post')
 
 
                     /*
@@ -168,15 +121,8 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'contributions.exchange-rates.view'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'contributions.exchange-rates.manage'
-                    )
+                    ->orWhere('name', 'contributions.exchange-rates.view')
+                    ->orWhere('name', 'contributions.exchange-rates.manage')
 
 
                     /*
@@ -185,10 +131,7 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'contributions.historical-imports.manage'
-                    )
+                    ->orWhere('name', 'contributions.historical-imports.manage')
 
 
                     /*
@@ -197,25 +140,10 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'pensions.reports.membership.view'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'pensions.reports.membership.export'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'pensions.reports.employer-membership.view'
-                    )
-
-                    ->orWhere(
-                        'name',
-                        'pensions.reports.employer-membership.export'
-                    )
+                    ->orWhere('name', 'pensions.reports.membership.view')
+                    ->orWhere('name', 'pensions.reports.membership.export')
+                    ->orWhere('name', 'pensions.reports.employer-membership.view')
+                    ->orWhere('name', 'pensions.reports.employer-membership.export')
 
 
                     /*
@@ -224,15 +152,20 @@ class RolePermissionSeeder extends Seeder
                     |--------------------------------------------------------------------------
                     */
 
-                    ->orWhere(
-                        'name',
-                        'pensions.reports.actuarial-data.view'
-                    )
+                    ->orWhere('name', 'pensions.reports.actuarial-data.view')
+                    ->orWhere('name', 'pensions.reports.actuarial-data.generate')
 
-                    ->orWhere(
-                        'name',
-                        'pensions.reports.actuarial-data.generate'
-                    );
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Pension Benefit Settings
+                    |--------------------------------------------------------------------------
+                    |
+                    | Only the System Administrator role receives these permissions.
+                    |
+                    */
+
+                    ->orWhere('name', 'like', 'pensions.settings.%');
             })
             ->get();
 
@@ -309,10 +242,7 @@ class RolePermissionSeeder extends Seeder
 
         $updatesOfficer->syncPermissions(
             Permission::query()
-                ->whereIn(
-                    'name',
-                    $updatesOfficerPermissions
-                )
+                ->whereIn('name', $updatesOfficerPermissions)
                 ->get()
         );
 
@@ -402,10 +332,7 @@ class RolePermissionSeeder extends Seeder
 
         $updatesSupervisor->syncPermissions(
             Permission::query()
-                ->whereIn(
-                    'name',
-                    $updatesSupervisorPermissions
-                )
+                ->whereIn('name', $updatesSupervisorPermissions)
                 ->get()
         );
 
@@ -456,7 +383,7 @@ class RolePermissionSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Exchange Rates
+            | Exchange Rates - View Only
             |--------------------------------------------------------------------------
             */
 
@@ -484,10 +411,7 @@ class RolePermissionSeeder extends Seeder
 
         $contributionsOfficer->syncPermissions(
             Permission::query()
-                ->whereIn(
-                    'name',
-                    $contributionsOfficerPermissions
-                )
+                ->whereIn('name', $contributionsOfficerPermissions)
                 ->get()
         );
 
@@ -505,7 +429,7 @@ class RolePermissionSeeder extends Seeder
             ],
             [
                 'display_name' => 'Contributions Supervisor',
-                'description' => 'Supervises monthly contribution processing, employer receipts and exchange rates.',
+                'description' => 'Supervises monthly contribution processing and employer receipts.',
                 'is_system_role' => false,
                 'is_active' => true,
             ]
@@ -539,12 +463,14 @@ class RolePermissionSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Exchange Rates
+            | Exchange Rates - View Only
             |--------------------------------------------------------------------------
+            |
+            | Exchange-rate maintenance is now restricted to System Administrator.
+            |
             */
 
             'contributions.exchange-rates.view',
-            'contributions.exchange-rates.manage',
 
             /*
             |--------------------------------------------------------------------------
@@ -568,10 +494,7 @@ class RolePermissionSeeder extends Seeder
 
         $contributionsSupervisor->syncPermissions(
             Permission::query()
-                ->whereIn(
-                    'name',
-                    $contributionsSupervisorPermissions
-                )
+                ->whereIn('name', $contributionsSupervisorPermissions)
                 ->get()
         );
 
@@ -613,10 +536,7 @@ class RolePermissionSeeder extends Seeder
 
         $contributionsApprover->syncPermissions(
             Permission::query()
-                ->whereIn(
-                    'name',
-                    $contributionsApproverPermissions
-                )
+                ->whereIn('name', $contributionsApproverPermissions)
                 ->get()
         );
 
@@ -665,7 +585,7 @@ class RolePermissionSeeder extends Seeder
 
             /*
             |--------------------------------------------------------------------------
-            | Exchange Rates
+            | Exchange Rates - View Only
             |--------------------------------------------------------------------------
             */
 
@@ -692,10 +612,7 @@ class RolePermissionSeeder extends Seeder
 
         $contributionsPoster->syncPermissions(
             Permission::query()
-                ->whereIn(
-                    'name',
-                    $contributionsPosterPermissions
-                )
+                ->whereIn('name', $contributionsPosterPermissions)
                 ->get()
         );
 
