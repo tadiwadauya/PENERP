@@ -1238,7 +1238,10 @@
 
                                     Retirement Increase Factors
                                 </a>
-<a class="dropdown-item {{ request()->routeIs('pensions-administration.settings.interest-rates.*') ? 'active' : '' }}" href="{{ route('pensions-administration.settings.interest-rates.index') }}">Interest Rates</a>
+<a href="{{ route('pensions-administration.settings.interest-rates.index') }}" class="dropdown-item {{ request()->routeIs('pensions-administration.settings.interest-rates.*') ? 'active' : '' }}">
+    <i class="mdi mdi-percent-outline me-2"></i>
+    Interest Rates
+</a>
 
                                 <div class="dropdown-divider"></div>
 
