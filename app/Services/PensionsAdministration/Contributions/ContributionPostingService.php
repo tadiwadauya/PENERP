@@ -114,18 +114,55 @@ class ContributionPostingService
 
         /*
         |--------------------------------------------------------------------------
-        | Validation Errors
+        | Complete Validation Required
         |--------------------------------------------------------------------------
         |
-        | Warnings DO NOT block posting.
+        | Posting is all-or-nothing. Every staging row must be valid. Warning rows
+        | must first be explicitly approved and error rows can never be approved.
         |
         */
 
-        if (
-            (int) $batch->error_rows > 0
-        ) {
+        $totalRows = ContributionImportRow::query()
+            ->where('import_batch_id', $batch->id)
+            ->count();
+
+        $validRows = ContributionImportRow::query()
+            ->where('import_batch_id', $batch->id)
+            ->where('validation_status', 'valid')
+            ->count();
+
+        $warningRows = ContributionImportRow::query()
+            ->where('import_batch_id', $batch->id)
+            ->where('validation_status', 'warning')
+            ->count();
+
+        $errorRows = ContributionImportRow::query()
+            ->where('import_batch_id', $batch->id)
+            ->where('validation_status', 'error')
+            ->count();
+
+        if ($totalRows <= 0) {
             throw new RuntimeException(
-                'The contribution batch contains validation errors and cannot be posted.'
+                'The contribution batch does not contain any rows to post.'
+            );
+        }
+
+        if ($errorRows > 0) {
+            throw new RuntimeException(
+                'The contribution batch contains ' . $errorRows . ' validation error(s) and cannot be posted.'
+            );
+        }
+
+        if ($warningRows > 0) {
+            throw new RuntimeException(
+                'The contribution batch contains ' . $warningRows . ' warning row(s). Review and approve the warnings before posting.'
+            );
+        }
+
+        if ($validRows !== $totalRows) {
+            throw new RuntimeException(
+                'The contribution batch cannot be posted because every row must be valid. Expected '
+                . $totalRows . ' valid row(s), but found ' . $validRows . '.'
             );
         }
 

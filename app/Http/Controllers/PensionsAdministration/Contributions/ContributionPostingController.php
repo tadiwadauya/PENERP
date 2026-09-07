@@ -80,21 +80,59 @@ class ContributionPostingController extends Controller
 
                     /*
                     |--------------------------------------------------------------------------
-                    | Only Errors Block Approval
+                    | All Rows Must Be Valid Before Approval
                     |--------------------------------------------------------------------------
+                    |
+                    | Errors can never be approved.
+                    | Warnings must first be explicitly approved through the Approve Warnings
+                    | action, which changes warning rows to valid while retaining the original
+                    | warning messages for audit/history purposes.
+                    |
                     */
 
-                    if (
-                        (int) $lockedBatch->error_rows
-                        >
-                        0
-                    ) {
+                    $totalRows = $lockedBatch->rows()->count();
+                    $validRows = $lockedBatch->rows()->where('validation_status', 'valid')->count();
+                    $warningRows = $lockedBatch->rows()->where('validation_status', 'warning')->count();
+                    $errorRows = $lockedBatch->rows()->where('validation_status', 'error')->count();
+
+                    if ($totalRows <= 0) {
                         throw new RuntimeException(
-                            'This contribution batch cannot be approved because it contains '
-                            . $lockedBatch->error_rows
-                            . ' validation error(s).'
+                            'This contribution batch cannot be approved because it does not contain any contribution rows.'
                         );
                     }
+
+                    if ($errorRows > 0) {
+                        throw new RuntimeException(
+                            'This contribution batch cannot be approved because it contains '
+                            . $errorRows
+                            . ' validation error(s). Errors cannot be approved and must be corrected.'
+                        );
+                    }
+
+                    if ($warningRows > 0) {
+                        throw new RuntimeException(
+                            'This contribution batch cannot be approved because it contains '
+                            . $warningRows
+                            . ' unapproved warning row(s). Review and approve all warnings first.'
+                        );
+                    }
+
+                    if ($validRows !== $totalRows) {
+                        throw new RuntimeException(
+                            'This contribution batch cannot be approved because every uploaded contribution row must be valid. '
+                            . $validRows
+                            . ' of '
+                            . $totalRows
+                            . ' row(s) are currently valid.'
+                        );
+                    }
+
+                    $lockedBatch->update([
+                        'total_rows' => $totalRows,
+                        'valid_rows' => $validRows,
+                        'warning_rows' => 0,
+                        'error_rows' => 0,
+                    ]);
 
                     /*
                     |--------------------------------------------------------------------------
@@ -505,6 +543,53 @@ class ContributionPostingController extends Controller
 
             /*
             |--------------------------------------------------------------------------
+            | All-Or-Nothing Posting Check
+            |--------------------------------------------------------------------------
+            |
+            | A monthly contribution batch is a single schedule. PENERP must never
+            | post only the valid subset and silently leave warnings/errors behind.
+            |
+            */
+
+            $totalRows = $batch->rows()->count();
+            $validRows = $batch->rows()->where('validation_status', 'valid')->count();
+            $warningRows = $batch->rows()->where('validation_status', 'warning')->count();
+            $errorRows = $batch->rows()->where('validation_status', 'error')->count();
+
+            if ($totalRows <= 0) {
+                throw new RuntimeException(
+                    'Posting blocked because this contribution batch does not contain any contribution rows.'
+                );
+            }
+
+            if ($errorRows > 0) {
+                throw new RuntimeException(
+                    'Posting blocked. This contribution batch contains '
+                    . $errorRows
+                    . ' validation error(s). Errors cannot be approved.'
+                );
+            }
+
+            if ($warningRows > 0) {
+                throw new RuntimeException(
+                    'Posting blocked. This contribution batch contains '
+                    . $warningRows
+                    . ' warning row(s) that have not been approved.'
+                );
+            }
+
+            if ($validRows !== $totalRows) {
+                throw new RuntimeException(
+                    'Posting blocked. All '
+                    . $totalRows
+                    . ' contribution row(s) must be valid before posting. Only '
+                    . $validRows
+                    . ' row(s) are currently valid.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
             | Posting User
             |--------------------------------------------------------------------------
             |
@@ -613,6 +698,28 @@ class ContributionPostingController extends Controller
                     if ($lockedBatch->posted_at) {
                         throw new RuntimeException(
                             'This contribution batch has already been posted.'
+                        );
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Re-check Every Row Under Lock
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $lockedTotalRows = $lockedBatch->rows()->count();
+                    $lockedValidRows = $lockedBatch->rows()->where('validation_status', 'valid')->count();
+                    $lockedWarningRows = $lockedBatch->rows()->where('validation_status', 'warning')->count();
+                    $lockedErrorRows = $lockedBatch->rows()->where('validation_status', 'error')->count();
+
+                    if (
+                        $lockedTotalRows <= 0
+                        || $lockedErrorRows > 0
+                        || $lockedWarningRows > 0
+                        || $lockedValidRows !== $lockedTotalRows
+                    ) {
+                        throw new RuntimeException(
+                            'Posting blocked because the batch changed after approval or not every contribution row is valid.'
                         );
                     }
 

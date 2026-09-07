@@ -40,6 +40,7 @@ use App\Http\Controllers\PensionsAdministration\Updates\EmployerMembershipReport
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionImportController;
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionImportReviewController;
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionPostingController;
+use App\Http\Controllers\PensionsAdministration\Contributions\ContributionBatchRollbackController;
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionReviewActionController;
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionExceptionReportController;
 use App\Http\Controllers\PensionsAdministration\Contributions\ContributionReconciliationController;
@@ -63,7 +64,7 @@ use App\Http\Controllers\PensionsAdministration\Settings\ExchangeRateSettingsCon
 use App\Http\Controllers\PensionsAdministration\Settings\RetirementIncreaseFactorController;
 use App\Http\Controllers\PensionsAdministration\Settings\WithdrawalEntitlementScaleController;
 use App\Http\Controllers\PensionsAdministration\Settings\InterestRateController;
-
+use App\Http\Controllers\PensionsAdministration\Updates\BenefitStatementController;
 
 
 
@@ -171,6 +172,7 @@ Route::middleware('auth')->group(function (): void {
                 | Pensions Dashboard
                 |--------------------------------------------------------------------------
                 */
+
 
                 Route::get('/', [PensionsDashboardController::class, 'index'])
                     ->name('dashboard');
@@ -344,6 +346,11 @@ Route::middleware('auth')->group(function (): void {
                         |
                         */
 
+
+                        Route::get('/benefit-statements',[BenefitStatementController::class,'index'])->name('benefit-statements.index')->middleware('permission:pensions.reports.actuarial-data.view');
+                        Route::post('/benefit-statements/preview',[BenefitStatementController::class,'preview'])->name('benefit-statements.preview')->middleware('permission:pensions.reports.actuarial-data.view');
+
+                        
                         Route::get('reports/membership', [MembershipReportController::class, 'index'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.index');
                         Route::get('reports/membership/data/members', [MembershipReportController::class, 'membersData'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.members-data');
                         Route::get('reports/membership/data/age', [MembershipReportController::class, 'ageData'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.age-data');
@@ -603,6 +610,7 @@ Route::middleware('auth')->group(function (): void {
                         |--------------------------------------------------------------------------
                         */
 
+                        Route::post('imports/{batch}/approve-warnings', [ContributionReviewActionController::class, 'approveWarnings'])->middleware('permission:contributions.monthly-imports.approve')->name('imports.approve-warnings');
                         Route::post('imports/{batch}/approve', [ContributionPostingController::class, 'approve'])->middleware('permission:contributions.monthly-imports.approve')->name('imports.approve');
                         Route::post('imports/{batch}/reject', [ContributionReviewActionController::class, 'reject'])->middleware('permission:contributions.monthly-imports.reject')->name('imports.reject');
 
@@ -616,6 +624,15 @@ Route::middleware('auth')->group(function (): void {
                         Route::post('imports/{batch}/post', [ContributionPostingController::class, 'post'])->middleware('permission:contributions.monthly-imports.post')->name('imports.post');
                         Route::get('imports/{batch}/posting', [ContributionPostingController::class, 'posting'])->middleware('permission:contributions.monthly-imports.view')->name('imports.posting');
                         Route::get('imports/{batch}/posting-status', [ContributionPostingController::class, 'postingStatus'])->middleware('permission:contributions.monthly-imports.view')->name('imports.posting-status');
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Rollback Posted Contribution Batch
+                        |--------------------------------------------------------------------------
+                        */
+
+                        Route::delete('imports/{batch}/rollback', [ContributionBatchRollbackController::class, 'destroy'])->middleware('permission:contributions.monthly-imports.post')->name('imports.rollback');
 
 
                         /*

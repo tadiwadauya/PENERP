@@ -10,6 +10,7 @@ use App\Notifications\PensionsAdministration\Contributions\ContributionBatchReje
 use App\Services\Audit\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -771,6 +772,142 @@ public function exceptions(
         )
     );
 }
+    /*
+    |--------------------------------------------------------------------------
+    | Approve Warning Rows
+    |--------------------------------------------------------------------------
+    |
+    | Warning rows are reviewable exceptions. Once an authorised checker has
+    | reviewed and approved them, their validation status becomes "valid".
+    |
+    | warning_messages are deliberately retained so the original warning remains
+    | available for audit/history. Error rows are never changed by this action.
+    |
+    */
+
+    public function approveWarnings(
+        Request $request,
+        ContributionImportBatch $batch
+    ): RedirectResponse {
+        $this->ensurePermission(
+            'contributions.monthly-imports.approve'
+        );
+
+        try {
+            $approvedCount = DB::transaction(
+                function () use ($batch): int {
+                    $lockedBatch = ContributionImportBatch::query()
+                        ->where('id', $batch->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    if (
+                        !in_array(
+                            $lockedBatch->status,
+                            [
+                                'awaiting_review',
+                                'validated',
+                            ],
+                            true
+                        )
+                    ) {
+                        throw new RuntimeException(
+                            'Warnings can only be approved while the contribution batch is awaiting review.'
+                        );
+                    }
+
+                    if (
+                        (int) $lockedBatch->uploaded_by === (int) auth()->id()
+                        && !auth()->user()->is_system_administrator
+                    ) {
+                        throw new RuntimeException(
+                            'You cannot approve warnings on a contribution batch that you uploaded yourself.'
+                        );
+                    }
+
+                    $warningRows = $lockedBatch->rows()
+                        ->where('validation_status', 'warning')
+                        ->get();
+
+                    if ($warningRows->isEmpty()) {
+                        throw new RuntimeException(
+                            'There are no warning rows awaiting approval in this contribution batch.'
+                        );
+                    }
+
+                    $approvedCount = $warningRows->count();
+
+                    $lockedBatch->rows()
+                        ->where('validation_status', 'warning')
+                        ->update([
+                            'validation_status' => 'valid',
+                            'updated_at' => now(),
+                        ]);
+
+                    $totalRows = $lockedBatch->rows()->count();
+                    $validRows = $lockedBatch->rows()->where('validation_status', 'valid')->count();
+                    $remainingWarnings = $lockedBatch->rows()->where('validation_status', 'warning')->count();
+                    $errorRows = $lockedBatch->rows()->where('validation_status', 'error')->count();
+
+                    $lockedBatch->update([
+                        'total_rows' => $totalRows,
+                        'valid_rows' => $validRows,
+                        'warning_rows' => $remainingWarnings,
+                        'error_rows' => $errorRows,
+                    ]);
+
+                    return $approvedCount;
+                }
+            );
+
+            $batch->refresh();
+
+            $this->auditService->log(
+                eventType: 'contribution_import',
+                module: 'Pensions Administration - Contributions',
+                action: 'APPROVE_MONTHLY_CONTRIBUTION_WARNINGS',
+                description: 'Warning rows on monthly contribution batch #' . $batch->id . ' were reviewed and approved.',
+                auditable: $batch,
+                newValues: $this->auditService->values($batch),
+                metadata: [
+                    'batch_id' => $batch->id,
+                    'warning_rows_approved' => $approvedCount,
+                    'approved_by' => auth()->id(),
+                    'remaining_warning_rows' => (int) $batch->warning_rows,
+                    'remaining_error_rows' => (int) $batch->error_rows,
+                ],
+                request: $request
+            );
+
+            $message = $approvedCount . ' warning row(s) approved successfully. The rows are now valid.';
+
+            if ((int) $batch->error_rows > 0) {
+                $message .= ' The batch still contains ' . $batch->error_rows . ' error row(s), which must be corrected before batch approval.';
+            }
+
+            return redirect()
+                ->route(
+                    'pensions-administration.contributions.imports.review',
+                    $batch
+                )
+                ->with('success', $message);
+
+        } catch (Throwable $e) {
+            $this->auditService->failure(
+                eventType: 'contribution_import',
+                module: 'Pensions Administration - Contributions',
+                action: 'APPROVE_MONTHLY_CONTRIBUTION_WARNINGS',
+                description: 'Attempt to approve warning rows on monthly contribution batch #' . $batch->id . ' failed.',
+                failureReason: $e->getMessage(),
+                auditable: $batch,
+                request: $request
+            );
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+
     public function reject(
         Request $request,
         ContributionImportBatch $batch

@@ -85,7 +85,7 @@
                 @else
 
                     <div class="mt-2">
-                        These warnings do not prevent approval. They are presented so the approver can review contribution rates and calculated contribution amounts before approving.
+                        These warnings must be reviewed and explicitly approved before the monthly contribution batch can be approved or posted. Approving a warning converts the row to valid while retaining the warning message for audit/history.
                     </div>
 
                 @endif

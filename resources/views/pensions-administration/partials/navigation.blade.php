@@ -211,6 +211,22 @@
 
     /*
     |--------------------------------------------------------------------------
+    | Benefit Statements
+    |--------------------------------------------------------------------------
+    |
+    | Benefit Statements currently use the actuarial-data report permission
+    | on their routes, so navigation follows the same access rule.
+    |
+    */
+
+    $canSeeBenefitStatements =
+        $pensionsNavUser
+        &&
+        $pensionsNavUser->can('pensions.reports.actuarial-data.view');
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Any Reports
     |--------------------------------------------------------------------------
     */
@@ -222,7 +238,9 @@
         ||
         $canSeeContributionReports
         ||
-        $canSeeActuarialReports;
+        $canSeeActuarialReports
+        ||
+        $canSeeBenefitStatements;
 
 
     /*
@@ -879,6 +897,8 @@
                                 class="nav-link dropdown-toggle arrow-none {{
                                     request()->routeIs('pensions-administration.updates.reports.*')
                                     ||
+                                    request()->routeIs('pensions-administration.updates.benefit-statements.*')
+                                    ||
                                     request()->routeIs('pensions-administration.contributions.reconciliation.*')
                                     ||
                                     request()->routeIs('pensions-administration.reports.actuarial-data.*')
@@ -1000,6 +1020,36 @@
 
 
                                 {{-- =====================================
+                                     BENEFIT STATEMENTS
+                                ====================================== --}}
+
+                                @if($canSeeBenefitStatements)
+
+                                    @if(
+                                        $canSeeMembershipReports
+                                        ||
+                                        $canSeeEmployerMembershipReports
+                                    )
+
+                                        <div class="dropdown-divider"></div>
+
+                                    @endif
+
+
+                                    <h6 class="dropdown-header">
+                                        Benefit Statements
+                                    </h6>
+
+
+                                    <a href="{{ route('pensions-administration.updates.benefit-statements.index') }}" class="dropdown-item {{ request()->routeIs('pensions-administration.updates.benefit-statements.*') ? 'active' : '' }}">
+                                        <i class="mdi mdi-file-account-outline me-2"></i>
+                                        Benefit Statements
+                                    </a>
+
+                                @endif
+
+
+                                {{-- =====================================
                                      ACTUARIAL VALUATION REPORTS
                                 ====================================== --}}
 
@@ -1009,6 +1059,8 @@
                                         $canSeeMembershipReports
                                         ||
                                         $canSeeEmployerMembershipReports
+                                        ||
+                                        $canSeeBenefitStatements
                                     )
 
                                         <div class="dropdown-divider"></div>

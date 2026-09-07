@@ -400,6 +400,28 @@
 
 
             {{-- =================================================
+                 APPROVE WARNINGS
+            ================================================= --}}
+
+            @can('contributions.monthly-imports.approve')
+
+                @if(
+                    in_array($batch->status, ['awaiting_review', 'validated'], true)
+                    &&
+                    (int) ($summary['warning_rows'] ?? 0) > 0
+                )
+
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#approveWarningsModal">
+                        <i class="mdi mdi-alert-check-outline me-1"></i>
+                        Approve Warnings ({{ number_format($summary['warning_rows'] ?? 0) }})
+                    </button>
+
+                @endif
+
+            @endcan
+
+
+            {{-- =================================================
                  APPROVE
             ================================================= --}}
 
@@ -419,15 +441,9 @@
                 )
 
                     @if(
-                        (int) (
-                            $summary[
-                                'error_rows'
-                            ]
-                            ??
-                            0
-                        )
-                        ===
-                        0
+                        (int) ($summary['error_rows'] ?? 0) === 0
+                        &&
+                        (int) ($summary['warning_rows'] ?? 0) === 0
                     )
 
                         <button
@@ -453,7 +469,7 @@
 
                             <i class="mdi mdi-lock-outline me-1"></i>
 
-                            Approval Blocked
+                            {{ (int) ($summary['error_rows'] ?? 0) > 0 ? 'Approval Blocked - Errors' : 'Approve Warnings First' }}
 
                         </button>
 
@@ -517,6 +533,14 @@
                     Contributions Posted
 
                 </button>
+
+
+                @can('contributions.monthly-imports.post')
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rollbackContributionModal">
+                        <i class="mdi mdi-backup-restore me-1"></i>
+                        Rollback & Delete
+                    </button>
+                @endcan
 
             @endif
 
@@ -1145,7 +1169,7 @@
 
                     warning row(s).
 
-                    Warnings do not prevent approval.
+                    Warnings must be reviewed and explicitly approved before this batch can be approved or posted.
 
                     @can('contributions.reports.view')
 
@@ -3387,6 +3411,85 @@
 
 
     {{-- =========================================================
+         APPROVE WARNINGS MODAL
+    ========================================================= --}}
+
+    @can('contributions.monthly-imports.approve')
+
+        @if(
+            in_array($batch->status, ['awaiting_review', 'validated'], true)
+            &&
+            (int) ($summary['warning_rows'] ?? 0) > 0
+        )
+
+            <div class="modal fade" id="approveWarningsModal" tabindex="-1" aria-hidden="true">
+
+                <div class="modal-dialog modal-lg">
+
+                    <div class="modal-content">
+
+                        <form method="POST" action="{{ route('pensions-administration.contributions.imports.approve-warnings', $batch) }}">
+
+                            @csrf
+
+                            <div class="modal-header">
+                                <h5 class="modal-title">Approve Contribution Warnings</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body">
+
+                                <div class="alert alert-warning">
+                                    <i class="mdi mdi-alert-outline me-1"></i>
+                                    This batch contains <strong>{{ number_format($summary['warning_rows'] ?? 0) }}</strong> warning row(s).
+                                    Approving these warnings confirms that the exceptions have been reviewed and accepted. The rows will become valid, while their original warning messages will remain available for audit/history.
+                                </div>
+
+                                @if((int) ($summary['error_rows'] ?? 0) > 0)
+                                    <div class="alert alert-danger">
+                                        <i class="mdi mdi-alert-circle-outline me-1"></i>
+                                        The batch also contains <strong>{{ number_format($summary['error_rows'] ?? 0) }}</strong> error row(s). Approving warnings will not approve or remove these errors. The errors must still be corrected before the batch can be approved.
+                                    </div>
+                                @endif
+
+                                @can('contributions.reports.view')
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="{{ route('pensions-administration.contributions.imports.exceptions', $batch) }}" class="btn btn-sm btn-outline-warning" target="_blank">
+                                            <i class="mdi mdi-alert-outline me-1"></i>
+                                            Review Exceptions
+                                        </a>
+
+                                        <a href="{{ route('pensions-administration.contributions.imports.exceptions.excel', $batch) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="mdi mdi-microsoft-excel me-1"></i>
+                                            Download Exception Excel
+                                        </a>
+                                    </div>
+                                @endcan
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="mdi mdi-alert-check-outline me-1"></i>
+                                    Confirm Warning Approval
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        @endif
+
+    @endcan
+
+
+    {{-- =========================================================
          APPROVAL MODAL
     ========================================================= --}}
 
@@ -3458,7 +3561,7 @@
 
                                     This batch contains
                                     <strong>{{ number_format($summary['warning_rows'] ?? 0) }}</strong>
-                                    warning row(s). These warnings do not block approval, but the approver should review the employee/employer rate and contribution amount exceptions before confirming approval.
+                                    warning row(s). These warnings must be approved first. Batch approval is blocked until all warning rows have been converted to valid rows.
 
                                     @can('contributions.reports.view')
 
@@ -4796,6 +4899,64 @@
 
 
 </div>
+
+
+    {{-- =========================================================
+         ROLLBACK & DELETE MODAL
+    ========================================================= --}}
+
+    @if($batch->status === 'posted')
+        @can('contributions.monthly-imports.post')
+            <div class="modal fade" id="rollbackContributionModal" tabindex="-1" aria-labelledby="rollbackContributionModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form method="POST" action="{{ route('pensions-administration.contributions.imports.rollback', $batch) }}">
+                            @csrf
+                            @method('DELETE')
+
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title" id="rollbackContributionModalLabel">
+                                    <i class="mdi mdi-alert-octagon-outline me-1"></i>
+                                    Rollback & Delete Posted Contributions
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <div class="alert alert-danger">
+                                    <strong>This reverses posted contribution data.</strong>
+                                    The posted contributions and monthly contribution-status records for this batch will be removed, and the import batch will then be deleted.
+                                </div>
+
+                                <p class="mb-2">
+                                    <strong>Employer:</strong> {{ $batch->employer?->name ?? '-' }}<br>
+                                    <strong>Period:</strong> {{ $batch->contributionPeriod?->period_label ?? '-' }}<br>
+                                    <strong>Batch:</strong> #{{ $batch->id }}
+                                </p>
+
+                                <p class="text-muted small">
+                                    A later active contribution batch for the same employer must be rolled back first. Member master records created from the original upload are retained for safety and can be matched during re-upload.
+                                </p>
+
+                                <div class="mb-0">
+                                    <label for="rollback_reason" class="form-label">Reason for rollback <span class="text-danger">*</span></label>
+                                    <textarea name="rollback_reason" id="rollback_reason" class="form-control" rows="3" required maxlength="2000" placeholder="Example: Re-uploading November and December 2025 using the corrected contribution validation and nil contributor rules."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="mdi mdi-backup-restore me-1"></i>
+                                    Rollback & Delete Batch
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endcan
+    @endif
 
 @endsection
 
