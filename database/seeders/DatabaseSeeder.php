@@ -99,6 +99,11 @@ class DatabaseSeeder extends Seeder
 
             EmployerGroupSeeder::class,
 
+
+
+
+            WithdrawalInterestRatesSeeder::class,
+
         ]);
     }
 }

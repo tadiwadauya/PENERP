@@ -65,6 +65,7 @@ use App\Http\Controllers\PensionsAdministration\Settings\RetirementIncreaseFacto
 use App\Http\Controllers\PensionsAdministration\Settings\WithdrawalEntitlementScaleController;
 use App\Http\Controllers\PensionsAdministration\Settings\InterestRateController;
 use App\Http\Controllers\PensionsAdministration\Updates\BenefitStatementController;
+use App\Http\Controllers\PensionsAdministration\Updates\BenefitStatementBulkController;
 
 
 
@@ -347,10 +348,42 @@ Route::middleware('auth')->group(function (): void {
                         */
 
 
-                        Route::get('/benefit-statements',[BenefitStatementController::class,'index'])->name('benefit-statements.index')->middleware('permission:pensions.reports.actuarial-data.view');
-                        Route::post('/benefit-statements/preview',[BenefitStatementController::class,'preview'])->name('benefit-statements.preview')->middleware('permission:pensions.reports.actuarial-data.view');
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Benefit Statements
+                        |--------------------------------------------------------------------------
+                        */
 
-                        
+                        Route::get('/benefit-statements', [BenefitStatementController::class, 'index'])->name('benefit-statements.index')->middleware('permission:pensions.reports.actuarial-data.view');
+
+                        Route::post('/benefit-statements/preview', [BenefitStatementController::class, 'preview'])->name('benefit-statements.preview')->middleware('permission:pensions.reports.actuarial-data.view');
+
+                        Route::post('/benefit-statements/pdf', [BenefitStatementController::class, 'pdf'])->name('benefit-statements.pdf')->middleware('permission:pensions.reports.actuarial-data.view');
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Bulk Benefit Statements
+                        |--------------------------------------------------------------------------
+                        */
+
+                        Route::get('/benefit-statements/bulk', [BenefitStatementBulkController::class, 'index'])
+                            ->name('benefit-statements.bulk.index')
+                            ->middleware('permission:pensions.reports.actuarial-data.view');
+
+                        Route::post('/benefit-statements/bulk', [BenefitStatementBulkController::class, 'start'])
+                            ->name('benefit-statements.bulk.start')
+                            ->middleware('permission:pensions.reports.actuarial-data.view');
+
+                        Route::get('/benefit-statements/bulk/status/{id}', [BenefitStatementBulkController::class, 'status'])
+                            ->whereUuid('id')
+                            ->name('benefit-statements.bulk.status')
+                            ->middleware('permission:pensions.reports.actuarial-data.view');
+
+                        Route::get('/benefit-statements/bulk/file/{id}', [BenefitStatementBulkController::class, 'file'])
+                            ->whereUuid('id')
+                            ->name('benefit-statements.bulk.file')
+                            ->middleware('permission:pensions.reports.actuarial-data.view');
+
                         Route::get('reports/membership', [MembershipReportController::class, 'index'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.index');
                         Route::get('reports/membership/data/members', [MembershipReportController::class, 'membersData'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.members-data');
                         Route::get('reports/membership/data/age', [MembershipReportController::class, 'ageData'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.age-data');

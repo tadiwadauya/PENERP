@@ -106,7 +106,20 @@ Benefit statement as at {{ $statement['statement_date']->format('d/m/Y') }}
     <div class="col-12">
         <div class="d-flex justify-content-end gap-2 mb-3">
             <a href="{{ route('pensions-administration.updates.benefit-statements.index') }}" class="btn btn-light"><i class="mdi mdi-arrow-left me-1"></i> Back</a>
-            <button type="button" class="btn btn-primary" onclick="window.print()"><i class="mdi mdi-printer-outline me-1"></i> Print Statement</button>
+            <form method="POST" action="{{ route('pensions-administration.updates.benefit-statements.pdf') }}" target="_blank">
+    @csrf
+    <input type="hidden" name="member_id" value="{{ $member->id }}">
+    <input type="hidden" name="statement_date" value="{{ $statement['statement_date']->toDateString() }}">
+    <input type="hidden" name="action" value="print">
+    <button type="submit" class="btn btn-primary"><i class="mdi mdi-printer-outline me-1"></i> Print Statement</button>
+</form>
+<form method="POST" action="{{ route('pensions-administration.updates.benefit-statements.pdf') }}">
+    @csrf
+    <input type="hidden" name="member_id" value="{{ $member->id }}">
+    <input type="hidden" name="statement_date" value="{{ $statement['statement_date']->toDateString() }}">
+    <input type="hidden" name="action" value="download">
+    <button type="submit" class="btn btn-success"><i class="mdi mdi-download me-1"></i> Download PDF</button>
+</form>
         </div>
     </div>
 </div>

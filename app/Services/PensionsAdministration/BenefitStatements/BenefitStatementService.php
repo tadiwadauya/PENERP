@@ -251,10 +251,7 @@ class BenefitStatementService
             */
             'interest_earned_on_employee_contributions_during_period'=>0.0,
 
-            'accumulated_additional_contributions_plus_interest'=>round(
-                $employeeAvc+$employerAvc,
-                2
-            ),
+            'accumulated_additional_contributions_plus_interest'=>0.0,
 
             'total_employer_contributions'=>round(
                 $employerContributions,

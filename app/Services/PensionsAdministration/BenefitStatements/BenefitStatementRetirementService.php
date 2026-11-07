@@ -213,8 +213,20 @@ class BenefitStatementRetirementService
             *$commutationFraction
             *$commutationFactor;
 
+       // No retrospective benefit estimate for a retirement age already passed.
+       // A member aged 62 has zero at ages 55 and 60, but may qualify at 70.
+       $retirementAgePassed=$retirementDate->lt($statementDate->copy()->startOfDay());
+       if ($retirementAgePassed) {
+           $baseAnnualPension=0.0;
+            $annualPension=0.0;
+           $commutationAmount=0.0;
+           $earlyReductionPercentage=0.0;
+           $lateIncreasePercentage=0.0;
+       }
+
         return [
             'age'=>$retirementAge,
+           'retirement_age_passed'=>$retirementAgePassed,
             'retirement_date'=>$retirementDate,
             'future_service_months'=>$futureServiceMonths,
             'projected_service_months'=>$projectedServiceMonths,
@@ -253,3 +265,4 @@ class BenefitStatementRetirementService
             +1;
     }
 }
+

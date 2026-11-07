@@ -136,7 +136,8 @@ class BenefitStatementDeathService
                 2
             ),
 
-            'children_pension'=>0.0,
+            'children_pension'=>round($spousePension * 0.25, 2), // One-child illustration where a spouse exists.
+           'children_pension_assumed_one_child'=>$spousePension > 0,
         ];
     }
 
@@ -165,3 +166,4 @@ class BenefitStatementDeathService
             +1;
     }
 }
+
