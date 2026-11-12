@@ -1041,9 +1041,14 @@
                                     </h6>
 
 
-                                    <a href="{{ route('pensions-administration.updates.benefit-statements.index') }}" class="dropdown-item {{ request()->routeIs('pensions-administration.updates.benefit-statements.*') ? 'active' : '' }}">
+                                    <a href="{{ route('pensions-administration.updates.benefit-statements.index') }}" class="dropdown-item {{ request()->routeIs('pensions-administration.updates.benefit-statements.index', 'pensions-administration.updates.benefit-statements.preview', 'pensions-administration.updates.benefit-statements.pdf') ? 'active' : '' }}">
                                         <i class="mdi mdi-file-account-outline me-2"></i>
                                         Benefit Statements
+                                    </a>
+
+                                    <a href="{{ route('pensions-administration.updates.benefit-statements.bulk.index') }}" class="dropdown-item {{ request()->routeIs('pensions-administration.updates.benefit-statements.bulk.*') ? 'active' : '' }}">
+                                        <i class="mdi mdi-file-document-multiple-outline me-2"></i>
+                                        Bulk Benefit Statements
                                     </a>
 
                                 @endif

@@ -117,7 +117,8 @@ class BenefitStatementService
 
             'member'=>[
                 'id'=>$member->id,
-                'member_number'=>$member->member_number,
+                'member_number'=>filled($member->penad_member_number) ? trim((string)$member->penad_member_number) : (filled($member->member_number) ? trim((string)$member->member_number) : 'N/A'),
+                'penerp_member_number'=>$member->member_number,
                 'penad_member_number'=>$member->penad_member_number,
                 'fundworx_member_number'=>$member->fundworx_member_number,
                 'national_id'=>$member->national_id,

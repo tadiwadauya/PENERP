@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\PensionsAdministration\HistoricalContributions;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PensionsAdministration\HistoricalContributions\ProcessHistoricalContributionImport;
 use App\Models\PensionsAdministration\HistoricalContributions\HistoricalContributionImportBatch;
 use App\Models\PensionsAdministration\HistoricalContributions\HistoricalContributionImportRow;
 use Illuminate\Database\Eloquent\Builder;
@@ -294,6 +295,45 @@ class HistoricalContributionReviewController extends Controller
             'data' =>
                 $data,
         ]);
+    }
+
+    /**
+     * Re-run validation against the original stored workbook.
+     * Revalidation replaces staging and resets previous review decisions.
+     */
+    public function revalidate(HistoricalContributionImportBatch $batch): RedirectResponse
+    {
+        $this->ensurePermission('contributions.monthly-imports.update');
+
+        if (!in_array($batch->status, ['awaiting_review', 'posting_failed'], true)) {
+            return back()->with('error', 'Only batches awaiting review or with failed posting can be revalidated.');
+        }
+
+        if ((int) $batch->new_members_created > 0 || (int) $batch->posted_transaction_rows > 0 || (int) $batch->posted_service_period_rows > 0 ||
+            HistoricalContributionImportRow::query()->where('import_batch_id', $batch->id)->where(function (Builder $query) {
+                $query->whereNotNull('created_member_id')->orWhereNotNull('posted_contribution_id')->orWhereNotNull('posted_at');
+            })->exists()) {
+            return back()->with('error', 'This batch has created members or posted transactions. Revalidation is blocked until the partial posting is reconciled.');
+        }
+
+        // Conditional update prevents a second click from queuing the same batch again.
+        $updated = HistoricalContributionImportBatch::query()->whereKey($batch->id)
+            ->whereIn('status', ['awaiting_review', 'posting_failed'])
+            ->update(['status' => 'queued', 'progress_percentage' => 0, 'failure_reason' => null, 'updated_at' => now()]);
+
+        if ($updated !== 1) {
+            return back()->with('error', 'Batch status changed. Refresh the page before retrying.');
+        }
+
+        try {
+            ProcessHistoricalContributionImport::dispatch($batch->id);
+        } catch (Throwable $e) {
+            $batch->update(['status' => 'posting_failed', 'failure_reason' => 'Could not queue revalidation: ' . $e->getMessage()]);
+            return back()->with('error', 'Could not queue revalidation: ' . $e->getMessage());
+        }
+
+        return redirect()->route('pensions-administration.historical-contributions.imports.show', $batch)
+            ->with('success', 'Batch revalidation queued. Previous review decisions will be reset. Review the results before posting.');
     }
 
     /*

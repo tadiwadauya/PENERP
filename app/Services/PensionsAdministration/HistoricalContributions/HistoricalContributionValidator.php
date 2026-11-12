@@ -50,6 +50,15 @@ class HistoricalContributionValidator
     public function process(
         HistoricalContributionImportBatch $batch
     ): void {
+        // Never rebuild staging after any member creation or contribution posting.
+        // Such batches require a controlled reconciliation, not revalidation.
+        if ((int) $batch->new_members_created > 0 || (int) $batch->posted_transaction_rows > 0 || (int) $batch->posted_service_period_rows > 0 ||
+            HistoricalContributionImportRow::query()->where('import_batch_id', $batch->id)->where(function ($query) {
+                $query->whereNotNull('created_member_id')->orWhereNotNull('posted_contribution_id')->orWhereNotNull('posted_at');
+            })->exists()) {
+            throw new RuntimeException('This batch already has created members or posted transactions. Revalidation is blocked to protect posted data. Reconcile the partial posting first.');
+        }
+
         $batch->update([
             'status' => 'processing',
             'progress_percentage' => 1,
@@ -883,6 +892,11 @@ class HistoricalContributionValidator
         $errors = [];
 
         $warnings = [];
+
+        $penadNumber = trim((string) ($memberData['penad_member_number'] ?? $memberData['legacy_member_number'] ?? ''));
+        if ($penadNumber === '') {
+            $errors[] = 'PenAd Member Number is mandatory. This historical transaction cannot be posted.';
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -2106,172 +2120,12 @@ class HistoricalContributionValidator
     |--------------------------------------------------------------------------
     */
 
-    private function makeNewMemberIdentityKey(
-        int $employerId,
-        array $data
-    ): string {
-        /*
-        |--------------------------------------------------------------------------
-        | PenAd First
-        |--------------------------------------------------------------------------
-        */
-
-        $penad =
-            $this->normalize(
-                $data[
-                    'penad_member_number'
-                ]
-                ??
-                $data[
-                    'legacy_member_number'
-                ]
-                ??
-                null
-            );
-
-        if ($penad) {
-            return hash(
-                'sha256',
-                'employer:'
-                . $employerId
-                . '|penad:'
-                . $penad
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | PENERP
-        |--------------------------------------------------------------------------
-        */
-
-        $penerp =
-            $this->normalize(
-                $data[
-                    'penerp_member_number'
-                ]
-                ??
-                null
-            );
-
-        if ($penerp) {
-            return hash(
-                'sha256',
-                'penerp:'
-                . $penerp
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Fundworx
-        |--------------------------------------------------------------------------
-        */
-
-        $fundworx =
-            $this->normalize(
-                $data[
-                    'fundworx_member_number'
-                ]
-                ??
-                null
-            );
-
-        if ($fundworx) {
-            return hash(
-                'sha256',
-                'fundworx:'
-                . $fundworx
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | National ID
-        |--------------------------------------------------------------------------
-        */
-
-        $nationalId =
-            Member::normalizeNationalId(
-                $data[
-                    'national_id'
-                ]
-                ??
-                null
-            );
-
-        if ($nationalId) {
-            return hash(
-                'sha256',
-                'national:'
-                . $nationalId
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Staff Number Is NOT Enough By Itself
-        |--------------------------------------------------------------------------
-        */
-
-        return hash(
-            'sha256',
-            implode(
-                '|',
-                [
-                    'employer:'
-                    . $employerId,
-
-                    'staff:'
-                    . (
-                        $this->normalize(
-                            $data[
-                                'staff_number'
-                            ]
-                            ??
-                            null
-                        )
-                        ??
-                        ''
-                    ),
-
-                    'surname:'
-                    . (
-                        $this->normalize(
-                            $data[
-                                'surname'
-                            ]
-                            ??
-                            null
-                        )
-                        ??
-                        ''
-                    ),
-
-                    'first:'
-                    . (
-                        $this->normalize(
-                            $data[
-                                'first_names'
-                            ]
-                            ??
-                            null
-                        )
-                        ??
-                        ''
-                    ),
-
-                    'dob:'
-                    . (
-                        $data[
-                            'date_of_birth'
-                        ]
-                        ??
-                        ''
-                    ),
-                ]
-            )
-        );
+    private function makeNewMemberIdentityKey(int $employerId, array $data): string
+    {
+        $penad = $this->normalize($data['penad_member_number'] ?? $data['legacy_member_number'] ?? null);
+        // Missing PenAd is an error; this fallback is only a temporary grouping
+        // key during validation, and must never authorise member creation.
+        return hash('sha256', $penad ? 'penad:' . $penad : 'missing-penad:employer:' . $employerId . '|staff:' . $this->normalize($data['staff_number'] ?? null));
     }
 
     /*

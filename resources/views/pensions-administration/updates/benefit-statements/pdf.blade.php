@@ -67,7 +67,7 @@
                 <div class="identity-name">{{ strtoupper($member['surname']??'') }} &nbsp; {{ strtoupper($member['first_names']??'') }}</div>
                 <div class="identity-employer">{{ $employment['employer_name']??'-' }}</div>
                 <table><tr><td>NATIONAL ID</td><td>{{ $member['national_id']??'-' }}</td></tr>
-                <tr><td>MEMBER NUMBER</td><td>{{ $member['member_number']??'-' }}</td></tr>
+                <tr><td>MEMBER NUMBER</td><td>{{ filled($member['penad_member_number']??null) ? trim((string)$member['penad_member_number']) : (filled($member['penerp_member_number']??null) ? trim((string)$member['penerp_member_number']) : ($member['member_number']??'-')) }}</td></tr>
                 <tr><td>STAFF NUMBER</td><td>{{ $employment['staff_number']??'-' }}</td></tr>
                 <tr><td>VOTE NUMBER</td><td>{{ $employment['vote_number']??'-' }}</td></tr></table>
             </div>

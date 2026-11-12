@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PENERP Member Portal</title>
+<style>body{font-family:Arial,sans-serif;background:#edf3fb;color:#172b4d;margin:0}.top{background:#124c92;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px}.top h1{font-size:20px;margin:0}.top button{background:#fff;color:#124c92;border:0;padding:9px 15px;border-radius:5px;cursor:pointer}.main{max-width:950px;margin:35px auto;padding:0 18px}.card{background:#fff;border-radius:10px;padding:25px;box-shadow:0 5px 20px #163c6b12;margin-bottom:20px}.muted{color:#5b6e82}.item{display:flex;justify-content:space-between;align-items:center;gap:15px;border-top:1px solid #e4eaf2;padding:16px 0;flex-wrap:wrap}.item a{color:#125aa5;margin-left:12px}.empty{text-align:center;padding:35px 10px;color:#65768b}</style></head>
+<body><header class="top"><h1>PENERP Member Portal</h1><form method="POST" action="{{ route('member-portal.logout') }}">@csrf<button type="submit">Logout</button></form></header>
+<main class="main"><section class="card"><h2>Welcome, {{ $member->first_names }} {{ $member->surname }}</h2><p class="muted">Member Number: {{ $member->penad_member_number ?: $member->member_number }}</p></section>
+<section class="card"><h2>My Benefit Statements</h2>
+@if($statements->isEmpty())<div class="empty">No Benefit Statement Available.</div>
+@else @foreach($statements as $statement)<div class="item"><div><strong>Benefit Statement</strong><div class="muted">As at {{ \Carbon\Carbon::parse($statement->statement_date)->format('d F Y') }}</div></div><div><a href="{{ route('member-portal.statements.show', ['id'=>$statement->id]) }}" target="_blank" rel="noopener">View / Print</a><a href="{{ route('member-portal.statements.show', ['id'=>$statement->id, 'action'=>'download']) }}">Download</a></div></div>@endforeach @endif
+</section></main></body></html>

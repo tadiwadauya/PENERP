@@ -81,45 +81,6 @@
 @include('pensions-administration.partials.navigation')
 
 
-@if(session('success'))
-
-<div class="alert alert-success">
-
-    <i class="mdi mdi-check-circle-outline me-1"></i>
-
-    {{ session('success') }}
-
-</div>
-
-@endif
-
-
-@if(session('warning'))
-
-<div class="alert alert-warning">
-
-    <i class="mdi mdi-alert-outline me-1"></i>
-
-    {{ session('warning') }}
-
-</div>
-
-@endif
-
-
-@if(session('error'))
-
-<div class="alert alert-danger">
-
-    <i class="mdi mdi-alert-circle-outline me-1"></i>
-
-    {{ session('error') }}
-
-</div>
-
-@endif
-
-
 {{-- =========================================================
      BATCH DETAILS
 ========================================================= --}}
@@ -448,6 +409,14 @@
 
             </form>
 
+
+            {{-- REVALIDATE BATCH --}}
+            <form method="POST" action="{{ route('pensions-administration.historical-contributions.review.revalidate', $batch) }}" onsubmit="return confirm('Revalidate this historical contribution batch? All existing review decisions will be reset to Pending, and the saved workbook will be validated again. Continue?');">
+                @csrf
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="mdi mdi-refresh me-1"></i> Revalidate Batch
+                </button>
+            </form>
 
             {{-- FINALISE --}}
             <form method="POST"

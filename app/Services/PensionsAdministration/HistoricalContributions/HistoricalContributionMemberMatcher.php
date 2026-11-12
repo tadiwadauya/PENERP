@@ -127,435 +127,70 @@ class HistoricalContributionMemberMatcher
         $employer =
             $employerMatch['employer'];
 
-        /*
-        |--------------------------------------------------------------------------
-        | Strong Identifiers
-        |--------------------------------------------------------------------------
-        |
-        | Historical matching priority:
-        |
-        | 1. PenAd Member Number
-        | 2. PENERP Member Number
-        | 3. Fundworx Member Number
-        | 4. National ID
-        |
-        | Staff Number is intentionally handled separately because it can be
-        | reused after an employee exits.
-        |
-        */
-
-        $strongMatches = [];
-
-        /*
-        |--------------------------------------------------------------------------
-        | PenAd Member Number
-        |--------------------------------------------------------------------------
-        */
-
-        $penadMemberNumber =
-            $this->clean(
-                $data['penad_member_number']
-                ??
-                $data['legacy_member_number']
-                ??
-                null
-            );
-
-        if ($penadMemberNumber) {
-            $this->addMemberIdentifierMatches(
-                matches:
-                    $strongMatches,
-
-                type:
-                    'penad_member_number',
-
-                memberIds:
-                    $this->membersByPenadNumber[
-                        $this->normalizeReference(
-                            $penadMemberNumber
-                        )
-                    ]
-                    ??
-                    []
-            );
+        // PenAd is the authoritative membership identifier. Other identifiers
+        // describe the person, but must never select a different membership.
+        $penad = $this->clean($data['penad_member_number'] ?? $data['legacy_member_number'] ?? null);
+        if (!$penad) {
+            return [
+                'employer' => $employer,
+                'employer_match_type' => 'penad_employer_number',
+                'member' => null,
+                'member_match_type' => 'missing_penad_member_number',
+                'is_new_member' => false,
+                'ambiguous' => false,
+                'error' => 'PenAd Member Number is mandatory. This historical member cannot be posted.',
+            ];
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | PENERP Member Number
-        |--------------------------------------------------------------------------
-        */
+        $memberIds = array_values(array_unique(array_map('intval',
+            $this->membersByPenadNumber[$this->normalizeReference($penad)] ?? []
+        )));
 
-        $penerpMemberNumber =
-            $this->clean(
-                $data['penerp_member_number']
-                ??
-                null
-            );
-
-        if ($penerpMemberNumber) {
-            $this->addMemberIdentifierMatches(
-                matches:
-                    $strongMatches,
-
-                type:
-                    'penerp_member_number',
-
-                memberIds:
-                    $this->membersByPenerpNumber[
-                        $this->normalizeReference(
-                            $penerpMemberNumber
-                        )
-                    ]
-                    ??
-                    []
-            );
+        if (count($memberIds) > 1) {
+            return [
+                'employer' => $employer,
+                'employer_match_type' => 'penad_employer_number',
+                'member' => null,
+                'member_match_type' => 'duplicate_penad_member_number',
+                'is_new_member' => false,
+                'ambiguous' => true,
+                'error' => "PenAd Member Number {$penad} is assigned to multiple PENERP members. Resolve this duplicate before posting.",
+            ];
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Fundworx Member Number
-        |--------------------------------------------------------------------------
-        */
-
-        $fundworxMemberNumber =
-            $this->clean(
-                $data['fundworx_member_number']
-                ??
-                null
-            );
-
-        if ($fundworxMemberNumber) {
-            $this->addMemberIdentifierMatches(
-                matches:
-                    $strongMatches,
-
-                type:
-                    'fundworx_member_number',
-
-                memberIds:
-                    $this->membersByFundworxNumber[
-                        $this->normalizeReference(
-                            $fundworxMemberNumber
-                        )
-                    ]
-                    ??
-                    []
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | National ID
-        |--------------------------------------------------------------------------
-        */
-
-        $nationalId =
-            Member::normalizeNationalId(
-                $data['national_id']
-                ??
-                null
-            );
-
-        if ($nationalId) {
-            $this->addMemberIdentifierMatches(
-                matches:
-                    $strongMatches,
-
-                type:
-                    'national_id',
-
-                memberIds:
-                    $this->membersByNationalId[
-                        $nationalId
-                    ]
-                    ??
-                    []
-            );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Resolve Strong Identifier Match
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            !empty(
-                $strongMatches
-            )
-        ) {
-            $uniqueMemberIds =
-                collect(
-                    $strongMatches
-                )
-                    ->flatten()
-                    ->map(
-                        fn ($id) =>
-                            (int) $id
-                    )
-                    ->unique()
-                    ->values();
-
-            if (
-                $uniqueMemberIds->count()
-                >
-                1
-            ) {
-                return [
-                    'employer' =>
-                        $employer,
-
-                    'employer_match_type' =>
-                        'penad_employer_number',
-
-                    'member' =>
-                        null,
-
-                    'member_match_type' =>
-                        'identifier_conflict',
-
-                    'is_new_member' =>
-                        false,
-
-                    'ambiguous' =>
-                        true,
-
-                    'error' =>
-                        'Historical member identifiers conflict. PenAd/PENERP/Fundworx Member Number and/or National ID point to different existing members.',
-                ];
-            }
-
-            $memberId =
-                (int) $uniqueMemberIds->first();
-
-            $member =
-                $this->membersById[
-                    $memberId
-                ]
-                ??
-                null;
-
+        if (count($memberIds) === 1) {
+            $member = $this->membersById[$memberIds[0]] ?? null;
             if (!$member) {
                 return [
-                    'employer' =>
-                        $employer,
-
-                    'employer_match_type' =>
-                        'penad_employer_number',
-
-                    'member' =>
-                        null,
-
-                    'member_match_type' =>
-                        null,
-
-                    'is_new_member' =>
-                        false,
-
-                    'ambiguous' =>
-                        true,
-
-                    'error' =>
-                        'The historical contribution row matched a member identifier that could not be loaded from PENERP.',
+                    'employer' => $employer,
+                    'employer_match_type' => 'penad_employer_number',
+                    'member' => null,
+                    'member_match_type' => 'identifier_conflict',
+                    'is_new_member' => false,
+                    'ambiguous' => true,
+                    'error' => "PenAd Member Number {$penad} refers to a member that could not be loaded.",
                 ];
             }
 
             return [
-                'employer' =>
-                    $employer,
-
-                'employer_match_type' =>
-                    'penad_employer_number',
-
-                'member' =>
-                    $member,
-
-                'member_match_type' =>
-                    $this->determineMemberMatchType(
-                        matches:
-                            $strongMatches,
-
-                        memberId:
-                            $memberId
-                    ),
-
-                'is_new_member' =>
-                    false,
-
-                'ambiguous' =>
-                    false,
-
-                'error' =>
-                    null,
+                'employer' => $employer,
+                'employer_match_type' => 'penad_employer_number',
+                'member' => $member,
+                'member_match_type' => 'penad_member_number',
+                'is_new_member' => false,
+                'ambiguous' => false,
+                'error' => null,
             ];
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Staff Number
-        |--------------------------------------------------------------------------
-        |
-        | Historical rule:
-        |
-        | Staff Number is unique only to the employer AND only while the
-        | holder is active/current.
-        |
-        | Examples:
-        |
-        | Exited A + Exited B, same staff number       = allowed
-        | Exited A + Active B, same staff number       = allowed
-        | Active A + Active B, same staff number       = ERROR
-        |
-        */
-
-        $staffNumber =
-            $this->clean(
-                $data['staff_number']
-                ??
-                null
-            );
-
-        if ($staffNumber) {
-            $staffMatch =
-                $this->matchStaffNumber(
-                    employer:
-                        $employer,
-
-                    staffNumber:
-                        $staffNumber,
-
-                    sourceStatus:
-                        $data['membership_status']
-                        ??
-                        null
-                );
-
-            if (
-                $staffMatch['active_conflict']
-            ) {
-                return [
-                    'employer' =>
-                        $employer,
-
-                    'employer_match_type' =>
-                        'penad_employer_number',
-
-                    'member' =>
-                        null,
-
-                    'member_match_type' =>
-                        'staff_number_active_conflict',
-
-                    'is_new_member' =>
-                        false,
-
-                    'ambiguous' =>
-                        true,
-
-                    'error' =>
-                        'Staff Number '
-                        . $staffNumber
-                        . ' is assigned to more than one active member under '
-                        . $employer->name
-                        . '.',
-                ];
-            }
-
-            if (
-                $staffMatch['member']
-            ) {
-                return [
-                    'employer' =>
-                        $employer,
-
-                    'employer_match_type' =>
-                        'penad_employer_number',
-
-                    'member' =>
-                        $staffMatch['member'],
-
-                    'member_match_type' =>
-                        $staffMatch['match_type'],
-
-                    'is_new_member' =>
-                        false,
-
-                    'ambiguous' =>
-                        false,
-
-                    'error' =>
-                        null,
-                ];
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Historical Staff Number Reuse
-            |--------------------------------------------------------------------------
-            |
-            | Staff Number by itself cannot safely determine which exited
-            | person this row belongs to.
-            |
-            | Do NOT flag it as a duplicate.
-            |
-            */
-
-            if (
-                $staffMatch['reused_historically']
-            ) {
-                return [
-                    'employer' =>
-                        $employer,
-
-                    'employer_match_type' =>
-                        'penad_employer_number',
-
-                    'member' =>
-                        null,
-
-                    'member_match_type' =>
-                        'staff_number_reused_historically',
-
-                    'is_new_member' =>
-                        true,
-
-                    'ambiguous' =>
-                        false,
-
-                    'error' =>
-                        null,
-                ];
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | New Historical Member
-        |--------------------------------------------------------------------------
-        */
-
         return [
-            'employer' =>
-                $employer,
-
-            'employer_match_type' =>
-                'penad_employer_number',
-
-            'member' =>
-                null,
-
-            'member_match_type' =>
-                'new_member',
-
-            'is_new_member' =>
-                true,
-
-            'ambiguous' =>
-                false,
-
-            'error' =>
-                null,
+            'employer' => $employer,
+            'employer_match_type' => 'penad_employer_number',
+            'member' => null,
+            'member_match_type' => 'new_penad_membership',
+            'is_new_member' => true,
+            'ambiguous' => false,
+            'error' => null,
         ];
     }
 

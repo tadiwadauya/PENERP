@@ -67,6 +67,10 @@ use App\Http\Controllers\PensionsAdministration\Settings\InterestRateController;
 use App\Http\Controllers\PensionsAdministration\Updates\BenefitStatementController;
 use App\Http\Controllers\PensionsAdministration\Updates\BenefitStatementBulkController;
 
+use App\Http\Controllers\MemberPortal\MemberPortalController;
+use App\Http\Middleware\EnsureMemberPortalAuthenticated;
+
+
 
 
 /*
@@ -383,6 +387,18 @@ Route::middleware('auth')->group(function (): void {
                             ->whereUuid('id')
                             ->name('benefit-statements.bulk.file')
                             ->middleware('permission:pensions.reports.actuarial-data.view');
+                        
+
+                        Route::post('benefit-statements/bulk/{id}/regenerate', [BenefitStatementBulkController::class, 'regenerate'])
+                            ->whereUuid('id')
+                            ->middleware('permission:pensions.reports.actuarial-data.view')
+                            ->name('benefit-statements.bulk.regenerate');
+
+
+                        Route::post('benefit-statements/bulk/{id}/cancel', [BenefitStatementBulkController::class, 'cancel'])
+                            ->whereUuid('id')
+                            ->middleware('permission:pensions.reports.actuarial-data.view')
+                            ->name('benefit-statements.bulk.cancel');
 
                         Route::get('reports/membership', [MembershipReportController::class, 'index'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.index');
                         Route::get('reports/membership/data/members', [MembershipReportController::class, 'membersData'])->middleware('permission:pensions.reports.membership.view')->name('reports.membership.members-data');
@@ -553,6 +569,7 @@ Route::middleware('auth')->group(function (): void {
                         Route::post('imports/{batch}/review/approve-eligible', [HistoricalContributionReviewController::class, 'approveEligible'])->name('review.approve-eligible');
                         Route::post('imports/{batch}/review/approve-warnings', [HistoricalContributionReviewController::class, 'approveWarnings'])->name('review.approve-warnings');
                         Route::post('imports/{batch}/review/finalise', [HistoricalContributionReviewController::class, 'finalise'])->name('review.finalise');
+                        Route::post('imports/{batch}/review/revalidate', [HistoricalContributionReviewController::class, 'revalidate'])->name('review.revalidate');
 
                         Route::post('imports/{batch}/post', [HistoricalContributionPostingController::class, 'store'])->name('posting.store');
                         Route::get('imports/{batch}/posting-status', [HistoricalContributionPostingController::class, 'status'])->name('posting.status');
@@ -564,7 +581,6 @@ Route::middleware('auth')->group(function (): void {
                         | Keep Generic Batch Route Last
                         |--------------------------------------------------------------------------
                         */
-
                         Route::get('imports/{batch}', [HistoricalContributionImportController::class, 'show'])->name('imports.show');
 
                     });
@@ -913,4 +929,13 @@ Route::middleware('auth')->group(function (): void {
 
     });
 
+});
+Route::prefix('member-portal')->name('member-portal.')->group(function () {
+    Route::get('login', [MemberPortalController::class, 'loginForm'])->name('login');
+    Route::post('login', [MemberPortalController::class, 'login'])->name('login.submit');
+    Route::middleware(EnsureMemberPortalAuthenticated::class)->group(function () {
+        Route::get('/', [MemberPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('statements/{id}', [MemberPortalController::class, 'statement'])->whereNumber('id')->name('statements.show');
+        Route::post('logout', [MemberPortalController::class, 'logout'])->name('logout');
+    });
 });

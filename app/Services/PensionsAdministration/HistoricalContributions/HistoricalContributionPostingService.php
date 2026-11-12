@@ -19,12 +19,43 @@ class HistoricalContributionPostingService
         HistoricalContributionImportBatch $batch,
         int $postedBy
     ): void {
-        if (!in_array($batch->status, ['approved', 'posting_failed'], true)) {
+        // A delayed or duplicate job must never change an already completed batch.
+        $batch->refresh();
+        if ($batch->status === 'posted') {
+            return;
+        }
+
+        // Atomically claim the batch. Only one worker can move it to posting.
+        // An interrupted posting_failed batch may be resumed after review.
+        $claimed = HistoricalContributionImportBatch::query()
+            ->whereKey($batch->id)
+            ->whereIn('status', ['approved', 'posting_failed'])
+            ->whereNotNull('approved_by')
+            ->whereNotNull('approved_at')
+            ->whereNull('posted_at')
+            ->update([
+                'status' => 'posting',
+                'progress_percentage' => 2,
+                'posting_started_at' => $batch->posting_started_at ?? now(),
+                'posted_by' => $postedBy,
+                'failure_reason' => null,
+                'completed_at' => null,
+                'updated_at' => now(),
+            ]);
+
+        if ($claimed !== 1) {
+            $batch->refresh();
+            if (in_array($batch->status, ['posted', 'posting'], true)) {
+                return;
+            }
             throw new RuntimeException(
-                'Historical contribution batch must be approved before posting.'
+                'Historical contribution batch must be approved before posting, and must not already have a posting completion date.'
             );
         }
 
+        $batch->refresh();
+
+        try {
         /*
         |--------------------------------------------------------------------------
         | Approved Rows
@@ -60,30 +91,19 @@ class HistoricalContributionPostingService
             ->whereNotNull('posted_at')
             ->count();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Start / Resume Posting
-        |--------------------------------------------------------------------------
-        */
-
+        // Record progress only after successfully claiming the batch.
         $batch->update([
-            'status' => 'posting',
-            'progress_percentage' => 2,
-            'posting_started_at' => $batch->posting_started_at ?? now(),
-            'posted_by' => $postedBy,
-            'posted_at' => null,
             'posted_transaction_rows' => $alreadyPostedContributionRows,
             'posted_service_period_rows' => $alreadyPostedServiceRows,
-            'failure_reason' => null,
-            'completed_at' => null,
         ]);
 
-        try {
             /*
             |--------------------------------------------------------------------------
             | Create / Resolve Historical Members
             |--------------------------------------------------------------------------
             */
+
+            $this->assertApprovedMemberIdentities($batch);
 
             $this->createHistoricalMembers(
                 batch: $batch,
@@ -255,22 +275,22 @@ class HistoricalContributionPostingService
                                     $row->transaction_type
                                 ) === 'expected'
                             ) {
-                                $inserted = $this->storeServicePeriod(
-                                    memberId: (int) $memberId,
-                                    employerId: $employerId,
-                                    row: $row,
-                                    batch: $batch,
-                                    userId: $postedBy
-                                );
+                                $inserted = DB::transaction(function () use ($memberId, $employerId, $row, $batch, $postedBy): bool {
+                                    $inserted = $this->storeServicePeriod(
+                                        memberId: (int) $memberId,
+                                        employerId: $employerId,
+                                        row: $row,
+                                        batch: $batch,
+                                        userId: $postedBy
+                                    );
+
+                                    $row->update(['posted_at' => now(), 'updated_at' => now()]);
+                                    return $inserted;
+                                }, 3);
 
                                 if ($inserted) {
                                     $postedServiceRows++;
                                 }
-
-                                $row->update([
-                                    'posted_at' => now(),
-                                    'updated_at' => now(),
-                                ]);
 
                                 $processedRows++;
 
@@ -448,24 +468,44 @@ class HistoricalContributionPostingService
             |--------------------------------------------------------------------------
             */
 
-            $batch->update([
-                'status' => 'posted',
-                'progress_percentage' => 100,
-                'posted_transaction_rows' => $finalContributionCount,
-                'posted_service_period_rows' => $finalServicePeriodCount,
-                'new_members_created' => $newMembersCreated,
-                'posted_by' => $postedBy,
-                'posted_at' => now(),
-                'completed_at' => now(),
-                'failure_reason' => null,
-            ]);
+            $remaining = (clone $approvedQuery)->whereNull('posted_at')->count();
+            if ($remaining > 0) {
+                throw new RuntimeException("Posting cannot be completed: {$remaining} approved rows remain unposted.");
+            }
+
+            $completed = HistoricalContributionImportBatch::query()
+                ->whereKey($batch->id)
+                ->where('status', 'posting')
+                ->whereNull('posted_at')
+                ->update([
+                    'status' => 'posted',
+                    'progress_percentage' => 100,
+                    'posted_transaction_rows' => $finalContributionCount,
+                    'posted_service_period_rows' => $finalServicePeriodCount,
+                    'new_members_created' => $newMembersCreated,
+                    'posted_by' => $postedBy,
+                    'posted_at' => now(),
+                    'completed_at' => now(),
+                    'failure_reason' => null,
+                    'updated_at' => now(),
+                ]);
+
+            if ($completed !== 1) {
+                throw new RuntimeException('The batch status changed unexpectedly during posting.');
+            }
 
         } catch (Throwable $e) {
-            $batch->update([
-                'status' => 'posting_failed',
-                'failure_reason' => $e->getMessage(),
-                'completed_at' => now(),
-            ]);
+            // Do not overwrite a successful posting recorded by another execution.
+            HistoricalContributionImportBatch::query()
+                ->whereKey($batch->id)
+                ->where('status', 'posting')
+                ->whereNull('posted_at')
+                ->update([
+                    'status' => 'posting_failed',
+                    'failure_reason' => $e->getMessage(),
+                    'completed_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
             throw $e;
         }
@@ -601,9 +641,7 @@ class HistoricalContributionPostingService
                                     $memberNumber,
 
                                 'penad_member_number' =>
-                                    $this->clean(
-                                        $row->penad_member_number
-                                    ),
+                                    $this->requiredPenad($row),
 
                                 'fundworx_member_number' =>
                                     $this->clean(
@@ -842,145 +880,63 @@ class HistoricalContributionPostingService
     |--------------------------------------------------------------------------
     */
 
-    private function findExistingMemberBeforeCreate(
-        HistoricalContributionImportRow $row
-    ): ?int {
-        /*
-        |--------------------------------------------------------------------------
-        | PenAd
-        |--------------------------------------------------------------------------
-        */
-
-        if (filled($row->penad_member_number)) {
-            $ids =
-                Member::query()
-                    ->where(
-                        'penad_member_number',
-                        trim($row->penad_member_number)
-                    )
-                    ->limit(2)
-                    ->pluck('id');
-
-            if ($ids->count() === 1) {
-                return (int) $ids->first();
-            }
+    private function findExistingMemberBeforeCreate(HistoricalContributionImportRow $row): ?int
+    {
+        $penad = $this->requiredPenad($row);
+        $ids = Member::query()->where('penad_member_number', $penad)->limit(2)->pluck('id');
+        if ($ids->count() > 1) {
+            throw new RuntimeException("Excel row {$row->source_row_number}: PenAd Member Number {$penad} exists on multiple PENERP members.");
         }
+        return $ids->count() === 1 ? (int) $ids->first() : null;
+    }
 
-        /*
-        |--------------------------------------------------------------------------
-        | PENERP
-        |--------------------------------------------------------------------------
-        */
-
-        if (filled($row->penerp_member_number)) {
-            $ids =
-                Member::query()
-                    ->where(
-                        'member_number',
-                        trim($row->penerp_member_number)
-                    )
-                    ->limit(2)
-                    ->pluck('id');
-
-            if ($ids->count() === 1) {
-                return (int) $ids->first();
-            }
+    private function requiredPenad(HistoricalContributionImportRow $row): string
+    {
+        $penad = trim((string) $row->penad_member_number);
+        if ($penad === '') {
+            throw new RuntimeException("Excel row {$row->source_row_number}: PenAd Member Number is mandatory. Posting stopped.");
         }
+        return $penad;
+    }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Fundworx
-        |--------------------------------------------------------------------------
-        */
-
-        if (filled($row->fundworx_member_number)) {
-            $ids =
-                Member::query()
-                    ->where(
-                        'fundworx_member_number',
-                        trim($row->fundworx_member_number)
-                    )
-                    ->limit(2)
-                    ->pluck('id');
-
-            if ($ids->count() === 1) {
-                return (int) $ids->first();
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | National ID
-        |--------------------------------------------------------------------------
-        */
-
-        $nationalId =
-            Member::normalizeNationalId(
-                $row->national_id
-            );
-
-        if ($nationalId) {
-            $ids =
-                Member::query()
-                    ->where(
-                        'national_id_normalized',
-                        $nationalId
-                    )
-                    ->limit(2)
-                    ->pluck('id');
-
-            if ($ids->count() === 1) {
-                return (int) $ids->first();
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Staff Number
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $row->matched_employer_id
-            &&
-            filled($row->staff_number)
-            &&
-            HistoricalMembershipStatus::isActive(
-                $row->membership_status
-            )
-        ) {
-            $activeIds =
-                MemberEmployment::query()
-                    ->join(
-                        'members',
-                        'members.id',
-                        '=',
-                        'member_employments.member_id'
-                    )
-                    ->where(
-                        'member_employments.employer_id',
-                        $row->matched_employer_id
-                    )
-                    ->where(
-                        'member_employments.staff_number',
-                        trim($row->staff_number)
-                    )
-                    ->where(
-                        'members.is_active',
-                        true
-                    )
-                    ->distinct()
-                    ->limit(2)
-                    ->pluck(
-                        'member_employments.member_id'
-                    );
-
-            if ($activeIds->count() === 1) {
-                return (int) $activeIds->first();
-            }
-        }
-
-        return null;
+    private function assertApprovedMemberIdentities(HistoricalContributionImportBatch $batch): void
+    {
+        HistoricalContributionImportRow::query()
+            ->where('import_batch_id', $batch->id)
+            ->where('review_decision', 'approved')
+            ->where('duplicate_status', 'none')
+            ->where('validation_status', '<>', 'error')
+            ->orderBy('id')
+            ->chunkById(self::ROW_CHUNK, function ($rows): void {
+                $penads = [];
+                foreach ($rows as $row) {
+                    $penads[$this->requiredPenad($row)] = true;
+                }
+                $members = Member::query()->whereIn('penad_member_number', array_keys($penads))
+                    ->get(['id', 'penad_member_number'])->groupBy('penad_member_number');
+                foreach ($rows as $row) {
+                    $penad = $this->requiredPenad($row);
+                    $existing = $members->get($penad, collect());
+                    if ($existing->count() > 1) {
+                        throw new RuntimeException("Excel row {$row->source_row_number}: PenAd {$penad} is duplicated in PENERP. Posting stopped.");
+                    }
+                    $expectedId = $existing->count() === 1 ? (int) $existing->first()->id : null;
+                    $stagedId = $row->matched_member_id ? (int) $row->matched_member_id : null;
+                    $createdId = $row->created_member_id ? (int) $row->created_member_id : null;
+                    if ($stagedId !== null && $stagedId !== $expectedId) {
+                        throw new RuntimeException("Excel row {$row->source_row_number}: Stored member match {$stagedId} does not belong to PenAd {$penad}. Revalidate the batch before posting.");
+                    }
+                    if ($createdId !== null && $createdId !== $expectedId) {
+                        throw new RuntimeException("Excel row {$row->source_row_number}: Created member {$createdId} does not belong to PenAd {$penad}. Posting stopped.");
+                    }
+                    if ($expectedId !== null && $stagedId === null && $createdId === null) {
+                        throw new RuntimeException("Excel row {$row->source_row_number}: PenAd {$penad} already exists but this row is not linked to it. Revalidate before posting.");
+                    }
+                    if ($expectedId === null && !$row->is_new_member && $createdId === null) {
+                        throw new RuntimeException("Excel row {$row->source_row_number}: PenAd {$penad} requires a new membership but is not marked as new. Revalidate before posting.");
+                    }
+                }
+            });
     }
 
     /*
@@ -1213,56 +1169,8 @@ class HistoricalContributionPostingService
 
         $isCurrentEmployment = $isActiveStatus;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Active Staff Number Conflict Only
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $isActiveStatus
-            &&
-            filled($row->staff_number)
-        ) {
-            $conflictingActiveMember =
-                MemberEmployment::query()
-                    ->join(
-                        'members',
-                        'members.id',
-                        '=',
-                        'member_employments.member_id'
-                    )
-                    ->where(
-                        'member_employments.employer_id',
-                        $employerId
-                    )
-                    ->where(
-                        'member_employments.staff_number',
-                        trim($row->staff_number)
-                    )
-                    ->where(
-                        'member_employments.member_id',
-                        '<>',
-                        $memberId
-                    )
-                    ->where(
-                        'members.is_active',
-                        true
-                    )
-                    ->value(
-                        'member_employments.member_id'
-                    );
-
-            if ($conflictingActiveMember) {
-                throw new RuntimeException(
-                    'Excel row '
-                    . $row->source_row_number
-                    . ': Staff Number '
-                    . $row->staff_number
-                    . ' is already assigned to another active member under this employer.'
-                );
-            }
-        }
+        // Staff numbers are historical reference data, not unique membership identifiers.
+        // Different PenAd memberships may share a staff number under the same employer.
 
         /*
         |--------------------------------------------------------------------------
@@ -1628,6 +1536,23 @@ class HistoricalContributionPostingService
                 $row->employer_avc
             );
 
+        $currencyCode = strtoupper(trim((string) $row->currency_code));
+
+        // Legacy historical imports contain no currency code. Their amounts
+        // were previously posted as ZWG; retain that classification without conversion.
+        if ($currencyCode === '') {
+            $currencyCode = 'ZWG';
+        }
+
+        if (!in_array($currencyCode, ['USD', 'ZWG'], true)) {
+            throw new RuntimeException(
+                'Excel row ' . $row->source_row_number
+                . ': Unsupported currency code: ' . $currencyCode
+            );
+        }
+
+        $isUsd = $currencyCode === 'USD';
+
         $now =
             now();
 
@@ -1700,13 +1625,13 @@ class HistoricalContributionPostingService
             |--------------------------------------------------------------------------
             */
 
-            'usd_basic_pay' => 0,
+            'usd_basic_pay' => $isUsd ? ($basicPay ?? '0.0000') : '0.0000',
             'usd_employee_rate' => 0,
             'usd_employer_rate' => 0,
-            'usd_employee_contribution' => 0,
-            'usd_employer_contribution' => 0,
-            'usd_employee_avc' => 0,
-            'usd_employer_avc' => 0,
+            'usd_employee_contribution' => $isUsd ? ($employeeContribution ?? '0.0000') : '0.0000',
+            'usd_employer_contribution' => $isUsd ? ($employerContribution ?? '0.0000') : '0.0000',
+            'usd_employee_avc' => $isUsd ? ($employeeAvc ?? '0.0000') : '0.0000',
+            'usd_employer_avc' => $isUsd ? ($employerAvc ?? '0.0000') : '0.0000',
             'usd_employee_arrear' => 0,
             'usd_employer_arrear' => 0,
             'usd_employee_transfer_in' => 0,
@@ -1720,13 +1645,13 @@ class HistoricalContributionPostingService
             |--------------------------------------------------------------------------
             */
 
-            'zwg_basic_pay' => 0,
+            'zwg_basic_pay' => !$isUsd ? ($basicPay ?? '0.0000') : '0.0000',
             'zwg_employee_rate' => 0,
             'zwg_employer_rate' => 0,
-            'zwg_employee_contribution' => 0,
-            'zwg_employer_contribution' => 0,
-            'zwg_employee_avc' => 0,
-            'zwg_employer_avc' => 0,
+            'zwg_employee_contribution' => !$isUsd ? ($employeeContribution ?? '0.0000') : '0.0000',
+            'zwg_employer_contribution' => !$isUsd ? ($employerContribution ?? '0.0000') : '0.0000',
+            'zwg_employee_avc' => !$isUsd ? ($employeeAvc ?? '0.0000') : '0.0000',
+            'zwg_employer_avc' => !$isUsd ? ($employerAvc ?? '0.0000') : '0.0000',
             'zwg_employee_arrear' => 0,
             'zwg_employer_arrear' => 0,
             'zwg_employee_transfer_in' => 0,
@@ -1741,7 +1666,7 @@ class HistoricalContributionPostingService
             */
 
             'currency_code' =>
-                $row->currency_code,
+                $currencyCode,
 
             'basic_pay' =>
                 $basicPay,
@@ -1818,6 +1743,20 @@ class HistoricalContributionPostingService
     */
 
     private function flushContributions(
+        array &$contributionBuffer,
+        array &$stagingRowIds
+    ): int {
+        if (empty($contributionBuffer)) {
+            return 0;
+        }
+
+        // Insert contributions and link staging rows as one atomic operation.
+        return DB::transaction(function () use (&$contributionBuffer, &$stagingRowIds): int {
+            return $this->flushContributionsWithinTransaction($contributionBuffer, $stagingRowIds);
+        }, 3);
+    }
+
+    private function flushContributionsWithinTransaction(
         array &$contributionBuffer,
         array &$stagingRowIds
     ): int {
@@ -2347,6 +2286,10 @@ class HistoricalContributionPostingService
     |--------------------------------------------------------------------------
     */
 
+    /**
+     * Normalise imported decimal formatting without currency conversion.
+     * The amounts have already been prepared in the source Excel workbook.
+     */
     private function nullableDecimal4(
         mixed $value
     ): ?string {
